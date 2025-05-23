@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - FTP Scheduler{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-success" onclick="manualRun()">
+                <i class="fas fa-play"></i> Esecuzione Manuale
+            </button>
+            <button type="button" class="btn btn-info" onclick="testFTP()">
+                <i class="fas fa-network-wired"></i> Test FTP
+            </button>
+        </div>
+        <div class="btn-group me-2">
+            <button class="btn btn-outline-warning dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-clock"></i> Schedulazione Rapida
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_10_seconds')">
+                    <i class="fas fa-bolt"></i> Ogni 10 secondi (TEST)
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_minute')">
+                    <i class="fas fa-stopwatch"></i> Ogni minuto
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_30_minutes')">
+                    <i class="fas fa-clock"></i> Ogni 30 minuti
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_hour')">
+                    <i class="fas fa-hourglass-half"></i> Ogni ora
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="showScheduleInfo()">
+                    <i class="fas fa-info-circle"></i> Info Schedulazione
+                </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Status Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card status-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-server"></i> Server FTP
+                </h5>
+                <p class="card-text">
+                    <strong>Host:</strong> {{ config.ftp_host or 'Non configurato' }}<br>
+                    <strong>Utente:</strong> {{ config.ftp_user or 'Non configurato' }}<br>
+                    <strong>Directory:</strong> {{ config.ftp_directory }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card status-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-file-download"></i> Download
+                </h5>
+                <p class="card-text">
+                    <strong>Modalità:</strong> 
+                    {% if config.download_all_files %}
+                        Tutti i file
+                    {% else %}
+                        File specifico
+                    {% endif %}<br>
+                    <strong>Pattern:</strong> {{ config.file_naming_pattern }}<br>
+                    <strong>Output:</strong> {{ config.output_directory }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card status-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-clock"></i> Schedulazione
+                </h5>
+                <p class="card-text">
+                    <strong>Tipo:</strong> {{ config.schedule_type }}<br>
+                    <strong>Frequenza:</strong> 
+                    {% if config.schedule_type == 'monthly' %}
+                        Giorno {{ config.schedule_day }} di ogni mese
+                    {% elif config.schedule_type == 'interval' %}
+                        Ogni {{ config.interval_days }} giorni
+                    {% else %}
+                        {{ config.schedule_type }}
+                    {% endif %}<br>
+                    <strong>Orario:</strong> {{ "%02d:%02d"|format(config.schedule_hour, config.schedule_minute) }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card status-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-phone"></i> Prezzi VoIP
+                </h5>
+                <p class="card-text">
+                    <strong>Fisso:</strong> {{ "%.3f"|format(config.voip_price_fixed or 0) }} {{ config.voip_currency or 'EUR' }}/min<br>
+                    <strong>Mobile:</strong> {{ "%.3f"|format(config.voip_price_mobile or 0) }} {{ config.voip_currency or 'EUR' }}/min<br>
+                    <strong>Unità:</strong> {{ 'Al minuto' if config.voip_price_unit == 'per_minute' else 'Al secondo' }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Risultati Operazioni</h5>
+            </div>
+            <div class="card-body">
+                <div id="results-container">
+                    <p class="text-muted">Nessuna operazione eseguita ancora. Usa i pulsanti sopra per testare la configurazione.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- File Preview Modal -->
+<div class="modal fade" id="filePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Anteprima File</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="filePreviewContent"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function manualRun() {
+    showLoading('Esecuzione in corso...');
+    
+    fetch('/manual_run')
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            displayResults(data, 'Esecuzione Manuale');
+        })
+        .catch(error => {
+            hideLoading();
+            displayError('Errore durante l\'esecuzione: ' + error.message);
+        });
+}
+
+function testFTP() {
+    showLoading('Test connessione FTP...');
+    
+    fetch('/test_ftp')
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                displayResults({
+                    success: true,
+                    message: 'Connessione FTP riuscita',
+                    files: data.files
+                }, 'Test FTP');
+            } else {
+                displayError('Errore connessione FTP: ' + data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            displayError('Errore durante il test FTP: ' + error.message);
+        });
+}
+
+function displayResults(data, operation) {
+    const container = document.getElementById('results-container');
+    const timestamp = new Date().toLocaleString('it-IT');
+    
+    let html = `
+        <div class="alert ${data.success ? 'alert-success' : 'alert-danger'}" role="alert">
+            <h6><i class="fas fa-${data.success ? 'check-circle' : 'exclamation-circle'}"></i> 
+                ${operation} - ${timestamp}</h6>
+            <p><strong>Risultato:</strong> ${data.success ? 'Successo' : 'Errore'}</p>
+    `;
+    
+    if (data.message) {
+        html += `<p><strong>Messaggio:</strong> ${data.message}</p>`;
+    }
+    
+    if (data.downloaded_files && data.downloaded_files.length > 0) {
+        html += `<p><strong>File scaricati:</strong></p><ul>`;
+        data.downloaded_files.forEach(file => {
+            html += `<li>${file}</li>`;
+        });
+        html += `</ul>`;
+    }
+    
+    if (data.converted_files && data.converted_files.length > 0) {
+        html += `<p><strong>File convertiti:</strong></p><ul>`;
+        data.converted_files.forEach(file => {
+            html += `<li>${file}</li>`;
+        });
+        html += `</ul>`;
+    }
+    
+    if (data.files && data.files.length > 0) {
+        html += `<p><strong>File trovati sul server:</strong></p><ul>`;
+        data.files.forEach(file => {
+            html += `<li>${file}</li>`;
+        });
+        html += `</ul>`;
+    }
+    
+    html += `</div>`;
+    
+    container.innerHTML = html + container.innerHTML;
+}
+
+function quickSchedule(scheduleType) {
+    showLoading('Configurazione schedulazione...');
+    
+    fetch(`/quick_schedule/${scheduleType}`)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                displayResults({
+                    success: true,
+                    message: data.message,
+                    schedule_info: data.schedule_description,
+                    next_jobs: data.next_jobs
+                }, 'Schedulazione Rapida');
+                
+                // Aggiorna la pagina dopo 2 secondi per riflettere le modifiche
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                displayError('Errore configurazione: ' + data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            displayError('Errore nella configurazione: ' + error.message);
+        });
+}
+
+function showScheduleInfo() {
+    showLoading('Caricamento info schedulazione...');
+    
+    fetch('/schedule_info')
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                let info = {
+                    success: true,
+                    message: 'Informazioni schedulazione corrente',
+                    schedule_description: data.schedule_description,
+                    active_jobs: data.active_jobs,
+                    scheduler_running: data.scheduler_running
+                };
+                displayResults(info, 'Info Schedulazione');
+            } else {
+                displayError('Errore recupero info: ' + data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            displayError('Errore nella richiesta: ' + error.message);
+        });
+}
+
+function showLoading(message) {
+    const container = document.getElementById('results-container');
+    const html = `
+        <div class="alert alert-info" id="loading-alert" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                <span>${message}</span>
+            </div>
+        </div>
+    `;
+    container.innerHTML = html + container.innerHTML;
+}
+
+function hideLoading() {
+    const loadingAlert = document.getElementById('loading-alert');
+    if (loadingAlert) {
+        loadingAlert.remove();
+    }
+}
+
+// Auto-refresh status ogni 30 secondi
+setInterval(() => {
+    fetch('/status')
+        .then(response => response.json())
+        .then(data => {
+            // Aggiorna informazioni di stato se necessario
+            console.log('Status update:', data);
+        })
+        .catch(error => console.error('Error fetching status:', error));
+}, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,661 @@
+{% extends "base.html" %}
+
+{% block title %}Configurazione - FTP Scheduler{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Configurazione</h1>
+</div>
+
+<form method="POST" class="needs-validation" novalidate>
+    <!-- Configurazione FTP -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-server"></i> Configurazione FTP</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="ftp_host" class="form-label">Host FTP *</label>
+                    <input type="text" class="form-control" id="ftp_host" name="ftp_host" 
+                           value="{{ config.ftp_host }}" required>
+                    <div class="invalid-feedback">Inserisci l'host del server FTP.</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ftp_user" class="form-label">Username *</label>
+                    <input type="text" class="form-control" id="ftp_user" name="ftp_user" 
+                           value="{{ config.ftp_user }}" required>
+                    <div class="invalid-feedback">Inserisci l'username FTP.</div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="ftp_password" class="form-label">Password *</label>
+                    <input type="password" class="form-control" id="ftp_password" name="ftp_password" 
+                           value="{{ config.ftp_password }}" required>
+                    <div class="invalid-feedback">Inserisci la password FTP.</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ftp_directory" class="form-label">Directory</label>
+                    <input type="text" class="form-control" id="ftp_directory" name="ftp_directory" 
+                           value="{{ config.ftp_directory }}" placeholder="/">
+                    <div class="form-text">Directory sul server FTP (default: /)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configurazione Download -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-download"></i> Configurazione Download</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="download_all_files" 
+                           name="download_all_files" {% if config.download_all_files %}checked{% endif %}>
+                    <label class="form-check-label" for="download_all_files">
+                        Scarica tutti i file presenti nella directory
+                    </label>
+                </div>
+            </div>
+            
+            <div id="specific-file-config" {% if config.download_all_files %}style="display:none;"{% endif %}>
+                <div class="mb-3">
+                    <label for="specific_filename" class="form-label">Nome file specifico o Pattern</label>
+                    <input type="text" class="form-control" id="specific_filename" name="specific_filename" 
+                           value="{{ config.specific_filename }}" placeholder="RIV_12345_MESE_*_*.CDR">
+                    <div class="form-text">
+                        <strong>Esempi:</strong><br>
+                        • Nome esatto: <code>RIV_12345_MESE_01_2025-01-05-14.16.27.CDR</code><br>
+                        • Qualsiasi mese: <code>RIV_12345_MESE_*_*.CDR</code><br>
+                        • Mese corrente: <code>RIV_12345_MESE_%m_*.CDR</code><br>
+                        • Anno corrente: <code>RIV_*_MESE_*_%Y-*.CDR</code><br>
+                        • Mese e anno: <code>RIV_*_MESE_%m_%Y-%m-*.CDR</code><br>
+                        <strong>Variabili:</strong> %Y=anno, %m=mese, %d=giorno, %H=ora, %M=minuto, %S=secondo
+                    </div>
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="testPattern()">
+                            <i class="fas fa-search"></i> Testa Pattern
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="listFtpFiles()">
+                            <i class="fas fa-list"></i> Lista File FTP
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="showPatternExamples()">
+                            <i class="fas fa-lightbulb"></i> Esempi
+                        </button>
+                        <div id="pattern-test-result" class="mt-2"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="file_selection_mode" id="use_specific_name" value="specific" checked>
+                        <label class="form-check-label" for="use_specific_name">
+                            Usa nome/pattern specifico sopra
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="file_selection_mode" id="use_pattern_generator" value="generator">
+                        <label class="form-check-label" for="use_pattern_generator">
+                            Genera automaticamente con pattern temporale
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="pattern-generator" style="display:none;">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="file_naming_pattern" class="form-label">Pattern nome file</label>
+                            <select class="form-select" id="file_naming_pattern" name="file_naming_pattern">
+                                <option value="monthly" {% if config.file_naming_pattern == 'monthly' %}selected{% endif %}>
+                                    Mensile (report_2025_01.csv)
+                                </option>
+                                <option value="weekly" {% if config.file_naming_pattern == 'weekly' %}selected{% endif %}>
+                                    Settimanale (report_2025_W01.csv)
+                                </option>
+                                <option value="daily" {% if config.file_naming_pattern == 'daily' %}selected{% endif %}>
+                                    Giornaliero (report_2025_01_15.csv)
+                                </option>
+                                <option value="quarterly" {% if config.file_naming_pattern == 'quarterly' %}selected{% endif %}>
+                                    Trimestrale (report_2025_Q1.csv)
+                                </option>
+                                <option value="yearly" {% if config.file_naming_pattern == 'yearly' %}selected{% endif %}>
+                                    Annuale (report_2025.csv)
+                                </option>
+                                <option value="cdr_monthly" {% if config.file_naming_pattern == 'cdr_monthly' %}selected{% endif %}>
+                                    CDR Mese Corrente (RIV_*_MESE_01_*.CDR)
+                                </option>
+                                <option value="cdr_any_month" {% if config.file_naming_pattern == 'cdr_any_month' %}selected{% endif %}>
+                                    CDR Qualsiasi Mese (RIV_*_MESE_*_*.CDR)
+                                </option>
+                                <option value="cdr_current_year" {% if config.file_naming_pattern == 'cdr_current_year' %}selected{% endif %}>
+                                    CDR Anno Corrente (RIV_*_MESE_*_2025-*.CDR)
+                                </option>
+                                <option value="custom" {% if config.file_naming_pattern == 'custom' %}selected{% endif %}>
+                                    Personalizzato
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="custom-pattern-container" 
+                             {% if config.file_naming_pattern != 'custom' %}style="display:none;"{% endif %}>
+                            <label for="custom_pattern" class="form-label">Pattern personalizzato</label>
+                            <input type="text" class="form-control" id="custom_pattern" name="custom_pattern" 
+                                   value="{{ config.custom_pattern }}" placeholder="RIV_%Y%m%d_%H%M%S.CDR">
+                            <div class="form-text">
+                                <strong>Codici disponibili:</strong><br>
+                                %Y=anno, %m=mese, %d=giorno<br>
+                                %H=ora (24h), %M=minuto, %S=secondo<br>
+                                *=qualsiasi, ?=carattere singolo<br>
+                                <strong>Esempio:</strong> RIV_%Y%m%d_*.CDR o RIV_*_MESE_%m_*.CDR
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">Anteprima: <span id="filename-preview">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="output_directory" class="form-label">Directory di output</label>
+                <input type="text" class="form-control" id="output_directory" name="output_directory" 
+                       value="{{ config.output_directory }}" required>
+                <div class="form-text">Directory locale dove salvare i file scaricati e convertiti</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configurazione Schedulazione -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-clock"></i> Configurazione Schedulazione</h5>
+        </div>
+        <div class="card-body">
+            <!-- contenuto schedulazione esistente -->
+        </div>
+    </div>
+
+    <!-- Configurazione Prezzi VoIP -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-phone"></i> Configurazione Prezzi VoIP</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="voip_price_fixed" class="form-label">Prezzo Fisso</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="voip_price_fixed" name="voip_price_fixed" 
+                               value="{{ config.voip_price_fixed }}" step="0.001" min="0" required>
+                        <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
+                    </div>
+                    <div class="form-text">Prezzo per chiamate verso numeri fissi</div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="voip_price_mobile" class="form-label">Prezzo Mobile</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="voip_price_mobile" name="voip_price_mobile" 
+                               value="{{ config.voip_price_mobile }}" step="0.001" min="0" required>
+                        <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
+                    </div>
+                    <div class="form-text">Prezzo per chiamate verso numeri mobili</div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="voip_currency" class="form-label">Valuta</label>
+                    <select class="form-select" id="voip_currency" name="voip_currency">
+                        <option value="EUR" {% if config.voip_currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                        <option value="USD" {% if config.voip_currency == 'USD' %}selected{% endif %}>USD ($)</option>
+                        <option value="GBP" {% if config.voip_currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
+                        <option value="CHF" {% if config.voip_currency == 'CHF' %}selected{% endif %}>CHF</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="voip_price_unit" class="form-label">Unità di Fatturazione</label>
+                    <select class="form-select" id="voip_price_unit" name="voip_price_unit">
+                        <option value="per_minute" {% if config.voip_price_unit == 'per_minute' %}selected{% endif %}>Per Minuto</option>
+                        <option value="per_second" {% if config.voip_price_unit == 'per_second' %}selected{% endif %}>Per Secondo</option>
+                    </select>
+                    <div class="form-text">Come vengono calcolati i prezzi nelle chiamate</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Anteprima Prezzi</h6>
+                            <div id="price-preview">
+                                <div><strong>Fisso:</strong> <span id="preview-fixed">{{ "%.3f"|format(config.voip_price_fixed) }}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                <div><strong>Mobile:</strong> <span id="preview-mobile">{{ "%.3f"|format(config.voip_price_mobile) }}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                <div class="text-muted small mt-2">
+                                    Esempi: Chiamata 5 min fisso = <span id="preview-calc-fixed">{{ "%.2f"|format(config.voip_price_fixed * 5) }}</span> {{ config.voip_currency or 'EUR' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+            <div class="mb-3">
+                <label for="schedule_type" class="form-label">Tipo di schedulazione</label>
+                <select class="form-select" id="schedule_type" name="schedule_type">
+                    <option value="monthly" {% if config.schedule_type == 'monthly' %}selected{% endif %}>
+                        Mensile (giorno specifico del mese)
+                    </option>
+                    <option value="weekly" {% if config.schedule_type == 'weekly' %}selected{% endif %}>
+                        Settimanale (giorno specifico della settimana)
+                    </option>
+                    <option value="daily" {% if config.schedule_type == 'daily' %}selected{% endif %}>
+                        Giornaliero
+                    </option>
+                    <option value="interval" {% if config.schedule_type == 'interval' %}selected{% endif %}>
+                        Intervallo (ogni X giorni)
+                    </option>
+                    <option value="cron" {% if config.schedule_type == 'cron' %}selected{% endif %}>
+                        Espressione Cron personalizzata
+                    </option>
+                </select>
+            </div>
+            
+            <!-- Configurazioni specifiche per tipo -->
+            <div id="monthly-config" class="schedule-config" 
+                 {% if config.schedule_type != 'monthly' %}style="display:none;"{% endif %}>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="schedule_day_monthly" class="form-label">Giorno del mese</label>
+                        <input type="number" class="form-control" id="schedule_day_monthly" name="schedule_day" 
+                               value="{{ config.schedule_day }}" min="1" max="31">
+                    </div>
+                </div>
+            </div>
+            
+            <div id="weekly-config" class="schedule-config" 
+                 {% if config.schedule_type != 'weekly' %}style="display:none;"{% endif %}>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="schedule_day_weekly" class="form-label">Giorno della settimana</label>
+                        <select class="form-select" id="schedule_day_weekly" name="schedule_day">
+                            <option value="0" {% if config.schedule_day == 0 %}selected{% endif %}>Lunedì</option>
+                            <option value="1" {% if config.schedule_day == 1 %}selected{% endif %}>Martedì</option>
+                            <option value="2" {% if config.schedule_day == 2 %}selected{% endif %}>Mercoledì</option>
+                            <option value="3" {% if config.schedule_day == 3 %}selected{% endif %}>Giovedì</option>
+                            <option value="4" {% if config.schedule_day == 4 %}selected{% endif %}>Venerdì</option>
+                            <option value="5" {% if config.schedule_day == 5 %}selected{% endif %}>Sabato</option>
+                            <option value="6" {% if config.schedule_day == 6 %}selected{% endif %}>Domenica</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="interval-config" class="schedule-config" 
+                 {% if config.schedule_type != 'interval' %}style="display:none;"{% endif %}>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="interval_days" class="form-label">Ogni X giorni</label>
+                        <input type="number" class="form-control" id="interval_days" name="interval_days" 
+                               value="{{ config.interval_days }}" min="1">
+                    </div>
+                </div>
+            </div>
+            
+            <div id="cron-config" class="schedule-config" 
+                 {% if config.schedule_type != 'cron' %}style="display:none;"{% endif %}>
+                <div class="mb-3">
+                    <label for="cron_expression" class="form-label">Espressione Cron</label>
+                    <input type="text" class="form-control" id="cron_expression" name="cron_expression" 
+                           value="{{ config.cron_expression }}" placeholder="0 9 1 * *">
+                    <div class="form-text">
+                        Formato: minuto ora giorno mese giorno_settimana<br>
+                        Esempio: "0 9 1 * *" = alle 9:00 del primo giorno di ogni mese
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orario (comune per tutti tranne interval) -->
+            <div id="time-config" {% if config.schedule_type == 'interval' %}style="display:none;"{% endif %}>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="schedule_hour" class="form-label">Ora</label>
+                        <input type="number" class="form-control" id="schedule_hour" name="schedule_hour" 
+                               value="{{ config.schedule_hour }}" min="0" max="23">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="schedule_minute" class="form-label">Minuto</label>
+                        <input type="number" class="form-control" id="schedule_minute" name="schedule_minute" 
+                               value="{{ config.schedule_minute }}" min="0" max="59">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> Salva Configurazione
+            </button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-arrow-left"></i> Torna al Dashboard
+            </a>
+        </div>
+    </div>
+
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Gestione visibilità campi basata su selezioni
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadAllCheckbox = document.getElementById('download_all_files');
+    const specificFileConfig = document.getElementById('specific-file-config');
+    
+    const fileNamingPattern = document.getElementById('file_naming_pattern');
+    const customPatternContainer = document.getElementById('custom-pattern-container');
+    
+    const scheduleType = document.getElementById('schedule_type');
+    const scheduleConfigs = document.querySelectorAll('.schedule-config');
+    const timeConfig = document.getElementById('time-config');
+    
+    // Radio buttons per modalità selezione file
+    const useSpecificName = document.getElementById('use_specific_name');
+    const usePatternGenerator = document.getElementById('use_pattern_generator');
+    const patternGenerator = document.getElementById('pattern-generator');
+    
+    // Toggle configurazione file specifico
+    downloadAllCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            specificFileConfig.style.display = 'none';
+        } else {
+            specificFileConfig.style.display = 'block';
+        }
+    });
+    
+    // Toggle modalità selezione file
+    useSpecificName.addEventListener('change', function() {
+        if (this.checked) {
+            patternGenerator.style.display = 'none';
+        }
+    });
+    
+    usePatternGenerator.addEventListener('change', function() {
+        if (this.checked) {
+            patternGenerator.style.display = 'block';
+        }
+    });
+    
+    // Toggle pattern personalizzato
+    fileNamingPattern.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customPatternContainer.style.display = 'block';
+        } else {
+            customPatternContainer.style.display = 'none';
+        }
+        updateFilePreview();
+    });
+    
+    // Toggle configurazioni schedulazione
+    scheduleType.addEventListener('change', function() {
+        // Nascondi tutte le configurazioni
+        scheduleConfigs.forEach(config => {
+            config.style.display = 'none';
+        });
+        
+        // Mostra configurazione specifica
+        const selectedConfig = document.getElementById(this.value + '-config');
+        if (selectedConfig) {
+            selectedConfig.style.display = 'block';
+        }
+        
+        // Gestisci visibilità configurazione orario
+        if (this.value === 'interval') {
+            timeConfig.style.display = 'none';
+        } else if (this.value !== 'cron') {
+            timeConfig.style.display = 'block';
+        } else {
+            timeConfig.style.display = 'none';
+        }
+    });
+    
+    // Validazione form
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+
+// Funzione per testare il pattern
+// Funzione per listare tutti i file FTP
+function listFtpFiles() {
+    const resultDiv = document.getElementById('pattern-test-result');
+    
+    resultDiv.innerHTML = '<div class="alert alert-info alert-sm"><i class="fas fa-spinner fa-spin"></i> Caricamento file dal server FTP...</div>';
+    
+    fetch('/list_ftp_files')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let html = `<div class="alert alert-info alert-sm">
+                <strong>File sul server FTP:</strong> ${data.count} totali<br>`;
+            
+            if (data.files && data.files.length > 0) {
+                html += '<div style="max-height: 200px; overflow-y: auto; margin-top: 10px;">';
+                data.files.forEach(file => {
+                    html += `<div class="d-flex justify-content-between align-items-center border-bottom py-1">
+                        <code class="text-primary">${file}</code>
+                        <button class="btn btn-xs btn-outline-primary" onclick="selectFile('${file}')" title="Usa questo file">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                    </div>`;
+                });
+                html += '</div>';
+            } else {
+                html += '<em>Nessun file trovato sul server</em>';
+            }
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger alert-sm">Errore: ${data.message}</div>`;
+        }
+    })
+    .catch(error => {
+        resultDiv.innerHTML = `<div class="alert alert-danger alert-sm">Errore nella richiesta: ${error.message}</div>`;
+    });
+}
+
+// Funzione per mostrare esempi di pattern
+function showPatternExamples() {
+    const resultDiv = document.getElementById('pattern-test-result');
+    
+    resultDiv.innerHTML = '<div class="alert alert-info alert-sm"><i class="fas fa-spinner fa-spin"></i> Caricamento esempi...</div>';
+    
+    fetch('/pattern_examples')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let html = `<div class="alert alert-success alert-sm">
+                <strong>Esempi Pattern con Variabili Temporali</strong><br>
+                <small class="text-muted">Ora corrente: ${data.current_datetime.year}-${String(data.current_datetime.month).padStart(2,'0')}-${String(data.current_datetime.day).padStart(2,'0')} ${String(data.current_datetime.hour).padStart(2,'0')}:${String(data.current_datetime.minute).padStart(2,'0')}</small>
+                <div class="mt-2" style="max-height: 300px; overflow-y: auto;">`;
+            
+            // Esempi base con wildcard
+            html += '<h6 class="mt-2 mb-1">🔸 Pattern Base con Wildcard:</h6>';
+            data.examples.basic_wildcards.forEach(example => {
+                html += `<div class="mb-1">
+                    <button class="btn btn-xs btn-outline-primary me-1" onclick="selectPattern('${example.pattern}')" title="Usa questo pattern">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <code>${example.pattern}</code>
+                    <small class="text-muted"> - ${example.description}</small>
+                </div>`;
+            });
+            
+            // Esempi con variabili temporali
+            html += '<h6 class="mt-3 mb-1">🔸 Pattern con Variabili Temporali:</h6>';
+            data.examples.temporal_variables.forEach(example => {
+                html += `<div class="mb-2 border-start border-2 border-primary ps-2">
+                    <div>
+                        <button class="btn btn-xs btn-outline-primary me-1" onclick="selectPattern('${example.pattern}')" title="Usa questo pattern">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <code class="text-primary">${example.pattern}</code>
+                    </div>
+                    <div class="text-muted small">→ Diventa: <code>${example.expanded}</code></div>
+                    <div class="text-muted small">${example.description}</div>
+                </div>`;
+            });
+            
+            // Esempi avanzati
+            html += '<h6 class="mt-3 mb-1">🔸 Combinazioni Avanzate:</h6>';
+            data.examples.advanced_combinations.forEach(example => {
+                html += `<div class="mb-2 border-start border-2 border-success ps-2">
+                    <div>
+                        <button class="btn btn-xs btn-outline-primary me-1" onclick="selectPattern('${example.pattern}')" title="Usa questo pattern">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <code class="text-success">${example.pattern}</code>
+                    </div>
+                    <div class="text-muted small">→ Diventa: <code>${example.expanded}</code></div>
+                </div>`;
+            });
+            
+            html += `</div>
+                <div class="mt-2 p-2 bg-light rounded">
+                    <small><strong>Variabili disponibili:</strong><br>
+                    %Y=anno, %m=mese, %d=giorno, %H=ora, %M=minuto, %S=secondo<br>
+                    *=qualsiasi sequenza, ?=carattere singolo</small>
+                </div>
+            </div>`;
+            
+            resultDiv.innerHTML = html;
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger alert-sm">Errore: ${data.message}</div>`;
+        }
+    })
+    .catch(error => {
+        resultDiv.innerHTML = `<div class="alert alert-danger alert-sm">Errore nella richiesta: ${error.message}</div>`;
+    });
+}
+
+// Funzione per selezionare un pattern dagli esempi
+function selectPattern(pattern) {
+    document.getElementById('specific_filename').value = pattern;
+    document.getElementById('pattern-test-result').innerHTML = 
+        `<div class="alert alert-success alert-sm">Pattern selezionato: <code>${pattern}</code><br>
+        <small class="text-muted">Clicca "Testa Pattern" per vedere i file corrispondenti</small></div>`;
+}
+
+// Anteprima nome file generato
+function updateFilePreview() {
+    const pattern = document.getElementById('file_naming_pattern').value;
+    const customPattern = document.getElementById('custom_pattern').value;
+    
+    // Simulazione nome file (lato client)
+    const now = new Date();
+    let preview = '';
+    
+    switch(pattern) {
+        case 'monthly':
+            preview = `report_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}.csv`;
+            break;
+        case 'weekly':
+            const week = Math.ceil((now.getDate() - 1 - now.getDay()) / 7) + 1;
+            preview = `report_${now.getFullYear()}_W${String(week).padStart(2, '0')}.csv`;
+            break;
+        case 'daily':
+            preview = `report_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}_${String(now.getDate()).padStart(2, '0')}.csv`;
+            break;
+        case 'quarterly':
+            const quarter = Math.ceil((now.getMonth() + 1) / 3);
+            preview = `report_${now.getFullYear()}_Q${quarter}.csv`;
+            break;
+        case 'yearly':
+            preview = `report_${now.getFullYear()}.csv`;
+            break;
+        case 'custom':
+            if (customPattern) {
+                // Simulazione semplice dei pattern più comuni
+                preview = customPattern
+                    .replace(/%Y/g, now.getFullYear())
+                    .replace(/%m/g, String(now.getMonth() + 1).padStart(2, '0'))
+                    .replace(/%d/g, String(now.getDate()).padStart(2, '0'))
+                    .replace(/%H/g, String(now.getHours()).padStart(2, '0'))
+                    .replace(/%M/g, String(now.getMinutes()).padStart(2, '0'))
+                    .replace(/%S/g, String(now.getSeconds()).padStart(2, '0'));
+            } else {
+                preview = 'pattern_personalizzato.csv';
+            }
+            break;
+    }
+    
+    // Mostra anteprima
+    const previewElement = document.getElementById('filename-preview');
+    if (previewElement) {
+        previewElement.textContent = preview;
+        previewElement.style.fontWeight = 'bold';
+        previewElement.style.color = '#0d6efd';
+    }
+}
+
+// Funzione per testare il pattern
+function testPattern() {
+    const pattern = document.getElementById('specific_filename').value;
+    const resultDiv = document.getElementById('pattern-test-result');
+    
+    if (!pattern) {
+        resultDiv.innerHTML = '<div class="alert alert-warning alert-sm">Inserisci un pattern da testare</div>';
+        return;
+    }
+    
+    resultDiv.innerHTML = '<div class="alert alert-info alert-sm"><i class="fas fa-spinner fa-spin"></i> Test in corso...</div>';
+    
+    // Chiamata AJAX per testare il pattern
+    fetch('/test_pattern', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({pattern: pattern})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let html = `<div class="alert alert-success alert-sm">
+                <strong>Pattern testato:</strong> ${data.pattern}<br>
+                <strong>File corrispondenti:</strong> ${data.match_count} di ${data.total_files}<br>`;
+            
+            if (data.matching_files && data.matching_files.length > 0) {
+                html += '<strong>File trovati:</strong><br>';
+                html += '<div style="max-height: 150px; overflow-y: auto; margin-top: 5px;">';
+                data.matching_files.forEach(file => {
+                    html += `<code class="d-block text-primary">${file}</code>`;
+                });
+                html += '</div>';
+            } else {
+                html += '<em>Nessun file corrispondente trovato</em>';
+            }
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger alert-sm">Errore: ${data.message}</div>`;
+        }
+    })
+    .catch(error => {
+        resultDiv.innerHTML = `<div class="alert alert-danger alert-sm">Errore nella richiesta: ${error.message}</div>`;
+    });
+}
+// Aggiorna anteprima quando cambiano i pattern
+document.getElementById('file_naming_pattern').addEventListener('change', updateFilePreview);
+document.getElementById('custom_pattern').addEventListener('input', updateFilePreview);
+
+// Anteprima iniziale
+updateFilePreview();
+</script>
+{% endblock %}

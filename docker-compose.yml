@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  ftp-scheduler:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ./app.log:/app/app.log
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+    
+  # Opzionale: server FTP di test
+  ftp-server:
+    image: stilliard/pure-ftpd
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"
+    volumes:
+      - ./ftp_test_data:/home/ftpusers/testuser
+    environment:
+      - PUBLICHOST=localhost
+      - FTP_USER_NAME=testuser
+      - FTP_USER_PASS=testpass
+      - FTP_USER_HOME=/home/ftpusers/testuser
+    restart: unless-stopped

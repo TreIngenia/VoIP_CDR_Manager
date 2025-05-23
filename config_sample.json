@@ -1,0 +1,17 @@
+{
+  "ftp_host": "ftp.example.com",
+  "ftp_user": "username",
+  "ftp_password": "password",
+  "ftp_directory": "/data",
+  "download_all_files": false,
+  "specific_filename": "",
+  "output_directory": "output",
+  "file_naming_pattern": "monthly",
+  "custom_pattern": "",
+  "schedule_type": "monthly",
+  "schedule_day": 1,
+  "schedule_hour": 9,
+  "schedule_minute": 0,
+  "interval_days": 30,
+  "cron_expression": "0 9 1 * *"
+}

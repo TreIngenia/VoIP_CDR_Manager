@@ -1,0 +1,9 @@
+.env
+__pycache__
+# *.json
+*.session
+*.log
+.env_backup
+output
+config_backup.json
+*_backup.py

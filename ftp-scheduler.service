@@ -1,0 +1,15 @@
+[Unit]
+Description=FTP Scheduler App
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/path/to/your/app
+Environment=PATH=/path/to/your/venv/bin
+ExecStart=/path/to/your/venv/bin/python app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
