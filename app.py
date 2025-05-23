@@ -41,7 +41,7 @@ def str_to_int(value, default=0):
     except (ValueError, TypeError):
         return default
 
-# Configurazione logging
+# Configurazione logging sicura
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -160,6 +160,12 @@ VOIP_PRICE_FIXED={CONFIG['voip_price_fixed']}
 VOIP_PRICE_MOBILE={CONFIG['voip_price_mobile']}
 VOIP_CURRENCY={CONFIG['voip_currency']}
 VOIP_PRICE_UNIT={CONFIG['voip_price_unit']}
+
+# Configurazione Applicazione (opzionale)
+FLASK_ENV=={CONFIG['FLASK_ENV']}
+FLASK_DEBUG=={CONFIG['FLASK_DEBUG']}
+APP_PORT=={CONFIG['APP_PORT']}
+APP_HOST=={CONFIG['APP_HOST']}
 """
         
         # Salva nel file .env principale

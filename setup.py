@@ -281,7 +281,7 @@ if __name__ == "__main__":
 import sys
 import json
 from pathlib import Path
-from app import FTPProcessor, CONFIG
+from app_new import FTPProcessor, CONFIG
 
 def test_file_conversion():
     """Testa la conversione di diversi tipi di file"""

@@ -103,8 +103,11 @@
                     <i class="fas fa-phone"></i> Prezzi VoIP
                 </h5>
                 <p class="card-text">
-                    <strong>Fisso:</strong> {{ "%.3f"|format(config.voip_price_fixed or 0) }} {{ config.voip_currency or 'EUR' }}/min<br>
-                    <strong>Mobile:</strong> {{ "%.3f"|format(config.voip_price_mobile or 0) }} {{ config.voip_currency or 'EUR' }}/min<br>
+                    <!-- <strong>Fisso:</strong> {{ "%.3f"|format(config.voip_price_fixed or 0) }} {{ config.voip_currency or 'EUR' }}/min<br> -->
+                    <strong>Fisso:</strong> {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
+                    <!-- <strong>Mobile:</strong> {{ "%.3f"|format(config.voip_price_mobile or 0) }} {{ config.voip_currency or 'EUR' }}/min<br> -->
+                    <strong>Mobile:</strong> {{ config.voip_price_mobile or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
+
                     <strong>Unità:</strong> {{ 'Al minuto' if config.voip_price_unit == 'per_minute' else 'Al secondo' }}
                 </p>
             </div>

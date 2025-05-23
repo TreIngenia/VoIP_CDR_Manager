@@ -7,3 +7,4 @@ __pycache__
 output
 config_backup.json
 *_backup.py
+.env.local

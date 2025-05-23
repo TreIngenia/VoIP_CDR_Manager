@@ -167,15 +167,7 @@
         </div>
     </div>
 
-    <!-- Configurazione Schedulazione -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5><i class="fas fa-clock"></i> Configurazione Schedulazione</h5>
-        </div>
-        <div class="card-body">
-            <!-- contenuto schedulazione esistente -->
-        </div>
-    </div>
+    
 
     <!-- Configurazione Prezzi VoIP -->
     <div class="card mb-4">
@@ -188,7 +180,7 @@
                     <label for="voip_price_fixed" class="form-label">Prezzo Fisso</label>
                     <div class="input-group">
                         <input type="number" class="form-control" id="voip_price_fixed" name="voip_price_fixed" 
-                               value="{{ config.voip_price_fixed }}" step="0.001" min="0" required>
+                               value="{{ config.voip_price_fixed }}" step="0.0001" min="0" required>
                         <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
                     </div>
                     <div class="form-text">Prezzo per chiamate verso numeri fissi</div>
@@ -197,7 +189,7 @@
                     <label for="voip_price_mobile" class="form-label">Prezzo Mobile</label>
                     <div class="input-group">
                         <input type="number" class="form-control" id="voip_price_mobile" name="voip_price_mobile" 
-                               value="{{ config.voip_price_mobile }}" step="0.001" min="0" required>
+                               value="{{ config.voip_price_mobile }}" step="0.0001" min="0" required>
                         <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
                     </div>
                     <div class="form-text">Prezzo per chiamate verso numeri mobili</div>
@@ -226,8 +218,10 @@
                         <div class="card-body">
                             <h6 class="card-title">Anteprima Prezzi</h6>
                             <div id="price-preview">
-                                <div><strong>Fisso:</strong> <span id="preview-fixed">{{ "%.3f"|format(config.voip_price_fixed) }}</span> {{ config.voip_currency or 'EUR' }}/min</div>
-                                <div><strong>Mobile:</strong> <span id="preview-mobile">{{ "%.3f"|format(config.voip_price_mobile) }}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                <!-- <div><strong>Fisso:</strong> <span id="preview-fixed">{{ "%.3f"|format(config.voip_price_fixed) }}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                <div><strong>Mobile:</strong> <span id="preview-mobile">{{ "%.3f"|format(config.voip_price_mobile) }}</span> {{ config.voip_currency or 'EUR' }}/min</div> -->
+                                <div><strong>Fisso:</strong> <span id="preview-fixed">{{ config.voip_price_fixed or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                <div><strong>Mobile:</strong> <span id="preview-mobile">{{ config.voip_price_mobile or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
                                 <div class="text-muted small mt-2">
                                     Esempi: Chiamata 5 min fisso = <span id="preview-calc-fixed">{{ "%.2f"|format(config.voip_price_fixed * 5) }}</span> {{ config.voip_currency or 'EUR' }}
                                 </div>
@@ -238,6 +232,12 @@
             </div>
         </div>
     </div>
+    <!-- Configurazione Schedulazione -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-clock"></i> Configurazione Schedulazione</h5>
+        </div>
+        <div class="card-body">
             <div class="mb-3">
                 <label for="schedule_type" class="form-label">Tipo di schedulazione</label>
                 <select class="form-select" id="schedule_type" name="schedule_type">
@@ -261,18 +261,18 @@
             
             <!-- Configurazioni specifiche per tipo -->
             <div id="monthly-config" class="schedule-config" 
-                 {% if config.schedule_type != 'monthly' %}style="display:none;"{% endif %}>
+                {% if config.schedule_type != 'monthly' %}style="display:none;"{% endif %}>
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label for="schedule_day_monthly" class="form-label">Giorno del mese</label>
                         <input type="number" class="form-control" id="schedule_day_monthly" name="schedule_day" 
-                               value="{{ config.schedule_day }}" min="1" max="31">
+                            value="{{ config.schedule_day }}" min="1" max="31">
                     </div>
                 </div>
             </div>
             
             <div id="weekly-config" class="schedule-config" 
-                 {% if config.schedule_type != 'weekly' %}style="display:none;"{% endif %}>
+                {% if config.schedule_type != 'weekly' %}style="display:none;"{% endif %}>
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label for="schedule_day_weekly" class="form-label">Giorno della settimana</label>
@@ -290,22 +290,22 @@
             </div>
             
             <div id="interval-config" class="schedule-config" 
-                 {% if config.schedule_type != 'interval' %}style="display:none;"{% endif %}>
+                {% if config.schedule_type != 'interval' %}style="display:none;"{% endif %}>
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label for="interval_days" class="form-label">Ogni X giorni</label>
                         <input type="number" class="form-control" id="interval_days" name="interval_days" 
-                               value="{{ config.interval_days }}" min="1">
+                            value="{{ config.interval_days }}" min="1">
                     </div>
                 </div>
             </div>
             
             <div id="cron-config" class="schedule-config" 
-                 {% if config.schedule_type != 'cron' %}style="display:none;"{% endif %}>
+                {% if config.schedule_type != 'cron' %}style="display:none;"{% endif %}>
                 <div class="mb-3">
                     <label for="cron_expression" class="form-label">Espressione Cron</label>
                     <input type="text" class="form-control" id="cron_expression" name="cron_expression" 
-                           value="{{ config.cron_expression }}" placeholder="0 9 1 * *">
+                        value="{{ config.cron_expression }}" placeholder="0 9 1 * *">
                     <div class="form-text">
                         Formato: minuto ora giorno mese giorno_settimana<br>
                         Esempio: "0 9 1 * *" = alle 9:00 del primo giorno di ogni mese
@@ -319,16 +319,17 @@
                     <div class="col-md-3 mb-3">
                         <label for="schedule_hour" class="form-label">Ora</label>
                         <input type="number" class="form-control" id="schedule_hour" name="schedule_hour" 
-                               value="{{ config.schedule_hour }}" min="0" max="23">
+                            value="{{ config.schedule_hour }}" min="0" max="23">
                     </div>
                     <div class="col-md-3 mb-3">
                         <label for="schedule_minute" class="form-label">Minuto</label>
                         <input type="number" class="form-control" id="schedule_minute" name="schedule_minute" 
-                               value="{{ config.schedule_minute }}" min="0" max="59">
+                            value="{{ config.schedule_minute }}" min="0" max="59">
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
         <div class="mt-4 mb-4">
             <button type="submit" class="btn btn-primary btn-lg">
@@ -338,7 +339,7 @@
                 <i class="fas fa-arrow-left"></i> Torna al Dashboard
             </a>
         </div>
-    </div>
+    
 
 
 </form>
@@ -651,11 +652,61 @@ function testPattern() {
         resultDiv.innerHTML = `<div class="alert alert-danger alert-sm">Errore nella richiesta: ${error.message}</div>`;
     });
 }
+
+// Funzione mancante per selezionare file dalla lista FTP
+function selectFile(filename) {
+    document.getElementById('specific_filename').value = filename;
+    document.getElementById('pattern-test-result').innerHTML = 
+        `<div class="alert alert-success alert-sm">File selezionato: <code>${filename}</code></div>`;
+}
+
+// Funzione mancante per mostrare errori
+function displayError(message) {
+    const container = document.getElementById('results-container');
+    if (container) {
+        const html = `<div class="alert alert-danger alert-sm">
+            <i class="fas fa-exclamation-circle"></i> ${message}
+        </div>`;
+        container.innerHTML = html + container.innerHTML;
+    } else {
+        alert(message);
+    }
+}
+
+// Aggiorna anteprima prezzi VoIP in tempo reale
+function updatePricePreview() {
+    const fixedPrice = parseFloat(document.getElementById('voip_price_fixed').value) || 0;
+    const mobilePrice = parseFloat(document.getElementById('voip_price_mobile').value) || 0;
+    const currency = document.getElementById('voip_currency').value || 'EUR';
+    const unit = document.getElementById('voip_price_unit').value;
+    
+    const unitLabel = unit === 'per_second' ? '/sec' : '/min';
+    
+    document.getElementById('preview-fixed').textContent = fixedPrice.toFixed(4);
+    document.getElementById('preview-mobile').textContent = mobilePrice.toFixed(4);
+    document.getElementById('preview-calc-fixed').textContent = (fixedPrice * 5).toFixed(4);
+    
+    // Aggiorna le unità di misura
+    const currencyElements = document.querySelectorAll('.input-group-text');
+    currencyElements.forEach(el => {
+        if (el.textContent === 'EUR' || el.textContent === 'USD' || el.textContent === 'GBP' || el.textContent === 'CHF') {
+            el.textContent = currency;
+        }
+    });
+}
+
+// Event listeners per anteprima prezzi
+document.getElementById('voip_price_fixed').addEventListener('input', updatePricePreview);
+document.getElementById('voip_price_mobile').addEventListener('input', updatePricePreview);
+document.getElementById('voip_currency').addEventListener('change', updatePricePreview);
+document.getElementById('voip_price_unit').addEventListener('change', updatePricePreview);
+
 // Aggiorna anteprima quando cambiano i pattern
 document.getElementById('file_naming_pattern').addEventListener('change', updateFilePreview);
 document.getElementById('custom_pattern').addEventListener('input', updateFilePreview);
 
 // Anteprima iniziale
+updatePricePreview();
 updateFilePreview();
 </script>
 {% endblock %}
