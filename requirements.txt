@@ -33,6 +33,9 @@ structlog>=23.1.0,<24.0.0
 # Sicurezza aggiuntiva
 cryptography>=41.0.0,<42.0.0
 
+# Per info sistema
+psutil>=5.9.0,<6.0.0
+
 # Development e testing (installare separatamente con pip install -r requirements-dev.txt)
 # pytest>=7.4.0,<8.0.0
 # black>=23.7.0,<24.0.0

@@ -43,7 +43,7 @@
 <!-- Status Cards -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="card status-card">
+        <div class="card status-card h-100">
             <div class="card-body">
                 <h5 class="card-title">
                     <i class="fas fa-server"></i> Server FTP
@@ -57,7 +57,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card status-card">
+        <div class="card status-card h-100">
             <div class="card-body">
                 <h5 class="card-title">
                     <i class="fas fa-file-download"></i> Download
@@ -76,7 +76,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card status-card">
+        <div class="card status-card h-100">
             <div class="card-body">
                 <h5 class="card-title">
                     <i class="fas fa-clock"></i> Schedulazione
@@ -97,19 +97,85 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card status-card">
+        <div class="card status-card h-100">
             <div class="card-body">
                 <h5 class="card-title">
                     <i class="fas fa-phone"></i> Prezzi VoIP
                 </h5>
                 <p class="card-text">
-                    <!-- <strong>Fisso:</strong> {{ "%.3f"|format(config.voip_price_fixed or 0) }} {{ config.voip_currency or 'EUR' }}/min<br> -->
-                    <strong>Fisso:</strong> {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
-                    <!-- <strong>Mobile:</strong> {{ "%.3f"|format(config.voip_price_mobile or 0) }} {{ config.voip_currency or 'EUR' }}/min<br> -->
-                    <strong>Mobile:</strong> {{ config.voip_price_mobile or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
-
-                    <strong>Unità:</strong> {{ 'Al minuto' if config.voip_price_unit == 'per_minute' else 'Al secondo' }}
+                    <strong>Base Fisso:</strong> {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
+                    <strong>Base Mobile:</strong> {{ config.voip_price_mobile or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
+                    <strong>Ricarico:</strong> {{ "%.0f"|format(config.voip_markup_percent or 0) }}%<br>
+                    <hr class="my-1">
+                    <small class="text-success">
+                        <strong>Finale Fisso:</strong> {{ config.voip_price_fixed_final or 0 }} {{ config.voip_currency or 'EUR' }}<br>
+                        <strong>Finale Mobile:</strong> {{ config.voip_price_mobile_final or 0 }} {{ config.voip_currency or 'EUR' }}
+                    </small>
                 </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seconda riga di card per informazioni aggiuntive -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-light h-100">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-calculator"></i> Calcolo Prezzi VoIP
+                </h6>
+                <div class="row">
+                    <div class="col-6">
+                        <small>
+                            <strong>Prezzo Base Fisso:</strong><br>
+                            {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min
+                        </small>
+                    </div>
+                    <div class="col-6">
+                        <small>
+                            <strong>+ Ricarico {{ "%.0f"|format(config.voip_markup_percent or 0) }}%:</strong><br>
+                            <span class="text-success">{{ config.voip_price_fixed_final or 0 }} {{ config.voip_currency or 'EUR' }}/min</span>
+                        </small>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="row">
+                    <div class="col-6">
+                        <small>
+                            <strong>Prezzo Base Mobile:</strong><br>
+                            {{ config.voip_price_mobile or 0 }} {{ config.voip_currency or 'EUR' }}/min
+                        </small>
+                    </div>
+                    <div class="col-6">
+                        <small>
+                            <strong>+ Ricarico {{ "%.0f"|format(config.voip_markup_percent or 0) }}%:</strong><br>
+                            <span class="text-success">{{ config.voip_price_mobile_final or 0 }} {{ config.voip_currency or 'EUR' }}/min</span>
+                        </small>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="text-center">
+                    <small class="text-muted">
+                        <strong>Esempio:</strong> Chiamata 5 min fisso = {{ "%.3f"|format((config.voip_price_fixed_final or 0) * 5) }} {{ config.voip_currency or 'EUR' }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-light h-100">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-info-circle"></i> Informazioni Sistema
+                </h6>
+                <small>
+                    <strong>Unità Fatturazione:</strong> {{ 'Al minuto' if config.voip_price_unit == 'per_minute' else 'Al secondo' }}<br>
+                    <strong>Valuta:</strong> {{ config.voip_currency or 'EUR' }}<br>
+                    <strong>Modalità Download:</strong> {{ 'Tutti i file' if config.download_all_files else 'Specifico/Pattern' }}<br>
+                    <strong>Directory Output:</strong> {{ config.output_directory }}<br>
+                    <strong>Schedulazione:</strong> {{ config.schedule_type|title }}
+                </small>
             </div>
         </div>
     </div>
@@ -229,6 +295,18 @@ function displayResults(data, operation) {
     html += `</div>`;
     
     container.innerHTML = html + container.innerHTML;
+}
+
+function displayError(message) {
+    const container = document.getElementById('results-container');
+    if (container) {
+        const html = `<div class="alert alert-danger alert-sm">
+            <i class="fas fa-exclamation-circle"></i> ${message}
+        </div>`;
+        container.innerHTML = html + container.innerHTML;
+    } else {
+        alert(message);
+    }
 }
 
 function quickSchedule(scheduleType) {

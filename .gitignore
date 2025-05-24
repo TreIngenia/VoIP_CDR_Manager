@@ -8,3 +8,5 @@ output
 config_backup.json
 *_backup.py
 .env.local
+.env.backup.*
+.env.local
