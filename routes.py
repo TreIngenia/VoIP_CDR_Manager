@@ -357,4 +357,118 @@ def create_routes(app, secure_config, processor, scheduler_manager):
     # Imposta la funzione job nello scheduler
     scheduler_manager.set_job_function(_scheduled_job)
     
+    # Aggiungi questi route nella funzione setup_cdr_analytics()
+
+    @app.route('/cdr_dashboard')
+    def cdr_dashboard():
+        """Dashboard principale CDR Analytics"""
+        try:
+            # Ottieni statistiche
+            reports = processor.cdr_analytics.list_generated_reports()
+            
+            # Separa report individuali e summary
+            individual_reports = [r for r in reports if not r['is_summary']]
+            summary_reports = [r for r in reports if r['is_summary']]
+            
+            # Calcola statistiche
+            total_size = sum(r['size_bytes'] for r in reports)
+            
+            stats = {
+                'total_reports': len(reports),
+                'individual_reports': len(individual_reports),
+                'summary_reports': len(summary_reports),
+                'total_size_mb': round(total_size / (1024*1024), 2),
+                'analytics_directory': str(processor.cdr_analytics.analytics_directory)
+            }
+            
+            return render_template('cdr_dashboard.html', 
+                                reports=reports[:10],  # Ultimi 10
+                                stats=stats,
+                                individual_reports=individual_reports[:5],
+                                summary_reports=summary_reports[:5])
+                                
+        except Exception as e:
+            logger.error(f"Errore dashboard CDR: {e}")
+            return render_template('error.html', 
+                                error_message=f"Errore caricamento dashboard CDR: {e}")
+
+    @app.route('/cdr_analytics/process_all')
+    def process_all_cdr():
+        """Elabora tutti i file CDR nella directory output"""
+        try:
+            from flask import jsonify
+            
+            output_dir = Path(processor.config['output_directory'])
+            processed_files = []
+            errors = []
+            
+            # Trova tutti i file JSON che potrebbero essere CDR
+            for json_file in output_dir.glob("*.json"):
+                if processor._is_cdr_file(str(json_file)):
+                    try:
+                        result = processor.cdr_analytics.process_cdr_file(str(json_file))
+                        if result['success']:
+                            processed_files.append({
+                                'file': json_file.name,
+                                'reports_generated': len(result.get('generated_files', []))
+                            })
+                        else:
+                            errors.append({
+                                'file': json_file.name,
+                                'error': result.get('message', 'Errore sconosciuto')
+                            })
+                    except Exception as e:
+                        errors.append({
+                            'file': json_file.name,
+                            'error': str(e)
+                        })
+            
+            return jsonify({
+                'success': True,
+                'processed_files': len(processed_files),
+                'errors': len(errors),
+                'files_details': processed_files,
+                'errors_details': errors
+            })
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+    @app.route('/cdr_analytics/report_details/<path:filename>')
+    def cdr_report_details(filename):
+        """Mostra dettagli di un report specifico"""
+        try:
+            from flask import jsonify
+            
+            report_path = processor.cdr_analytics.analytics_directory / filename
+            
+            if not report_path.exists():
+                return jsonify({'success': False, 'message': 'Report non trovato'}), 404
+            
+            # Carica il report
+            with open(report_path, 'r', encoding='utf-8') as f:
+                report_data = json.load(f)
+            
+            # Estrai informazioni chiave per la visualizzazione
+            summary = report_data.get('summary', {})
+            metadata = report_data.get('metadata', {})
+            
+            details = {
+                'filename': filename,
+                'contract_code': summary.get('codice_contratto'),
+                'total_calls': summary.get('totale_chiamate'),
+                'total_duration_minutes': summary.get('durata_totale_minuti'),
+                'total_cost': summary.get('costo_totale_euro'),
+                'client_city': summary.get('cliente_finale_comune'),
+                'generation_date': metadata.get('generation_timestamp'),
+                'call_types_breakdown': report_data.get('call_types_breakdown', {}),
+                'daily_breakdown': report_data.get('daily_breakdown', {})
+            }
+            
+            return jsonify({'success': True, 'details': details})
+            
+        except Exception as e:
+            logger.error(f"Errore dettagli report: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+        
     return app

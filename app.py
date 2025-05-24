@@ -22,6 +22,7 @@ except ImportError:
 from config import SecureConfig, save_config_to_env, load_config_from_env_local, log_success, log_error, log_warning, log_info
 from ftp_processor import FTPProcessor
 from scheduler import SchedulerManager
+from integration_cdr_analytics import setup_cdr_analytics
 from routes import create_routes
 
 # Import Flask
@@ -98,6 +99,7 @@ def main():
         
         # Inizializza componenti
         processor = FTPProcessor(secure_config.get_config())
+        setup_cdr_analytics(app, processor)
         scheduler_manager = SchedulerManager()
         scheduler_manager.set_config(secure_config.get_config())
         
