@@ -527,11 +527,11 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             with open(report_path, 'r', encoding='utf-8') as f:
                 report_data = json.load(f)
             
-            # DETECT SE È UN FILE SUMMARY
+            # ✅ CORREZIONE: Rileva automaticamente il tipo di file
             is_summary = filename.startswith('SUMMARY_') or 'global_totals' in report_data
             
             if is_summary:
-                # GESTIONE FILE SUMMARY (Report Globale)
+                # ========== GESTIONE FILE SUMMARY (Report Globale) ==========
                 metadata = report_data.get('metadata', {})
                 global_totals = report_data.get('global_totals', {})
                 global_by_type = report_data.get('global_by_call_type', {})
@@ -545,13 +545,13 @@ def create_routes(app, secure_config, processor, scheduler_manager):
                     'total_cost': global_totals.get('total_cost_euro', 0),
                     'client_city': f"Tutti i contratti ({global_totals.get('total_contracts', 0)} contratti)",
                     'generation_date': metadata.get('generation_timestamp'),
-                    'call_types_breakdown': global_by_type,
+                    'call_types_breakdown': global_by_type,  # ✅ Usa la struttura corretta per SUMMARY
                     'contracts_summary': report_data.get('contracts_summary', {}),
                     'top_contracts': report_data.get('top_contracts', {}),
                     'metadata': metadata
                 }
             else:
-                # GESTIONE FILE CONTRATTO SINGOLO (Report Individuale)
+                # ========== GESTIONE FILE CONTRATTO SINGOLO (Report Individuale) ==========
                 summary = report_data.get('summary', {})
                 metadata = report_data.get('metadata', {})
                 
@@ -564,7 +564,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
                     'total_cost': summary.get('costo_totale_euro'),
                     'client_city': summary.get('cliente_finale_comune'),
                     'generation_date': metadata.get('generation_timestamp'),
-                    'call_types_breakdown': report_data.get('call_types_breakdown', {}),
+                    'call_types_breakdown': report_data.get('call_types_breakdown', {}),  # ✅ Usa la struttura corretta per contratti singoli
                     'daily_breakdown': report_data.get('daily_breakdown', {})
                 }
             

@@ -256,11 +256,13 @@ function viewReportDetails(filename) {
 
 function displayReportDetails(details) {
     const content = document.getElementById('report-details-content');
+    let html = '';
     
-    // ✅ SOLUZIONE: Controlla se è un file SUMMARY
+    console.log('Dettagli ricevuti:', details); // ✅ Debug per vedere cosa arriva
+    
     if (details.is_summary) {
         // ========== GESTIONE FILE SUMMARY ==========
-        let html = `
+        html = `
             <div class="alert alert-info">
                 <h5><i class="fas fa-chart-pie"></i> Report Summary Globale</h5>
                 <p>Questo è un report aggregato di tutti i contratti elaborati.</p>
@@ -271,32 +273,24 @@ function displayReportDetails(details) {
                     <h6>📊 Informazioni Generali</h6>
                     <ul class="list-unstyled">
                         <li><strong>File:</strong> ${details.filename}</li>
-                        
-                        <!-- ✅ SOLUZIONE: Mostra che è un report globale -->
                         <li><strong>Tipo:</strong> <span class="badge bg-warning">Report Globale</span></li>
-                        
-                        <!-- ✅ SOLUZIONE: Mostra numero contratti invece di singolo cliente -->
                         <li><strong>Contratti Elaborati:</strong> ${details.client_city}</li>
-                        
                         <li><strong>Generato:</strong> ${new Date(details.generation_date).toLocaleString('it-IT')}</li>
                     </ul>
                 </div>
                 <div class="col-md-6">
                     <h6>📈 Statistiche Totali</h6>
                     <ul class="list-unstyled">
-                        <!-- ✅ SOLUZIONE: Usa i campi corretti per SUMMARY -->
                         <li><strong>Chiamate Totali:</strong> <span class="text-primary">${details.total_calls.toLocaleString()}</span></li>
                         <li><strong>Durata Totale:</strong> <span class="text-success">${details.total_duration_minutes.toFixed(2)} minuti</span></li>
                         <li><strong>Costo Totale:</strong> <span class="text-danger">€${details.total_cost.toFixed(4)}</span></li>
-                        
-                        <!-- ✅ BONUS: Aggiunge metrica utile -->
                         <li><strong>Costo Medio/min:</strong> €${(details.total_cost / details.total_duration_minutes).toFixed(4)}</li>
                     </ul>
                 </div>
             </div>
         `;
         
-        // ✅ SOLUZIONE: Gestisce correttamente la struttura dati SUMMARY
+        // ✅ Gestisce correttamente la struttura dati SUMMARY
         if (details.call_types_breakdown && Object.keys(details.call_types_breakdown).length > 0) {
             html += `
                 <h6 class="mt-4">📞 Breakdown per Tipo Chiamata (Globale)</h6>
@@ -309,15 +303,14 @@ function displayReportDetails(details) {
             `;
             
             Object.entries(details.call_types_breakdown).forEach(([type, data]) => {
-                // ✅ SOLUZIONE: Usa i nomi dei campi corretti per SUMMARY
                 const costPerMin = data.duration_minutes > 0 ? (data.cost_euro / data.duration_minutes) : 0;
                 html += `
                     <tr>
                         <td><span class="badge bg-secondary">${type}</span></td>
-                        <td class="text-center">${data.calls}</td>  <!-- ✅ CORRETTO: "calls" -->
-                        <td class="text-end">${data.duration_minutes.toFixed(2)}</td>  <!-- ✅ CORRETTO: "duration_minutes" -->
-                        <td class="text-end">€${data.cost_euro.toFixed(4)}</td>  <!-- ✅ CORRETTO: "cost_euro" -->
-                        <td class="text-end">€${costPerMin.toFixed(4)}</td>  <!-- ✅ BONUS: Costo al minuto -->
+                        <td class="text-center">${data.calls}</td>
+                        <td class="text-end">${data.duration_minutes.toFixed(2)}</td>
+                        <td class="text-end">€${data.cost_euro.toFixed(4)}</td>
+                        <td class="text-end">€${costPerMin.toFixed(4)}</td>
                     </tr>
                 `;
             });
@@ -325,7 +318,7 @@ function displayReportDetails(details) {
             html += '</tbody></table></div>';
         }
         
-        // ✅ BONUS: Aggiunge Top Contracts per SUMMARY
+        // ✅ Top Contracts per SUMMARY
         if (details.top_contracts && details.top_contracts.top_by_cost) {
             html += `
                 <h6 class="mt-4">🥇 Top 5 Contratti per Costo</h6>
@@ -351,15 +344,19 @@ function displayReportDetails(details) {
         }
         
     } else {
-        // ========== GESTIONE FILE CONTRATTO SINGOLO (ORIGINALE) ==========
-        // ✅ MANTIENE la logica originale per i contratti singoli
-        let html = `
+        // ========== GESTIONE FILE CONTRATTO SINGOLO ==========
+        html = `
+            <div class="alert alert-primary">
+                <h5><i class="fas fa-file-alt"></i> Report Contratto Singolo</h5>
+                <p>Dettagli per il contratto ${details.contract_code}</p>
+            </div>
+            
             <div class="row">
                 <div class="col-md-6">
                     <h6>📋 Informazioni Generali</h6>
                     <ul class="list-unstyled">
                         <li><strong>File:</strong> ${details.filename}</li>
-                        <li><strong>Contratto:</strong> ${details.contract_code || 'N/A'}</li>
+                        <li><strong>Contratto:</strong> <span class="badge bg-primary">${details.contract_code || 'N/A'}</span></li>
                         <li><strong>Cliente:</strong> ${details.client_city || 'N/A'}</li>
                         <li><strong>Generato:</strong> ${new Date(details.generation_date).toLocaleString('it-IT')}</li>
                     </ul>
@@ -367,33 +364,63 @@ function displayReportDetails(details) {
                 <div class="col-md-6">
                     <h6>📊 Statistiche</h6>
                     <ul class="list-unstyled">
-                        <li><strong>Chiamate Totali:</strong> ${details.total_calls || 0}</li>
-                        <li><strong>Durata Totale:</strong> ${details.total_duration_minutes || 0} min</li>
-                        <li><strong>Costo Totale:</strong> €${details.total_cost || 0}</li>
+                        <li><strong>Chiamate Totali:</strong> <span class="text-primary">${details.total_calls || 0}</span></li>
+                        <li><strong>Durata Totale:</strong> <span class="text-success">${details.total_duration_minutes || 0} min</span></li>
+                        <li><strong>Costo Totale:</strong> <span class="text-danger">€${details.total_cost || 0}</span></li>
                     </ul>
                 </div>
             </div>
         `;
         
-        // ✅ MANTIENE la logica originale per breakdown contratti singoli
-        if (details.call_types_breakdown) {
+        // ✅ Breakdown per contratti singoli
+        if (details.call_types_breakdown && Object.keys(details.call_types_breakdown).length > 0) {
             html += `
-                <h6 class="mt-3">Breakdown per Tipo Chiamata</h6>
+                <h6 class="mt-3">📞 Breakdown per Tipo Chiamata</h6>
                 <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr><th>Tipo</th><th>Chiamate</th><th>Durata (min)</th><th>Costo (€)</th></tr>
+                    <table class="table table-sm table-striped">
+                        <thead class="table-dark">
+                            <tr><th>Tipo</th><th>Chiamate</th><th>Durata (min)</th><th>Costo (€)</th><th>€/min</th></tr>
                         </thead>
                         <tbody>
             `;
             
             Object.entries(details.call_types_breakdown).forEach(([type, data]) => {
+                const durationMinutes = (data.durata_totale_secondi / 60).toFixed(2);
+                const costPerMin = data.costo_al_minuto || 0;
                 html += `
                     <tr>
-                        <td>${type}</td>
-                        <td>${data.numero_chiamate}</td>  <!-- ✅ CORRETTO per contratti singoli -->
-                        <td>${(data.durata_totale_secondi / 60).toFixed(2)}</td>  <!-- ✅ CORRETTO per contratti singoli -->
-                        <td>€${data.costo_totale_euro}</td>  <!-- ✅ CORRETTO per contratti singoli -->
+                        <td><span class="badge bg-info">${type}</span></td>
+                        <td class="text-center">${data.numero_chiamate}</td>
+                        <td class="text-end">${durationMinutes}</td>
+                        <td class="text-end">€${data.costo_totale_euro.toFixed(4)}</td>
+                        <td class="text-end">€${costPerMin.toFixed(4)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+        }
+        
+        // ✅ Daily breakdown per contratti singoli
+        if (details.daily_breakdown && Object.keys(details.daily_breakdown).length > 0) {
+            html += `
+                <h6 class="mt-4">📅 Breakdown Giornaliero</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Data</th><th>Chiamate</th><th>Durata (min)</th><th>Costo (€)</th></tr></thead>
+                        <tbody>
+            `;
+            
+            // Ordina le date
+            const sortedDates = Object.keys(details.daily_breakdown).sort();
+            sortedDates.forEach(date => {
+                const dayData = details.daily_breakdown[date];
+                html += `
+                    <tr>
+                        <td>${date}</td>
+                        <td class="text-center">${dayData.chiamate}</td>
+                        <td class="text-end">${dayData.durata_minuti.toFixed(2)}</td>
+                        <td class="text-end">€${dayData.costo_euro.toFixed(4)}</td>
                     </tr>
                 `;
             });
@@ -402,7 +429,38 @@ function displayReportDetails(details) {
         }
     }
     
+    // ✅ Aggiungi sempre il pulsante di download
+    html += `
+        <div class="text-center mt-4">
+            <a href="/cdr_analytics/reports/${details.filename}" class="btn btn-success" download>
+                <i class="fas fa-download"></i> Scarica Report Completo
+            </a>
+        </div>
+    `;
+    
     content.innerHTML = html;
+}
+
+function debugReportDetails(filename) {
+    console.log('🔍 Debug: Richiesta dettagli per:', filename);
+    
+    fetch(`/cdr_analytics/report_details/${filename}`)
+        .then(response => {
+            console.log('📡 Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Dati ricevuti:', data);
+            if (data.success) {
+                console.log('✅ Successo - Dettagli:', data.details);
+                console.log('🔍 Tipo file:', data.details.is_summary ? 'SUMMARY' : 'CONTRATTO');
+            } else {
+                console.error('❌ Errore:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('💥 Errore fetch:', error);
+        });
 }
 
 function showAlert(type, title, message) {
