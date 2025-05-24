@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from datetime import datetime
 from flask import render_template, request, jsonify, redirect, url_for
 
 logger = logging.getLogger(__name__)
@@ -190,7 +191,6 @@ def create_routes(app, secure_config, processor, scheduler_manager):
     def pattern_examples():
         """Restituisce esempi di pattern con variabili temporali"""
         try:
-            from datetime import datetime
             examples = processor.generate_pattern_examples()
             return jsonify({
                 'success': True,
@@ -343,6 +343,88 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             logger.error(f"Errore calcolo prezzi VoIP: {e}")
             return jsonify({'success': False, 'message': str(e)})
 
+    @app.route('/health')
+    def health_check():
+        """Endpoint di health check per monitoraggio"""
+        try:
+            health_status = {
+                'status': 'healthy',
+                'timestamp': datetime.now().isoformat(),
+                'checks': {}
+            }
+            
+            # Check FTP connectivity
+            try:
+                ftp = processor.connect_ftp()
+                ftp.quit()
+                health_status['checks']['ftp'] = {
+                    'status': 'pass',
+                    'details': 'FTP connection successful'
+                }
+            except Exception as e:
+                health_status['checks']['ftp'] = {
+                    'status': 'fail',
+                    'details': f'FTP connection failed: {str(e)}'
+                }
+            
+            # Check scheduler
+            health_status['checks']['scheduler'] = {
+                'status': 'pass' if scheduler_manager.is_running() else 'fail',
+                'details': f'Scheduler running: {scheduler_manager.is_running()}'
+            }
+            
+            # Check disk space
+            try:
+                import shutil
+                output_dir = secure_config.get_config()['output_directory']
+                disk_usage = shutil.disk_usage(output_dir)
+                free_percent = (disk_usage.free / disk_usage.total) * 100
+                
+                if free_percent < 10:
+                    status = 'fail'
+                    message = f'Low disk space: {free_percent:.1f}% free'
+                elif free_percent < 20:
+                    status = 'warn'
+                    message = f'Disk space warning: {free_percent:.1f}% free'
+                else:
+                    status = 'pass'
+                    message = f'Disk space OK: {free_percent:.1f}% free'
+                
+                health_status['checks']['disk_space'] = {
+                    'status': status,
+                    'details': message,
+                    'free_gb': round(disk_usage.free / (1024**3), 2),
+                    'total_gb': round(disk_usage.total / (1024**3), 2)
+                }
+            except Exception as e:
+                health_status['checks']['disk_space'] = {
+                    'status': 'warn',
+                    'details': f'Could not check disk space: {str(e)}'
+                }
+            
+            # Overall health status
+            failed_checks = [k for k, v in health_status['checks'].items() if v['status'] == 'fail']
+            if failed_checks:
+                health_status['status'] = 'unhealthy'
+                health_status['failed_checks'] = failed_checks
+            elif any(v['status'] == 'warn' for v in health_status['checks'].values()):
+                health_status['status'] = 'degraded'
+            
+            # Return appropriate HTTP status
+            if health_status['status'] == 'healthy':
+                return jsonify(health_status), 200
+            elif health_status['status'] == 'degraded':
+                return jsonify(health_status), 200  # Still OK but with warnings
+            else:
+                return jsonify(health_status), 503  # Service Unavailable
+                
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'timestamp': datetime.now().isoformat(),
+                'error': str(e)
+            }), 500
+
     def _scheduled_job():
         """Job schedulato che esegue il processo completo"""
         logger.info("Esecuzione job schedulato")
@@ -396,8 +478,6 @@ def create_routes(app, secure_config, processor, scheduler_manager):
     def process_all_cdr():
         """Elabora tutti i file CDR nella directory output"""
         try:
-            from flask import jsonify
-            
             output_dir = Path(processor.config['output_directory'])
             processed_files = []
             errors = []
@@ -436,10 +516,8 @@ def create_routes(app, secure_config, processor, scheduler_manager):
 
     @app.route('/cdr_analytics/report_details/<path:filename>')
     def cdr_report_details(filename):
-        """Mostra dettagli di un report specifico"""
+        """Mostra dettagli di un report specifico con supporto per file SUMMARY"""
         try:
-            from flask import jsonify
-            
             report_path = processor.cdr_analytics.analytics_directory / filename
             
             if not report_path.exists():
@@ -449,21 +527,46 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             with open(report_path, 'r', encoding='utf-8') as f:
                 report_data = json.load(f)
             
-            # Estrai informazioni chiave per la visualizzazione
-            summary = report_data.get('summary', {})
-            metadata = report_data.get('metadata', {})
+            # DETECT SE È UN FILE SUMMARY
+            is_summary = filename.startswith('SUMMARY_') or 'global_totals' in report_data
             
-            details = {
-                'filename': filename,
-                'contract_code': summary.get('codice_contratto'),
-                'total_calls': summary.get('totale_chiamate'),
-                'total_duration_minutes': summary.get('durata_totale_minuti'),
-                'total_cost': summary.get('costo_totale_euro'),
-                'client_city': summary.get('cliente_finale_comune'),
-                'generation_date': metadata.get('generation_timestamp'),
-                'call_types_breakdown': report_data.get('call_types_breakdown', {}),
-                'daily_breakdown': report_data.get('daily_breakdown', {})
-            }
+            if is_summary:
+                # GESTIONE FILE SUMMARY (Report Globale)
+                metadata = report_data.get('metadata', {})
+                global_totals = report_data.get('global_totals', {})
+                global_by_type = report_data.get('global_by_call_type', {})
+                
+                details = {
+                    'filename': filename,
+                    'is_summary': True,
+                    'contract_code': 'SUMMARY_GLOBALE',
+                    'total_calls': global_totals.get('total_calls', 0),
+                    'total_duration_minutes': global_totals.get('total_duration_minutes', 0),
+                    'total_cost': global_totals.get('total_cost_euro', 0),
+                    'client_city': f"Tutti i contratti ({global_totals.get('total_contracts', 0)} contratti)",
+                    'generation_date': metadata.get('generation_timestamp'),
+                    'call_types_breakdown': global_by_type,
+                    'contracts_summary': report_data.get('contracts_summary', {}),
+                    'top_contracts': report_data.get('top_contracts', {}),
+                    'metadata': metadata
+                }
+            else:
+                # GESTIONE FILE CONTRATTO SINGOLO (Report Individuale)
+                summary = report_data.get('summary', {})
+                metadata = report_data.get('metadata', {})
+                
+                details = {
+                    'filename': filename,
+                    'is_summary': False,
+                    'contract_code': summary.get('codice_contratto'),
+                    'total_calls': summary.get('totale_chiamate'),
+                    'total_duration_minutes': summary.get('durata_totale_minuti'),
+                    'total_cost': summary.get('costo_totale_euro'),
+                    'client_city': summary.get('cliente_finale_comune'),
+                    'generation_date': metadata.get('generation_timestamp'),
+                    'call_types_breakdown': report_data.get('call_types_breakdown', {}),
+                    'daily_breakdown': report_data.get('daily_breakdown', {})
+                }
             
             return jsonify({'success': True, 'details': details})
             

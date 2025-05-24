@@ -10,3 +10,6 @@ config_backup.json
 .env.local
 .env.backup.*
 .env.local
+endpoints_report_*_*.html
+endpoints_report_*_*.json
+endpoints_report_*_*.md

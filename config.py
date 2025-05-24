@@ -7,7 +7,8 @@ from pathlib import Path
 
 # Setup logging sicuro
 def setup_logging():
-    """Setup logging con supporto Unicode cross-platform"""
+    """Setup logging con supporto Unicode cross-platform e rotazione file"""
+    from logging.handlers import RotatingFileHandler
     
     class UnicodeStreamHandler(logging.StreamHandler):
         """StreamHandler che gestisce correttamente Unicode su Windows"""
@@ -42,8 +43,13 @@ def setup_logging():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     
-    # Handler per file (sempre UTF-8)
-    file_handler = logging.FileHandler('app.log', encoding='utf-8')
+    # Handler per file con rotazione (NUOVO)
+    file_handler = RotatingFileHandler(
+        'app.log', 
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
     
@@ -56,8 +62,8 @@ def setup_logging():
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
     root_logger.handlers.clear()
-    root_logger.addHandler(file_handler)
-    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)  # Prima il file
+    root_logger.addHandler(console_handler)  # Poi console
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -169,8 +175,73 @@ class SecureConfig:
         
         # Valida caratteri permessi (lettere, numeri, underscore, punto, asterisco, percentuale)
         import re
-        allowed_chars = re.compile(r'^[a-zA-Z0-9_.\-*%/]+$')
+        allowed_chars = re.compile(r'^[a-zA-Z0-9_.%/*-]+$')
         return bool(allowed_chars.match(pattern))
+    
+    def _validate_ftp_config(self):
+        """Valida configurazione FTP"""
+        errors = []
+        
+        # Valida host FTP
+        if not self.config.get('ftp_host'):
+            errors.append("Host FTP è obbligatorio")
+        elif not self._is_valid_hostname(self.config['ftp_host']):
+            errors.append("Host FTP non valido")
+        
+        # Valida credenziali
+        if not self.config.get('ftp_user'):
+            errors.append("Username FTP è obbligatorio")
+        
+        if not self.config.get('ftp_password'):
+            errors.append("Password FTP è obbligatoria")
+        
+        return errors
+
+    def _validate_voip_config(self):
+        """Valida configurazione prezzi VoIP"""
+        errors = []
+        
+        # Valida prezzi
+        for price_field in ['voip_price_fixed', 'voip_price_mobile']:
+            price = self.config.get(price_field, 0)
+            if not isinstance(price, (int, float)) or price < 0:
+                errors.append(f"{price_field} deve essere un numero positivo")
+        
+        # Valida markup
+        markup = self.config.get('voip_markup_percent', 0)
+        if not isinstance(markup, (int, float)) or markup < 0 or markup > 1000:
+            errors.append("Markup percentuale deve essere tra 0 e 1000")
+        
+        # Valida valuta
+        valid_currencies = ['EUR', 'USD', 'GBP', 'CHF']
+        if self.config.get('voip_currency') not in valid_currencies:
+            errors.append(f"Valuta deve essere una di: {', '.join(valid_currencies)}")
+        
+        return errors
+
+    def _is_valid_hostname(self, hostname):
+        """Valida hostname/IP"""
+        import re
+        
+        # Pattern per hostname valido
+        hostname_pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$'
+        
+        # Pattern per IP
+        ip_pattern = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        
+        return bool(re.match(hostname_pattern, hostname) or re.match(ip_pattern, hostname))
+
+    def validate_all_config(self):
+        """Valida tutta la configurazione"""
+        all_errors = []
+        all_errors.extend(self._validate_ftp_config())
+        all_errors.extend(self._validate_voip_config())
+        
+        if all_errors:
+            logger.warning(f"Errori di validazione configurazione: {all_errors}")
+            return False, all_errors
+        
+        return True, []
     
     def get_safe_config(self):
         """Restituisce configurazione senza dati sensibili"""

@@ -6,7 +6,7 @@ import os
 import sys
 import socket
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -180,7 +180,7 @@ def validate_email(email):
     if not email:
         return False
     
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return bool(re.match(pattern, email))
 
 def validate_url(url):
@@ -190,7 +190,7 @@ def validate_url(url):
     if not url:
         return False
     
-    pattern = r'^https?://[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?(?::\d+)?(?:/.*)?
+    pattern = r'^https?://[a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?(?::\d+)?(?:/.*)?$'
     return bool(re.match(pattern, url))
 
 def truncate_string(text, max_length=100, suffix='...'):
@@ -311,7 +311,7 @@ def is_valid_cron_expression(cron_expr):
     
     # Validazione molto semplice - ogni parte può essere numero, *, o range
     import re
-    pattern = r'^(\*|\d+(-\d+)?|\d+(,\d+)*)
+    pattern = r'^(\*|\d+(-\d+)?|\d+(,\d+)*)$'
     
     for part in parts:
         if not re.match(pattern, part):

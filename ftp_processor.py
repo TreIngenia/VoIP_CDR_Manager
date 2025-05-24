@@ -42,48 +42,58 @@ class FTPProcessor:
         return True
     
     def connect_ftp(self):
-        """Connessione FTP con gestione errori migliorata"""
-        ftp = None
-        try:
-            ftp = ftplib.FTP()
-            ftp.connect(self.config['ftp_host'], timeout=30)
-            ftp.login(self.config['ftp_user'], self.config['ftp_password'])
-            
-            # Validazione directory
-            if self.config['ftp_directory'] and self.config['ftp_directory'] != '/':
-                clean_dir = self.config['ftp_directory'].strip('/')
-                if '..' not in clean_dir:
-                    ftp.cwd('/' + clean_dir)
+        """Connessione FTP con gestione errori migliorata e retry automatico"""
+        max_retries = 3
+        retry_delay = 2
+        
+        for attempt in range(max_retries):
+            ftp = None
+            try:
+                ftp = ftplib.FTP()
+                ftp.connect(self.config['ftp_host'], timeout=30)
+                ftp.login(self.config['ftp_user'], self.config['ftp_password'])
+                
+                # Validazione directory con controllo esistenza
+                if self.config['ftp_directory'] and self.config['ftp_directory'] != '/':
+                    clean_dir = self.config['ftp_directory'].strip('/')
+                    if '..' not in clean_dir:
+                        try:
+                            ftp.cwd('/' + clean_dir)
+                        except ftplib.error_perm as e:
+                            if "550" in str(e):  # Directory non esistente
+                                logger.warning(f"Directory {clean_dir} non esistente, uso directory root")
+                            else:
+                                raise
+                    else:
+                        logger.warning("Directory FTP contiene path traversal, uso directory root")
+                
+                logger.info(f"Connesso al server FTP: {self.config['ftp_host']}")
+                return ftp
+                
+            except (ftplib.error_perm, ftplib.error_temp) as e:
+                if ftp:
+                    try:
+                        ftp.quit()
+                    except:
+                        pass
+                
+                if attempt < max_retries - 1:
+                    logger.warning(f"Tentativo {attempt + 1} fallito: {e}. Riprovo in {retry_delay} secondi...")
+                    import time
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Backoff esponenziale
                 else:
-                    logger.warning("Directory FTP contiene path traversal, uso directory root")
-            
-            logger.info(f"Connesso al server FTP: {self.config['ftp_host']}")
-            return ftp
-            
-        except ftplib.error_perm as e:
-            logger.error(f"Errore permessi FTP: {e}")
-            if ftp:
-                try:
-                    ftp.quit()
-                except:
-                    pass
-            raise
-        except ftplib.error_temp as e:
-            logger.error(f"Errore temporaneo FTP: {e}")
-            if ftp:
-                try:
-                    ftp.quit()
-                except:
-                    pass
-            raise
-        except Exception as e:
-            logger.error(f"Errore connessione FTP: {e}")
-            if ftp:
-                try:
-                    ftp.quit()
-                except:
-                    pass
-            raise
+                    logger.error(f"Tutti i {max_retries} tentativi di connessione falliti: {e}")
+                    raise
+                    
+            except Exception as e:
+                if ftp:
+                    try:
+                        ftp.quit()
+                    except:
+                        pass
+                logger.error(f"Errore connessione FTP: {e}")
+                raise
     
     def list_ftp_files(self):
         """Lista i file presenti sul server FTP"""
