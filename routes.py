@@ -484,13 +484,24 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             
             # Trova tutti i file JSON che potrebbero essere CDR
             for json_file in output_dir.glob("*.json"):
-                if processor._is_cdr_file(str(json_file)):
+                # Usa il metodo _is_cdr_file del processore se disponibile
+                is_cdr = False
+                if hasattr(processor, '_is_cdr_file'):
+                    is_cdr = processor._is_cdr_file(str(json_file))
+                else:
+                    # Fallback: controlla il nome del file
+                    filename = json_file.name.upper()
+                    is_cdr = 'CDR' in filename or 'RIV' in filename
+                
+                if is_cdr:
                     try:
                         result = processor.cdr_analytics.process_cdr_file(str(json_file))
                         if result['success']:
                             processed_files.append({
                                 'file': json_file.name,
-                                'reports_generated': len(result.get('generated_files', []))
+                                'reports_generated': len(result.get('generated_files', [])),
+                                'voip_enabled': result.get('voip_pricing_enabled', False),
+                                'contracts': result.get('total_contracts', 0)
                             })
                         else:
                             errors.append({
@@ -508,7 +519,8 @@ def create_routes(app, secure_config, processor, scheduler_manager):
                 'processed_files': len(processed_files),
                 'errors': len(errors),
                 'files_details': processed_files,
-                'errors_details': errors
+                'errors_details': errors,
+                'voip_pricing_enabled': any(f.get('voip_enabled', False) for f in processed_files)
             })
             
         except Exception as e:
@@ -572,6 +584,59 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             
         except Exception as e:
             logger.error(f"Errore dettagli report: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+        
+    @app.route('/cdr_analytics/voip_test', methods=['POST'])
+    def test_voip_pricing():
+        """Testa il calcolo prezzi VoIP per diversi tipi di chiamata"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'success': False, 'message': 'Dati non validi'}), 400
+            
+            tipo_chiamata = data.get('tipo_chiamata', '')
+            durata_secondi = int(data.get('durata_secondi', 60))
+            
+            if not hasattr(processor, 'cdr_analytics') or not processor.cdr_analytics.voip_config:
+                return jsonify({
+                    'success': False, 
+                    'message': 'Configurazione VoIP non disponibile'
+                }), 400
+            
+            # Calcola costo con configurazione VoIP
+            calcolo = processor.cdr_analytics.voip_config.calculate_cost(tipo_chiamata, durata_secondi)
+            
+            return jsonify({
+                'success': True,
+                'input': {
+                    'tipo_chiamata': tipo_chiamata,
+                    'durata_secondi': durata_secondi
+                },
+                'risultato': calcolo
+            })
+            
+        except Exception as e:
+            logger.error(f"Errore test prezzi VoIP: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+    @app.route('/cdr_analytics/categories')
+    def get_voip_categories():
+        """Restituisce tutte le categorie VoIP e relativi pattern"""
+        try:
+            if not hasattr(processor, 'cdr_analytics') or not processor.cdr_analytics.voip_config:
+                return jsonify({
+                    'success': False,
+                    'message': 'Configurazione VoIP non disponibile'
+                })
+            
+            categories_info = processor.cdr_analytics.get_voip_categories_info()
+            return jsonify({
+                'success': True,
+                'data': categories_info
+            })
+            
+        except Exception as e:
+            logger.error(f"Errore recupero categorie VoIP: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
         
     return app

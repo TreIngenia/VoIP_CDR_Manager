@@ -264,6 +264,39 @@
         </div>
     </div>
 
+    <!-- Card informativa CDR + VoIP -->
+    <div class="card mb-4 bg-light border-info">
+        <div class="card-header bg-info text-white">
+            <h6><i class="fas fa-info-circle"></i> Integrazione CDR Analytics + VoIP</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <p class="small mb-2">
+                        <strong>I prezzi VoIP configurati sopra vengono utilizzati automaticamente 
+                        per ricalcolare i costi nei report CDR.</strong>
+                    </p>
+                    <ul class="small mb-0">
+                        <li><strong>FISSI:</strong> Usa "Prezzo Finale Fisso" per chiamate urbane, interurbane</li>
+                        <li><strong>MOBILI:</strong> Usa "Prezzo Finale Mobile" per chiamate cellulari</li>
+                        <li><strong>FAX:</strong> Usa prezzo fisso</li>
+                        <li><strong>NUMERI VERDI:</strong> Costo zero</li>
+                        <li><strong>INTERNAZIONALI:</strong> Usa prezzo mobile</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <i class="fas fa-calculator fa-3x text-info mb-2"></i>
+                        <p class="small text-muted">
+                        Tutti i file CDR processati includeranno il campo 
+                        <code>costo_cliente_euro</code> calcolato con questi prezzi.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Configurazione Schedulazione -->
     <div class="card mb-4">
         <div class="card-header">

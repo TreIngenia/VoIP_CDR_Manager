@@ -351,13 +351,20 @@ def save_config_to_env(secure_config, app_secret_key):
     try:
         config = secure_config.get_config()
         
-        # Crea backup prima della modifica
+        # Percorso file .env
         env_file = Path('.env')
+        
+        # Cartella backup
+        backup_dir = Path('env_backup')
+        backup_dir.mkdir(parents=True, exist_ok=True)
+
+        # Crea backup prima della modifica
         if env_file.exists():
-            backup_file = Path(f'.env.backup.{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+            backup_file = backup_dir / f'.env.backup.{datetime.now().strftime("%Y%m%d_%H%M%S")}'
             env_file.rename(backup_file)
             log_info(f"Backup configurazione creato: {backup_file}")
         
+        # Contenuto del nuovo file .env
         env_content = f"""# Configurazione aggiornata automaticamente - {datetime.now().isoformat()}
 
 # Parametri di configurazione per accesso ad ODOO
@@ -410,39 +417,131 @@ FLASK_DEBUG={str(config.get('FLASK_DEBUG', True)).lower()}
 APP_PORT={config.get('APP_PORT', 5001)}
 APP_HOST={config.get('APP_HOST', '127.0.0.1')}
 """
-        
-        # Salva con permessi sicuri
+        # Scrittura dei file .env e .env.local
         with open('.env', 'w', encoding='utf-8') as f:
             f.write(env_content)
-        
-        # Su Windows non possiamo usare chmod
+
         if not sys.platform.startswith('win'):
             os.chmod('.env', 0o600)
-        
-        # Mantieni anche la copia locale per backup
+
         with open('.env.local', 'w', encoding='utf-8') as f:
             f.write(env_content)
-        
+
         log_success("Configurazione salvata correttamente")
-        
-        # Mantieni backup solo degli ultimi 5 file
-        cleanup_old_backups()
-        
+
+        # Cleanup backup vecchi
+        cleanup_old_backups(backup_dir)
+
     except Exception as e:
         log_error(f"Errore nel salvataggio configurazione: {e}")
 
-def cleanup_old_backups():
-    """Rimuove backup vecchi per limitare spazio disco"""
+def cleanup_old_backups(backup_dir: Path, max_backups=5):
+    """Mantiene solo gli ultimi `max_backups` file nella cartella di backup"""
     try:
-        backup_files = list(Path('.').glob('.env.backup.*'))
-        backup_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-        
-        # Mantieni solo i 5 backup più recenti
-        for old_backup in backup_files[5:]:
+        backups = sorted(backup_dir.glob('.env.backup.*'), key=os.path.getmtime, reverse=True)
+        for old_backup in backups[max_backups:]:
             old_backup.unlink()
-            logger.info(f"Backup vecchio rimosso: {old_backup}")
+            log_info(f"Backup eliminato: {old_backup}")
     except Exception as e:
-        logger.error(f"Errore pulizia backup: {e}")
+        log_error(f"Errore durante la pulizia dei backup: {e}")
+
+# def save_config_to_env(secure_config, app_secret_key):
+#     """Salva configurazione con backup e validazione"""
+#     try:
+#         config = secure_config.get_config()
+        
+#         # Crea backup prima della modifica
+#         env_file = Path('.env')
+#         if env_file.exists():
+#             backup_file = Path(f'.env.backup.{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+#             env_file.rename(backup_file)
+#             log_info(f"Backup configurazione creato: {backup_file}")
+        
+#         env_content = f"""# Configurazione aggiornata automaticamente - {datetime.now().isoformat()}
+
+# # Parametri di configurazione per accesso ad ODOO
+# ODOO_URL={config['ODOO_URL']}
+# ODOO_DB={config['ODOO_DB']}
+# ODOO_USERNAME={config['ODOO_USERNAME']}
+# ODOO_API_KEY={config['ODOO_API_KEY']}
+
+# # Sicurezza Flask
+# SECRET_KEY={app_secret_key}
+
+# # Configurazione Server FTP
+# FTP_HOST={config['ftp_host']}
+# FTP_USER={config['ftp_user']}
+# FTP_PASSWORD={config['ftp_password']}
+# FTP_DIRECTORY={config['ftp_directory']}
+
+# # Configurazione Download
+# DOWNLOAD_ALL_FILES={str(config['download_all_files']).lower()}
+# SPECIFIC_FILENAME={config['specific_filename']}
+# OUTPUT_DIRECTORY={config['output_directory']}
+# FILE_NAMING_PATTERN={config['file_naming_pattern']}
+# CUSTOM_PATTERN={config['custom_pattern']}
+# FILTER_PATTERN={config.get('filter_pattern', '')}
+
+# # Configurazione Schedulazione
+# SCHEDULE_TYPE={config['schedule_type']}
+# SCHEDULE_DAY={config['schedule_day']}
+# SCHEDULE_HOUR={config['schedule_hour']}
+# SCHEDULE_MINUTE={config['schedule_minute']}
+# INTERVAL_DAYS={config['interval_days']}
+# CRON_EXPRESSION={config['cron_expression']}
+
+# # Configurazione Schedulazione Precisa
+# SCHEDULE_INTERVAL_TYPE={config.get('schedule_interval_type', 'minutes')}
+# SCHEDULE_INTERVAL_VALUE={config.get('schedule_interval_value', 30)}
+
+# # Configurazione Prezzi VoIP
+# VOIP_PRICE_FIXED={config['voip_price_fixed']}
+# VOIP_PRICE_MOBILE={config['voip_price_mobile']}
+# VOIP_MARKUP_PERCENT={config['voip_markup_percent']}
+# VOIP_PRICE_FIXED_FINAL={config['voip_price_fixed_final']}
+# VOIP_PRICE_MOBILE_FINAL={config['voip_price_mobile_final']}
+# VOIP_CURRENCY={config['voip_currency']}
+# VOIP_PRICE_UNIT={config['voip_price_unit']}
+
+# # Configurazione Applicazione
+# FLASK_ENV={config.get('FLASK_ENV', 'development')}
+# FLASK_DEBUG={str(config.get('FLASK_DEBUG', True)).lower()}
+# APP_PORT={config.get('APP_PORT', 5001)}
+# APP_HOST={config.get('APP_HOST', '127.0.0.1')}
+# """
+        
+#         # Salva con permessi sicuri
+#         with open('.env', 'w', encoding='utf-8') as f:
+#             f.write(env_content)
+        
+#         # Su Windows non possiamo usare chmod
+#         if not sys.platform.startswith('win'):
+#             os.chmod('.env', 0o600)
+        
+#         # Mantieni anche la copia locale per backup
+#         with open('.env.local', 'w', encoding='utf-8') as f:
+#             f.write(env_content)
+        
+#         log_success("Configurazione salvata correttamente")
+        
+#         # Mantieni backup solo degli ultimi 5 file
+#         cleanup_old_backups()
+        
+#     except Exception as e:
+#         log_error(f"Errore nel salvataggio configurazione: {e}")
+
+# def cleanup_old_backups():
+#     """Rimuove backup vecchi per limitare spazio disco"""
+#     try:
+#         backup_files = list(Path('.').glob('.env.backup.*'))
+#         backup_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+#         # Mantieni solo i 5 backup più recenti
+#         for old_backup in backup_files[5:]:
+#             old_backup.unlink()
+#             logger.info(f"Backup vecchio rimosso: {old_backup}")
+#     except Exception as e:
+#         logger.error(f"Errore pulizia backup: {e}")
 
 def load_config_from_env_local(secure_config):
     """Carica configurazione da .env.local se esiste e è più recente di .env"""

@@ -13,3 +13,5 @@ config_backup.json
 endpoints_report_*_*.html
 endpoints_report_*_*.json
 endpoints_report_*_*.md
+backup_20250525_205813
+cdr_analytics copy.py

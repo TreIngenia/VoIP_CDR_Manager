@@ -100,7 +100,7 @@
         <div class="card status-card h-100">
             <div class="card-body">
                 <h5 class="card-title">
-                    <i class="fas fa-phone"></i> Prezzi VoIP
+                    <i class="fas fa-phone"></i> Prezzi VoIP + CDR
                 </h5>
                 <p class="card-text">
                     <strong>Base Fisso:</strong> {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
@@ -108,8 +108,9 @@
                     <strong>Ricarico:</strong> {{ "%.0f"|format(config.voip_markup_percent or 0) }}%<br>
                     <hr class="my-1">
                     <small class="text-success">
-                        <strong>Finale Fisso:</strong> {{ config.voip_price_fixed_final or 0 }} {{ config.voip_currency or 'EUR' }}<br>
-                        <strong>Finale Mobile:</strong> {{ config.voip_price_mobile_final or 0 }} {{ config.voip_currency or 'EUR' }}
+                        <strong>→ Finale Fisso:</strong> {{ config.voip_price_fixed_final or 0 }}<br>
+                        <strong>→ Finale Mobile:</strong> {{ config.voip_price_mobile_final or 0 }}<br>
+                        <span class="badge bg-info">Applicato a CDR</span>
                     </small>
                 </p>
             </div>
