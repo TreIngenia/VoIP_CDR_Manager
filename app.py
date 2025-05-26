@@ -24,6 +24,8 @@ from ftp_processor import FTPProcessor
 from scheduler import SchedulerManager
 from integration_cdr_analytics import setup_cdr_analytics
 from routes import create_routes
+from cdr_integration import integrate_enhanced_cdr_system
+from categories_routes import add_categories_routes
 
 # Import Flask
 from flask import Flask
@@ -99,6 +101,8 @@ def main():
         
         # Inizializza componenti
         processor = FTPProcessor(secure_config.get_config())
+        processor = integrate_enhanced_cdr_system(app, processor)
+        add_categories_routes(app, processor.cdr_analytics)
         setup_cdr_analytics(app, processor)
         scheduler_manager = SchedulerManager()
         scheduler_manager.set_config(secure_config.get_config())

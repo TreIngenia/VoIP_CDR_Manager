@@ -303,93 +303,87 @@
             <h5><i class="fas fa-clock"></i> Configurazione Schedulazione</h5>
         </div>
         <div class="card-body">
-            <div class="mb-3">
-                <label for="schedule_type" class="form-label">Tipo di schedulazione</label>
-                <select class="form-select" id="schedule_type" name="schedule_type">
-                    <option value="monthly" {% if config.schedule_type == 'monthly' %}selected{% endif %}>
-                        Mensile (giorno specifico del mese)
-                    </option>
-                    <option value="weekly" {% if config.schedule_type == 'weekly' %}selected{% endif %}>
-                        Settimanale (giorno specifico della settimana)
-                    </option>
-                    <option value="daily" {% if config.schedule_type == 'daily' %}selected{% endif %}>
-                        Giornaliero
-                    </option>
-                    <option value="interval" {% if config.schedule_type == 'interval' %}selected{% endif %}>
-                        Intervallo (ogni X giorni)
-                    </option>
-                    <option value="cron" {% if config.schedule_type == 'cron' %}selected{% endif %}>
-                        Espressione Cron personalizzata
-                    </option>
-                </select>
-            </div>
-            
-            <!-- Configurazioni specifiche per tipo schedulazione -->
-            <div id="monthly-config" class="schedule-config" 
-                {% if config.schedule_type != 'monthly' %}style="display:none;"{% endif %}>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="schedule_day_monthly" class="form-label">Giorno del mese</label>
-                        <input type="number" class="form-control" id="schedule_day_monthly" name="schedule_day" 
-                            value="{{ config.schedule_day }}" min="1" max="31">
+            <div class="row">
+                <div class="mb-3 col-3">
+                    <label for="schedule_type" class="form-label">Tipo di schedulazione</label>
+                    <select class="form-select" id="schedule_type" name="schedule_type">
+                        <option value="monthly" {% if config.schedule_type == 'monthly' %}selected{% endif %}>
+                            Mensile (giorno specifico del mese)
+                        </option>
+                        <option value="weekly" {% if config.schedule_type == 'weekly' %}selected{% endif %}>
+                            Settimanale (giorno specifico della settimana)
+                        </option>
+                        <option value="daily" {% if config.schedule_type == 'daily' %}selected{% endif %}>
+                            Giornaliero
+                        </option>
+                        <option value="interval" {% if config.schedule_type == 'interval' %}selected{% endif %}>
+                            Intervallo (ogni X giorni)
+                        </option>
+                        <option value="cron" {% if config.schedule_type == 'cron' %}selected{% endif %}>
+                            Espressione Cron personalizzata
+                        </option>
+                    </select>
+                </div>
+                
+                <!-- Configurazioni specifiche per tipo schedulazione -->
+                <div id="monthly-config" class="col-3 schedule-config" 
+                    {% if config.schedule_type != 'monthly' %}style="display:none;"{% endif %}>
+                    <label for="schedule_day_monthly" class="form-label">Giorno del mese</label>
+                    <input type="number" class="form-control" id="schedule_day_monthly" name="schedule_day" 
+                        value="{{ config.schedule_day }}" min="1" max="31">
+                </div>
+                
+                <div id="weekly-config" class="col-3 schedule-config" 
+                    {% if config.schedule_type != 'weekly' %}style="display:none;"{% endif %}>
+
+                            <label for="schedule_day_weekly" class="form-label">Giorno della settimana</label>
+                            <select class="form-select" id="schedule_day_weekly" name="schedule_day">
+                                <option value="0" {% if config.schedule_day == 0 %}selected{% endif %}>Lunedì</option>
+                                <option value="1" {% if config.schedule_day == 1 %}selected{% endif %}>Martedì</option>
+                                <option value="2" {% if config.schedule_day == 2 %}selected{% endif %}>Mercoledì</option>
+                                <option value="3" {% if config.schedule_day == 3 %}selected{% endif %}>Giovedì</option>
+                                <option value="4" {% if config.schedule_day == 4 %}selected{% endif %}>Venerdì</option>
+                                <option value="5" {% if config.schedule_day == 5 %}selected{% endif %}>Sabato</option>
+                                <option value="6" {% if config.schedule_day == 6 %}selected{% endif %}>Domenica</option>
+                            </select>
+
+                </div>
+                
+                <div id="interval-config" class="col-3 schedule-config" 
+                    {% if config.schedule_type != 'interval' %}style="display:none;"{% endif %}>
+
+                            <label for="interval_days" class="form-label">Ogni X giorni</label>
+                            <input type="number" class="form-control" id="interval_days" name="interval_days" 
+                                value="{{ config.interval_days }}" min="1">
+
+                </div>
+                
+                <div id="cron-config" class="col-3 schedule-config" 
+                    {% if config.schedule_type != 'cron' %}style="display:none;"{% endif %}>
+                    <div class="mb-3">
+                        <label for="cron_expression" class="form-label">Espressione Cron</label>
+                        <input type="text" class="form-control" id="cron_expression" name="cron_expression" 
+                            value="{{ config.cron_expression }}" placeholder="0 9 1 * *">
+                        <div class="form-text">
+                            Formato: minuto ora giorno mese giorno_settimana<br>
+                            Esempio: "0 9 1 * *" = alle 9:00 del primo giorno di ogni mese
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div id="weekly-config" class="schedule-config" 
-                {% if config.schedule_type != 'weekly' %}style="display:none;"{% endif %}>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="schedule_day_weekly" class="form-label">Giorno della settimana</label>
-                        <select class="form-select" id="schedule_day_weekly" name="schedule_day">
-                            <option value="0" {% if config.schedule_day == 0 %}selected{% endif %}>Lunedì</option>
-                            <option value="1" {% if config.schedule_day == 1 %}selected{% endif %}>Martedì</option>
-                            <option value="2" {% if config.schedule_day == 2 %}selected{% endif %}>Mercoledì</option>
-                            <option value="3" {% if config.schedule_day == 3 %}selected{% endif %}>Giovedì</option>
-                            <option value="4" {% if config.schedule_day == 4 %}selected{% endif %}>Venerdì</option>
-                            <option value="5" {% if config.schedule_day == 5 %}selected{% endif %}>Sabato</option>
-                            <option value="6" {% if config.schedule_day == 6 %}selected{% endif %}>Domenica</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="interval-config" class="schedule-config" 
-                {% if config.schedule_type != 'interval' %}style="display:none;"{% endif %}>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="interval_days" class="form-label">Ogni X giorni</label>
-                        <input type="number" class="form-control" id="interval_days" name="interval_days" 
-                            value="{{ config.interval_days }}" min="1">
-                    </div>
-                </div>
-            </div>
-            
-            <div id="cron-config" class="schedule-config" 
-                {% if config.schedule_type != 'cron' %}style="display:none;"{% endif %}>
-                <div class="mb-3">
-                    <label for="cron_expression" class="form-label">Espressione Cron</label>
-                    <input type="text" class="form-control" id="cron_expression" name="cron_expression" 
-                        value="{{ config.cron_expression }}" placeholder="0 9 1 * *">
-                    <div class="form-text">
-                        Formato: minuto ora giorno mese giorno_settimana<br>
-                        Esempio: "0 9 1 * *" = alle 9:00 del primo giorno di ogni mese
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Orario (comune per tutti tranne interval) -->
-            <div id="time-config" {% if config.schedule_type == 'interval' %}style="display:none;"{% endif %}>
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label for="schedule_hour" class="form-label">Ora</label>
-                        <input type="number" class="form-control" id="schedule_hour" name="schedule_hour" 
-                            value="{{ config.schedule_hour }}" min="0" max="23">
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label for="schedule_minute" class="form-label">Minuto</label>
-                        <input type="number" class="form-control" id="schedule_minute" name="schedule_minute" 
-                            value="{{ config.schedule_minute }}" min="0" max="59">
+                
+                <!-- Orario (comune per tutti tranne interval) -->
+                <div class="col-6 d-line"  id="time-config" {% if config.schedule_type == 'interval' %}style="display:none;"{% endif %}>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label for="schedule_hour" class="form-label">Ora</label>
+                            <input type="number" class="form-control" id="schedule_hour" name="schedule_hour" 
+                                value="{{ config.schedule_hour }}" min="0" max="23">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label for="schedule_minute" class="form-label">Minuto</label>
+                            <input type="number" class="form-control" id="schedule_minute" name="schedule_minute" 
+                                value="{{ config.schedule_minute }}" min="0" max="59">
+                        </div>
                     </div>
                 </div>
             </div>

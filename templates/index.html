@@ -44,75 +44,77 @@
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="card status-card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
+            <div class="card-header">
+                <h5 class="mb-0">
                     <i class="fas fa-server"></i> Server FTP
                 </h5>
-                <p class="card-text">
-                    <strong>Host:</strong> {{ config.ftp_host or 'Non configurato' }}<br>
-                    <strong>Utente:</strong> {{ config.ftp_user or 'Non configurato' }}<br>
-                    <strong>Directory:</strong> {{ config.ftp_directory }}
-                </p>
+            </div>
+            <div class="card-body">
+                <strong>Host:</strong> {{ config.ftp_host or 'Non configurato' }}<br>
+                <strong>Utente:</strong> {{ config.ftp_user or 'Non configurato' }}<br>
+                <strong>Directory:</strong> {{ config.ftp_directory }}
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card status-card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
+            <div class="card-header">
+                <h5 class="mb-0">
                     <i class="fas fa-file-download"></i> Download
                 </h5>
-                <p class="card-text">
-                    <strong>Modalità:</strong> 
-                    {% if config.download_all_files %}
-                        Tutti i file
-                    {% else %}
-                        File specifico
-                    {% endif %}<br>
-                    <strong>Pattern:</strong> {{ config.file_naming_pattern }}<br>
-                    <strong>Output:</strong> {{ config.output_directory }}
-                </p>
+            </div>
+            <div class="card-body">
+                <strong>Modalità:</strong> 
+                {% if config.download_all_files %}
+                    Tutti i file
+                {% else %}
+                    File specifico
+                {% endif %}<br>
+                <strong>Pattern:</strong> {{ config.file_naming_pattern }}<br>
+                <strong>Output:</strong> {{ config.output_directory }}
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card status-card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
+            <div class="card-header">
+                <h5 class="mb-0">
                     <i class="fas fa-clock"></i> Schedulazione
                 </h5>
-                <p class="card-text">
-                    <strong>Tipo:</strong> {{ config.schedule_type }}<br>
-                    <strong>Frequenza:</strong> 
-                    {% if config.schedule_type == 'monthly' %}
-                        Giorno {{ config.schedule_day }} di ogni mese
-                    {% elif config.schedule_type == 'interval' %}
-                        Ogni {{ config.interval_days }} giorni
-                    {% else %}
-                        {{ config.schedule_type }}
-                    {% endif %}<br>
-                    <strong>Orario:</strong> {{ "%02d:%02d"|format(config.schedule_hour, config.schedule_minute) }}
-                </p>
+            </div>
+            <div class="card-body">
+                <strong>Tipo:</strong> {{ config.schedule_type }}<br>
+                <strong>Frequenza:</strong> 
+                {% if config.schedule_type == 'monthly' %}
+                    Giorno {{ config.schedule_day }} di ogni mese
+                {% elif config.schedule_type == 'interval' %}
+                    Ogni {{ config.interval_days }} giorni
+                {% else %}
+                    {{ config.schedule_type }}
+                {% endif %}<br>
+                <strong>Orario:</strong> {{ "%02d:%02d"|format(config.schedule_hour, config.schedule_minute) }}
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card status-card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
+            <div class="card-header">
+                <h5 class="mb-0">
                     <i class="fas fa-phone"></i> Prezzi VoIP + CDR
                 </h5>
-                <p class="card-text">
-                    <strong>Base Fisso:</strong> {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
-                    <strong>Base Mobile:</strong> {{ config.voip_price_mobile or 0 }} {{ config.voip_currency or 'EUR' }}/min<br>
-                    <strong>Ricarico:</strong> {{ "%.0f"|format(config.voip_markup_percent or 0) }}%<br>
-                    <hr class="my-1">
-                    <small class="text-success">
-                        <strong>→ Finale Fisso:</strong> {{ config.voip_price_fixed_final or 0 }}<br>
-                        <strong>→ Finale Mobile:</strong> {{ config.voip_price_mobile_final or 0 }}<br>
-                        <span class="badge bg-info">Applicato a CDR</span>
-                    </small>
-                </p>
+            </div>
+            <div class="card-body">
+                <div class="text-secondary">
+                    <div class="fw-bold float-start">Base Fisso:</div> <div class="fw-bold float-end"> {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min</div><br>
+                    <div class="fw-bold float-start">Base Mobile:</div> <div class="fw-bold float-end"> {{ config.voip_price_mobile or 0 }} {{ config.voip_currency or 'EUR' }}/min</div><br>
+                </div>
+                <div class="fw-bold float-start">Ricarico:</div> <div class="fw-bold float-end"> {{ "%.0f"|format(config.voip_markup_percent or 0) }}%</div><br>
+                <hr class="my-2">
+                <span class="text-success">
+                    <div class="fw-bold float-start">Finale Fisso:</div><div class="fw-bold float-end"> {{ "%.4f"|format(config.voip_price_fixed_final or 0) }} {{ config.voip_currency or 'EUR' }}/min</div><br>
+                    <div class="fw-bold float-start">Utente Finale Mobile:</div> <div class="fw-bold float-end">{{ "%.4f"|format(config.voip_price_mobile_final or 0) }} {{ config.voip_currency or 'EUR' }}/min</div><br>
+                    <span class="badge bg-info">Applicato a CDR</span>
+                </span>
             </div>
         </div>
     </div>
@@ -136,7 +138,7 @@
                     <div class="col-6">
                         <small>
                             <strong>+ Ricarico {{ "%.0f"|format(config.voip_markup_percent or 0) }}%:</strong><br>
-                            <span class="text-success">{{ config.voip_price_fixed_final or 0 }} {{ config.voip_currency or 'EUR' }}/min</span>
+                            <span class="text-success fw-bold">{{ "%.4f"|format(config.voip_price_fixed_final or 0) }} {{ config.voip_currency or 'EUR' }}/min</span>
                         </small>
                     </div>
                 </div>
@@ -151,14 +153,14 @@
                     <div class="col-6">
                         <small>
                             <strong>+ Ricarico {{ "%.0f"|format(config.voip_markup_percent or 0) }}%:</strong><br>
-                            <span class="text-success">{{ config.voip_price_mobile_final or 0 }} {{ config.voip_currency or 'EUR' }}/min</span>
+                            <span class="text-success fw-bold">{{ "%.4f"|format(config.voip_price_mobile_final or 0) }} {{ config.voip_currency or 'EUR' }}/min</span>
                         </small>
                     </div>
                 </div>
                 <hr class="my-2">
                 <div class="text-center">
                     <small class="text-muted">
-                        <strong>Esempio:</strong> Chiamata 5 min fisso = {{ "%.3f"|format((config.voip_price_fixed_final or 0) * 5) }} {{ config.voip_currency or 'EUR' }}
+                        <strong>Esempio:</strong> Chiamata <strong>5 min fisso</strong> = <span class="fw-bold">{{ "%.4f"|format((config.voip_price_fixed_final or 0) * 5) }} {{ config.voip_currency or 'EUR' }}</span>
                     </small>
                 </div>
             </div>

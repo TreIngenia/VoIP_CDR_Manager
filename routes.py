@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from flask import render_template, request, jsonify, redirect, url_for
+from flask import render_template, request, jsonify, redirect, url_for, Response
 
 logger = logging.getLogger(__name__)
 
@@ -89,15 +89,60 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             return jsonify({'success': False, 'message': str(e)})
 
     @app.route('/logs')
+    # def logs():
+    #     """Stato dell'applicazione senza dati sensibili - formato testo"""
+    #     try:
+    #         config = secure_config.get_config()
+    #         log_file = Path() / 'app.log'
+    #         last_logs = []
+
+    #         if log_file.exists():
+    #             try:
+    #                 # Prova con UTF-8
+    #                 with open(log_file, 'r', encoding='utf-8') as f:
+    #                     all_lines = f.readlines()
+    #             except UnicodeDecodeError as e:
+    #                 logger.warning(f"Errore UTF-8: {e} — uso codifica 'latin1'")
+    #                 # Fallback a latin1
+    #                 with open(log_file, 'r', encoding='latin1') as f:
+    #                     all_lines = f.readlines()
+    #             except Exception as e:
+    #                 logger.error(f"Errore nella lettura del file app.log: {e}")
+    #                 all_lines = ["Errore nella lettura del file di log."]
+
+    #             last_logs = [line.strip() for line in all_lines if line.strip()]
+    #         else:
+    #             last_logs = ["File di log non trovato."]
+
+    #         return Response("\n".join(last_logs), mimetype='text/plain')
+
+    #     except Exception as e:
+    #         logger.error(f"Errore endpoint logs: {e}")
+    #         return Response("Errore interno del server.", status=500, mimetype='text/plain')
     def logs():
-        """Visualizzazione log"""
+        """Visualizza i log dell'applicazione su pagina HTML"""
         try:
-            with open('app.log', 'r', encoding='utf-8') as f:
-                log_content = f.read()
-            return f"<pre>{log_content}</pre>"
+            config = secure_config.get_config()
+            log_file = Path() / 'app.log'
+            last_logs = []
+
+            if log_file.exists():
+                try:
+                    with open(log_file, 'r', encoding='utf-8') as f:
+                        all_lines = f.readlines()
+                except UnicodeDecodeError:
+                    with open(log_file, 'r', encoding='latin1') as f:
+                        all_lines = f.readlines()
+
+                last_logs = [line.strip() for line in all_lines if line.strip()]
+            else:
+                last_logs = ["⚠️ File di log non trovato."]
+
+            return render_template('logs.html', logs=last_logs)
+
         except Exception as e:
-            logger.error(f"Errore lettura log: {e}")
-            return "Log non disponibile"
+            logger.error(f"Errore endpoint logs: {e}")
+            return render_template('logs.html', logs=["❌ Errore interno del server."])
 
     @app.route('/status')
     def status():
@@ -115,16 +160,49 @@ def create_routes(app, secure_config, processor, scheduler_manager):
                 except Exception as e:
                     logger.error(f"Errore lettura ultima esecuzione: {e}")
             
-            return jsonify({
+            last_logs = jsonify({
                 'scheduled_jobs': jobs,
                 'last_execution': last_execution,
                 'config': secure_config.get_safe_config(),
                 'scheduler_running': scheduler_manager.is_running()
             })
+        
+            return last_logs
         except Exception as e:
             logger.error(f"Errore endpoint status: {e}")
             return jsonify({'error': 'Errore interno del server'}), 500
-
+        
+    @app.route('/status_page')
+    def status_page():
+        """Stato dell'applicazione senza dati sensibili"""
+        try:
+            jobs = scheduler_manager.get_job_info()
+            
+            # Legge l'ultima esecuzione se disponibile
+            last_execution = None
+            log_file = Path(secure_config.get_config()['output_directory']) / 'last_execution.json'
+            if log_file.exists():
+                try:
+                    with open(log_file, 'r') as f:
+                        last_execution = json.load(f)
+                except Exception as e:
+                    logger.error(f"Errore lettura ultima esecuzione: {e}")
+            
+            last_logs = {
+                'scheduled_jobs': jobs,
+                'last_execution': last_execution,
+                'config': secure_config.get_safe_config(),
+                'scheduler_running': scheduler_manager.is_running()
+            }
+            last_logs_json = jsonify(last_logs)
+             # ✅ Converti in testo JSON formattato
+            json_text = json.dumps(last_logs, indent=2, ensure_ascii=False)
+            # return  last_logs_json
+            return render_template('logs.html', json=json_text)
+        except Exception as e:
+            logger.error(f"Errore endpoint status: {e}")
+            return jsonify({'error': 'Errore interno del server'}), 500
+        
     @app.route('/env_status')
     def env_status():
         """Mostra lo stato delle variabili d'ambiente (senza password)"""
