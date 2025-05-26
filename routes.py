@@ -716,5 +716,178 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         except Exception as e:
             logger.error(f"Errore recupero categorie VoIP: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
-        
+    
+    @app.route('/api/cdr/process_with_categories/<path:filename>')
+    def process_single_cdr_with_categories(filename):
+        """Elabora un singolo file CDR con il nuovo sistema categorie"""
+        try:
+            from flask import jsonify
+            
+            file_path = Path(processor.config['output_directory']) / filename
+            
+            if not file_path.exists():
+                return jsonify({'success': False, 'message': 'File non trovato'}), 404
+            
+            # ✅ USA IL NUOVO SISTEMA INTEGRATO
+            result = processor.cdr_analytics.process_cdr_file(str(file_path))
+            
+            if result['success']:
+                # ✅ ESTRAI INFO CATEGORIE PER RISPOSTA
+                category_stats = result.get('category_stats', {})
+                categories_summary = {
+                    'total_categories_used': len(category_stats),
+                    'categories_breakdown': category_stats,
+                    'has_costo_cliente_by_category': True,  # ✅ CONFERMA CAMPO RICHIESTO
+                    'system_version': '2.0'
+                }
+                
+                result['categories_summary'] = categories_summary
+            
+            return jsonify(result)
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    @app.route('/api/cdr/categories_summary')
+    def get_categories_system_summary():
+        """Restituisce riassunto sistema categorie"""
+        try:
+            from flask import jsonify
+            
+            if not hasattr(processor, 'cdr_analytics') or not hasattr(processor.cdr_analytics, 'categories_manager'):
+                return jsonify({'success': False, 'message': 'Sistema categorie non disponibile'}), 500
+            
+            categories_manager = processor.cdr_analytics.categories_manager
+            
+            # ✅ INFO SISTEMA CATEGORIE
+            summary = {
+                'success': True,
+                'system_version': '2.0',
+                'system_enabled': True,
+                'categories_stats': categories_manager.get_statistics(),
+                'active_categories': len(categories_manager.get_active_categories()),
+                'total_categories': len(categories_manager.get_all_categories()),
+                'conflicts': categories_manager.validate_patterns_conflicts(),
+                'config_file': str(categories_manager.config_file),
+                'features': {
+                    'costo_cliente_totale_euro_by_category': True,  # ✅ CAMPO RICHIESTO
+                    'pattern_matching': True,
+                    'custom_pricing': True,
+                    'conflict_detection': True,
+                    'import_export': True
+                }
+            }
+            
+            return jsonify(summary)
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    @app.route('/api/cdr/test_category_matching', methods=['POST'])
+    def test_category_matching():
+        """Testa il matching di categorie per tipi di chiamata"""
+        try:
+            from flask import request, jsonify
+            
+            data = request.get_json()
+            if not data or 'call_types' not in data:
+                return jsonify({'success': False, 'message': 'Dati non validi'}), 400
+            
+            call_types = data['call_types']
+            duration_seconds = int(data.get('duration_seconds', 300))
+            
+            if not hasattr(processor, 'cdr_analytics') or not hasattr(processor.cdr_analytics, 'categories_manager'):
+                return jsonify({'success': False, 'message': 'Sistema categorie non disponibile'}), 500
+            
+            categories_manager = processor.cdr_analytics.categories_manager
+            results = []
+            
+            for call_type in call_types:
+                # ✅ USA IL NUOVO SISTEMA DI CALCOLO
+                classification = categories_manager.calculate_call_cost(call_type, duration_seconds)
+                
+                results.append({
+                    'call_type': call_type,
+                    'category_name': classification['category_name'],
+                    'category_display': classification['category_display_name'],
+                    'matched': classification['matched'],
+                    'price_per_minute': classification['price_per_minute'],
+                    'cost_calculated': classification['cost_calculated'],
+                    'currency': classification['currency'],
+                    'duration_billed': classification['duration_billed'],
+                    'unit_label': classification['unit_label']
+                })
+            
+            return jsonify({
+                'success': True,
+                'test_duration_seconds': duration_seconds,
+                'results': results,
+                'system_version': '2.0'
+            })
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    @app.route('/api/cdr/reports_with_categories')
+    def list_reports_with_categories():
+        """Lista report CDR con informazioni su supporto categorie"""
+        try:
+            from flask import jsonify
+            
+            if not hasattr(processor, 'cdr_analytics'):
+                return jsonify({'success': False, 'message': 'Sistema CDR non disponibile'}), 500
+            
+            reports = processor.cdr_analytics.list_generated_reports()
+            
+            # ✅ AGGIUNGI INFO CATEGORIE
+            enhanced_reports = []
+            for report in reports:
+                enhanced_report = report.copy()
+                enhanced_report['supports_categories'] = report.get('categories_version', '1.0') == '2.0'
+                enhanced_report['has_costo_by_category'] = report.get('has_categories', False)
+                enhanced_reports.append(enhanced_report)
+            
+            return jsonify({
+                'success': True,
+                'reports': enhanced_reports,
+                'total_reports': len(enhanced_reports),
+                'categories_enabled_reports': len([r for r in enhanced_reports if r['supports_categories']]),
+                'system_version': '2.0'
+            })
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    @app.route('/cdr_categories_dashboard')
+    def cdr_categories_dashboard():
+        """Dashboard principale per gestione categorie CDR"""
+        try:
+            from flask import render_template
+            
+            if not hasattr(processor, 'cdr_analytics') or not hasattr(processor.cdr_analytics, 'categories_manager'):
+                return render_template('error.html', 
+                                     error_message="Sistema categorie CDR non disponibile")
+            
+            categories_manager = processor.cdr_analytics.categories_manager
+            
+            # ✅ DATI PER DASHBOARD CATEGORIE
+            dashboard_data = {
+                'categories': categories_manager.get_all_categories(),
+                'active_categories': categories_manager.get_active_categories(),
+                'statistics': categories_manager.get_statistics(),
+                'conflicts': categories_manager.validate_patterns_conflicts(),
+                'recent_reports': processor.cdr_analytics.list_generated_reports(),
+                'system_info': {
+                    'version': '2.0',
+                    'config_file': str(categories_manager.config_file),
+                    'supports_costo_by_category': True
+                }
+            }
+            
+            return render_template('cdr_categories_dashboard.html', **dashboard_data)
+            
+        except Exception as e:
+            return render_template('error.html', 
+                                 error_message=f"Errore dashboard categorie: {e}")
+           
     return app

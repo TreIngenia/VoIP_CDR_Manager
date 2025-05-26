@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-FTP Scheduler App - Versione Completa e Modulare
-Combinazione di app.py e app_new.py con tutte le funzionalità
+FTP Scheduler App - Versione Completa con Sistema Categorie CDR Integrato
+Modifiche per utilizzare il nuovo sistema categorie invece dei precedenti approcci
 """
 
 import os
@@ -22,9 +22,10 @@ except ImportError:
 from config import SecureConfig, save_config_to_env, load_config_from_env_local, log_success, log_error, log_warning, log_info
 from ftp_processor import FTPProcessor
 from scheduler import SchedulerManager
-from integration_cdr_analytics import setup_cdr_analytics
 from routes import create_routes
-from cdr_integration import integrate_enhanced_cdr_system
+
+# ✅ NUOVO: Import del sistema categorie integrato invece dei vecchi sistemi
+from cdr_integration_enhanced import integrate_enhanced_cdr_system
 from categories_routes import add_categories_routes
 
 # Import Flask
@@ -55,41 +56,45 @@ def find_free_port(start_port=5000):
         except OSError:
             continue
     
-    # Se non trova nessuna porta libera, usa la porta originale
     return start_port
 
 def print_startup_info(app_host, app_port):
-    """Stampa informazioni di avvio senza emoji per compatibilità"""
-    print("\n" + "="*50)
-    print("AVVIO FTP SCHEDULER APP - VERSIONE COMPLETA")
-    print("="*50)
+    """Stampa informazioni di avvio con info sistema categorie"""
+    print("\n" + "="*60)
+    print("AVVIO FTP SCHEDULER APP - VERSIONE CON CATEGORIE CDR 2.0")
+    print("="*60)
     print(f"Dashboard: http://{app_host}:{app_port}")
     print(f"Configurazione: http://{app_host}:{app_port}/config")
+    print(f"Gestione Categorie CDR: http://{app_host}:{app_port}/categories")  # ✅ NUOVO
+    print(f"Dashboard CDR: http://{app_host}:{app_port}/cdr_dashboard")  # ✅ NUOVO
     print(f"Log: http://{app_host}:{app_port}/logs")
     print(f"Stato: http://{app_host}:{app_port}/status")
-    print(f"Variabili ENV: http://{app_host}:{app_port}/env_status")
-    print("="*50)
+    print("="*60)
     
-    # Informazioni configurazione
+    # ✅ Informazioni configurazione aggiornate
     secure_config = SecureConfig()
     config = secure_config.get_config()
     
     print(f"Directory output: {config['output_directory']}")
     print(f"Server FTP: {config['ftp_host'] if config['ftp_host'] else '(non configurato)'}")
     print(f"Schedulazione: {config['schedule_type']}")
-    print(f"Prezzi VoIP: Fisso={config['voip_price_fixed']} {config['voip_currency']}/min, Mobile={config['voip_price_mobile']} {config['voip_currency']}/min")
-    print("="*50 + "\n")
+    print(f"Sistema Categorie CDR: Abilitato v2.0")  # ✅ NUOVO
+    print(f"File categorie: output/cdr_analytics/cdr_categories.json")  # ✅ NUOVO
+    print("="*60 + "\n")
 
 def graceful_shutdown(scheduler_manager):
     """Shutdown graceful dell'applicazione"""
     try:
         scheduler_manager.shutdown()
+        log_success("Applicazione fermata correttamente")
     except Exception as e:
         log_error(f"Errore durante shutdown: {e}")
 
 def main():
-    """Funzione principale"""
+    """Funzione principale con integrazione sistema categorie"""
     try:
+        log_info("Inizializzazione FTP Scheduler con Sistema Categorie CDR 2.0")
+        
         # Inizializza configurazione sicura
         secure_config = SecureConfig()
         
@@ -99,25 +104,33 @@ def main():
         # Crea app Flask
         app = create_app()
         
-        # Inizializza componenti
+        # ✅ INIZIALIZZA COMPONENTI CON NUOVO SISTEMA CATEGORIE
         processor = FTPProcessor(secure_config.get_config())
+        
+        # ✅ INTEGRA IL NUOVO SISTEMA CATEGORIE CDR (sostituisce i vecchi sistemi)
+        log_info("Integrazione Sistema Categorie CDR 2.0...")
         processor = integrate_enhanced_cdr_system(app, processor)
-        add_categories_routes(app, processor.cdr_analytics)
-        setup_cdr_analytics(app, processor)
+        
+        # ✅ AGGIUNGI ROUTE PER GESTIONE CATEGORIE
+        log_info("Registrazione route gestione categorie...")
+        categories_info = add_categories_routes(app, processor.cdr_analytics)
+        log_success(f"Route categorie registrate: {categories_info['routes_count']} endpoint")
+        
+        # Inizializza scheduler
         scheduler_manager = SchedulerManager()
         scheduler_manager.set_config(secure_config.get_config())
         
-        # Crea tutte le route
+        # Crea tutte le route standard
         app = create_routes(app, secure_config, processor, scheduler_manager)
-        
+              
         # Avvia scheduler
         try:
             scheduler_manager.restart_scheduler()
-            log_success("Scheduler inizializzato correttamente")
+            log_success("Scheduler inizializzato")
         except Exception as e:
             log_error(f"Errore inizializzazione scheduler: {e}")
         
-        # Configurazione server
+        # Configurazione server  
         app_host = secure_config.get_config().get('APP_HOST', '127.0.0.1')
         requested_port = secure_config.get_config().get('APP_PORT', 5001)
         app_debug = secure_config.get_config().get('FLASK_DEBUG', False)
@@ -132,17 +145,16 @@ def main():
                 s.bind((app_host, requested_port))
             app_port = requested_port
         except OSError:
-            log_warning(f"Porta {requested_port} occupata, cercando porta alternativa...")
+            log_warning(f"Porta {requested_port} occupata, cercando alternativa...")
             app_port = find_free_port(requested_port)
             if app_port != requested_port:
                 log_info(f"Usando porta alternativa: {app_port}")
         
+        # ✅ VERIFICA SISTEMA CATEGORIE ALL'AVVIO
+        verify_categories_system(processor)
+        
         # Stampa info di avvio
         print_startup_info(app_host, app_port)
-        
-        # Aggiorna info di startup con porta effettiva
-        if app_port != requested_port:
-            print(f"\n[INFO] Applicazione disponibile su: http://{app_host}:{app_port}")
         
         # Registra cleanup per shutdown graceful
         import atexit
@@ -150,10 +162,8 @@ def main():
         
         # Avvia applicazione
         if sys.platform.startswith('win'):
-            # Su Windows, usa threaded=True per evitare problemi con scheduler
             app.run(debug=app_debug, host=app_host, port=app_port, threaded=True, use_reloader=False)
         else:
-            # Su Linux/Mac, configurazione standard
             app.run(debug=app_debug, host=app_host, port=app_port, threaded=True)
             
     except KeyboardInterrupt:
@@ -165,6 +175,40 @@ def main():
         if 'scheduler_manager' in locals():
             graceful_shutdown(scheduler_manager)
         sys.exit(1)
+
+def verify_categories_system(processor):
+    """Verifica che il sistema categorie sia configurato correttamente"""
+    try:
+        if hasattr(processor, 'cdr_analytics') and hasattr(processor.cdr_analytics, 'categories_manager'):
+            categories_manager = processor.cdr_analytics.categories_manager
+            
+            # Verifica categorie caricate
+            categories = categories_manager.get_all_categories()
+            active_categories = categories_manager.get_active_categories()
+            
+            log_success(f"Sistema Categorie CDR verificato:")
+            log_info(f"  - Categorie totali: {len(categories)}")
+            log_info(f"  - Categorie attive: {len(active_categories)}")
+            
+            # Mostra categorie attive
+            for name, category in active_categories.items():
+                log_info(f"  - {category.display_name}: €{category.price_per_minute}/min ({len(category.patterns)} pattern)")
+            
+            # Verifica conflitti
+            conflicts = categories_manager.validate_patterns_conflicts()
+            if conflicts:
+                log_warning(f"  - Conflitti pattern rilevati: {len(conflicts)}")
+                for conflict in conflicts[:3]:  # Mostra solo i primi 3
+                    log_warning(f"    {conflict['category1']} vs {conflict['category2']}: {', '.join(conflict['common_patterns'])}")
+            else:
+                log_success("  - Nessun conflitto pattern rilevato")
+                
+        else:
+            log_error("Sistema categorie CDR non inizializzato correttamente")
+            
+    except Exception as e:
+        log_error(f"Errore verifica sistema categorie: {e}")
+
 
 if __name__ == '__main__':
     main()

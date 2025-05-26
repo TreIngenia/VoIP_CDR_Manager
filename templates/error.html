@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Errore - FTP Scheduler</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .error-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .error-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 90%;
+        }
+        .error-icon {
+            font-size: 4rem;
+            color: #dc3545;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-card text-center">
+            <i class="fas fa-exclamation-triangle error-icon"></i>
+            <h1 class="h2 mb-3">Oops! Si è verificato un errore</h1>
+            
+            {% if error_message %}
+            <div class="alert alert-danger" role="alert">
+                <h5>Dettagli errore:</h5>
+                <p class="mb-0">{{ error_message }}</p>
+            </div>
+            {% else %}
+            <p class="text-muted mb-4">Si è verificato un errore imprevisto. Ti preghiamo di riprovare.</p>
+            {% endif %}
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="javascript:history.back()" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Indietro
+                </a>
+                <a href="/" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Dashboard Principale
+                </a>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <a href="/config" class="btn btn-link">
+                        <i class="fas fa-cog"></i><br>
+                        Configurazione
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a href="/logs" class="btn btn-link">
+                        <i class="fas fa-file-alt"></i><br>
+                        Log Sistema
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a href="/status" class="btn btn-link">
+                        <i class="fas fa-heartbeat"></i><br>
+                        Stato Sistema
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
