@@ -111,9 +111,16 @@ class CDRAnalyticsIntegrated:
     def _enhance_records_with_categories(self, records: List[Dict]) -> List[Dict]:
         """
         Arricchisce i record CDR con informazioni categorie e costi calcolati
+        MODIFICA: Aggiungi durata_secondi nelle statistiche categoria
         """
         enhanced_records = []
-        category_usage = defaultdict(lambda: {'count': 0, 'total_cost': 0.0, 'total_duration': 0})
+        # ✅ MODIFICA: Aggiungi total_duration_seconds
+        category_usage = defaultdict(lambda: {
+            'count': 0, 
+            'total_cost': 0.0, 
+            'total_duration': 0,
+            'total_duration_seconds': 0  # ✅ AGGIUNTO
+        })
         unmatched_types = set()
         
         for record in records:
@@ -156,11 +163,12 @@ class CDRAnalyticsIntegrated:
                     'processed_timestamp': datetime.now().isoformat()
                 })
                 
-                # ✅ STATISTICHE UTILIZZO CATEGORIE
+                # ✅ STATISTICHE UTILIZZO CATEGORIE - MODIFICA
                 cat_name = cost_calculation['category_name']
                 category_usage[cat_name]['count'] += 1
                 category_usage[cat_name]['total_cost'] += cost_calculation['cost_calculated']
-                category_usage[cat_name]['total_duration'] += durata_secondi
+                category_usage[cat_name]['total_duration'] += durata_secondi  # Mantieni per compatibilità
+                category_usage[cat_name]['total_duration_seconds'] += durata_secondi  # ✅ AGGIUNTO
                 category_usage[cat_name]['display_name'] = cost_calculation['category_display_name']
                 
                 # Tieni traccia dei tipi non riconosciuti
@@ -176,12 +184,13 @@ class CDRAnalyticsIntegrated:
                 record['costo_cliente_euro'] = float(record.get('costo_euro', 0.0))
                 enhanced_records.append(record)
         
-        # ✅ LOG STATISTICHE DETTAGLIATE
+        # ✅ LOG STATISTICHE DETTAGLIATE - MODIFICA
         logger.info(f"💰 Elaborazione categorie completata:")
         for cat_name, stats in category_usage.items():
-            avg_cost_per_min = (stats['total_cost'] / (stats['total_duration'] / 60)) if stats['total_duration'] > 0 else 0
+            avg_cost_per_min = (stats['total_cost'] / (stats['total_duration_seconds'] / 60)) if stats['total_duration_seconds'] > 0 else 0
+            duration_minutes = stats['total_duration_seconds'] / 60
             logger.info(f"   {stats['display_name']}: {stats['count']} chiamate, "
-                       f"€{avg_cost_per_min:.4f}/min medio, totale €{stats['total_cost']:.2f}")
+                    f"{duration_minutes:.1f} min, €{avg_cost_per_min:.4f}/min medio, totale €{stats['total_cost']:.2f}")
         
         if unmatched_types:
             logger.warning(f"⚠️ Tipi chiamata non riconosciuti ({len(unmatched_types)}):")
@@ -193,6 +202,7 @@ class CDRAnalyticsIntegrated:
     def _aggregate_contract_data_with_categories(self, records: List[Dict]) -> Dict[str, Any]:
         """
         Aggrega dati contratto con breakdown per categoria
+        MODIFICA: Aggiungi duration_seconds nel breakdown categoria
         """
         if not records:
             return {}
@@ -210,11 +220,12 @@ class CDRAnalyticsIntegrated:
         total_cost_original = sum(float(r.get('costo_originale_euro', 0)) for r in records)
         total_cost_client = sum(float(r.get('costo_cliente_euro', 0)) for r in records)
         
-        # ✅ AGGREGAZIONE PER CATEGORIA (CAMPO RICHIESTO)
+        # ✅ AGGREGAZIONE PER CATEGORIA (CAMPO RICHIESTO) - MODIFICA
         costo_cliente_totale_euro_by_category = defaultdict(float)
         category_breakdown = defaultdict(lambda: {
             'calls': 0,
             'duration_seconds': 0,
+            'duration_minutes': 0.0,  # ✅ AGGIUNTO per chiarezza
             'cost_client_euro': 0.0,
             'cost_original_euro': 0.0,
             'display_name': '',
@@ -246,12 +257,14 @@ class CDRAnalyticsIntegrated:
         
         # Finalizza calcoli per categoria
         for cat_name, data in category_breakdown.items():
-            data['duration_minutes'] = round(data['duration_seconds'] / 60, 2)
+            data['duration_minutes'] = round(data['duration_seconds'] / 60, 2)  # ✅ CALCOLA MINUTI
             data['cost_client_euro'] = round(data['cost_client_euro'], 4)
             data['cost_original_euro'] = round(data['cost_original_euro'], 4)
             data['difference_euro'] = round(data['cost_client_euro'] - data['cost_original_euro'], 4)
             data['avg_cost_per_call'] = round(data['cost_client_euro'] / data['calls'], 4) if data['calls'] > 0 else 0
+            data['avg_duration_per_call'] = round(data['duration_seconds'] / data['calls'], 1) if data['calls'] > 0 else 0  # ✅ AGGIUNTO
             data['match_rate'] = round((data['matched_calls'] / data['calls']) * 100, 1) if data['calls'] > 0 else 0
+            # ✅ MANTIENI duration_seconds come campo principale
         
         # ✅ RISULTATO FINALE CON CAMPO RICHIESTO
         result = {
@@ -271,7 +284,7 @@ class CDRAnalyticsIntegrated:
             # ✅ CAMPO RICHIESTO PRINCIPALE
             'costo_cliente_totale_euro_by_category': dict(costo_cliente_totale_euro_by_category),
             
-            # Breakdown dettagliato
+            # Breakdown dettagliato - ORA CON DURATION_SECONDS
             'categoria_breakdown_dettagliato': dict(category_breakdown)
         }
         
@@ -384,13 +397,21 @@ class CDRAnalyticsIntegrated:
         return sorted(list(unmatched))
     
     def _get_daily_breakdown_with_categories(self, records: List[Dict]) -> Dict[str, Dict]:
-        """Genera breakdown giornaliero con categorie"""
+        """
+        Genera breakdown giornaliero con categorie
+        MODIFICA: Aggiungi duration_seconds per ogni categoria
+        """
         daily_data = defaultdict(lambda: {
             'chiamate': 0,
             'durata_secondi': 0,
             'costo_originale_euro': 0.0,
             'costo_cliente_euro': 0.0,
-            'categorie': defaultdict(lambda: {'count': 0, 'cost': 0.0})
+            # ✅ MODIFICA: Struttura categoria con duration_seconds
+            'categorie': defaultdict(lambda: {
+                'count': 0, 
+                'cost': 0.0,
+                'duration_seconds': 0  # ✅ AGGIUNTO
+            })
         })
         
         for record in records:
@@ -398,15 +419,21 @@ class CDRAnalyticsIntegrated:
             if date_str:
                 date_key = date_str[:10] if len(date_str) >= 10 else date_str
                 cat_name = record.get('categoria_cliente', 'ALTRO')
+                duration = int(record.get('durata_secondi', 0))  # ✅ AGGIUNTO
+                cost = float(record.get('costo_cliente_euro', 0))
                 
+                # Aggregazioni generali per giorno
                 daily_data[date_key]['chiamate'] += 1
-                daily_data[date_key]['durata_secondi'] += int(record.get('durata_secondi', 0))
+                daily_data[date_key]['durata_secondi'] += duration
                 daily_data[date_key]['costo_originale_euro'] += float(record.get('costo_originale_euro', 0))
-                daily_data[date_key]['costo_cliente_euro'] += float(record.get('costo_cliente_euro', 0))
+                daily_data[date_key]['costo_cliente_euro'] += cost
+                
+                # ✅ AGGREGAZIONI PER CATEGORIA (CON DURATION_SECONDS)
                 daily_data[date_key]['categorie'][cat_name]['count'] += 1
-                daily_data[date_key]['categorie'][cat_name]['cost'] += float(record.get('costo_cliente_euro', 0))
+                daily_data[date_key]['categorie'][cat_name]['cost'] += cost
+                daily_data[date_key]['categorie'][cat_name]['duration_seconds'] += duration  # ✅ AGGIUNTO
         
-        # Finalizza calcoli
+        # Arrotonda e converte
         for day in daily_data:
             daily_data[day]['costo_originale_euro'] = round(daily_data[day]['costo_originale_euro'], 4)
             daily_data[day]['costo_cliente_euro'] = round(daily_data[day]['costo_cliente_euro'], 4)
@@ -415,13 +442,17 @@ class CDRAnalyticsIntegrated:
                 daily_data[day]['costo_cliente_euro'] - daily_data[day]['costo_originale_euro'], 4
             )
             
-            # Converte categorie in dict normale
+            # ✅ CONVERTE CATEGORIE IN DICT NORMALE E ARROTONDA
             daily_data[day]['categorie'] = {
-                cat: {'count': data['count'], 'cost': round(data['cost'], 4)}
+                cat: {
+                    'count': data['count'], 
+                    'cost': round(data['cost'], 4),
+                    'duration_seconds': data['duration_seconds']  # ✅ MANTIENI COME INTERO
+                }
                 for cat, data in daily_data[day]['categorie'].items()
             }
         
-        return dict(daily_data)
+        return dict(daily_data)    
     
     def _get_call_types_breakdown_enhanced(self, records: List[Dict]) -> Dict[str, Dict]:
         """Breakdown dettagliato per tipo di chiamata con informazioni categoria"""
@@ -468,11 +499,15 @@ class CDRAnalyticsIntegrated:
         return dict(breakdown)
     
     def _get_category_usage_stats(self, records: List[Dict]) -> Dict[str, Any]:
-        """Genera statistiche utilizzo categorie"""
+        """
+        Genera statistiche utilizzo categorie
+        MODIFICA: Aggiungi duration_seconds nelle statistiche
+        """
         stats = defaultdict(lambda: {
             'calls': 0,
             'total_cost': 0.0,
             'total_duration_minutes': 0.0,
+            'total_duration_seconds': 0,  # ✅ AGGIUNTO
             'matched': 0,
             'display_name': ''
         })
@@ -484,11 +519,13 @@ class CDRAnalyticsIntegrated:
             cat_display = record.get('categoria_display', cat_name)
             cost = float(record.get('costo_cliente_euro', 0))
             duration_min = float(record.get('durata_fatturata_minuti', 0))
+            duration_sec = int(record.get('durata_secondi', 0))  # ✅ AGGIUNTO
             matched = record.get('categoria_matched', False)
             
             stats[cat_name]['calls'] += 1
             stats[cat_name]['total_cost'] += cost
             stats[cat_name]['total_duration_minutes'] += duration_min
+            stats[cat_name]['total_duration_seconds'] += duration_sec  # ✅ AGGIUNTO
             stats[cat_name]['display_name'] = cat_display
             if matched:
                 stats[cat_name]['matched'] += 1
@@ -498,12 +535,13 @@ class CDRAnalyticsIntegrated:
             data['percentage'] = round((data['calls'] / total_records) * 100, 2)
             data['avg_cost_per_call'] = round(data['total_cost'] / data['calls'], 4) if data['calls'] > 0 else 0
             data['avg_cost_per_minute'] = round(data['total_cost'] / data['total_duration_minutes'], 4) if data['total_duration_minutes'] > 0 else 0
+            data['avg_duration_seconds'] = round(data['total_duration_seconds'] / data['calls'], 1) if data['calls'] > 0 else 0  # ✅ AGGIUNTO
             data['match_rate'] = round((data['matched'] / data['calls']) * 100, 1) if data['calls'] > 0 else 0
             data['total_cost'] = round(data['total_cost'], 4)
             data['total_duration_minutes'] = round(data['total_duration_minutes'], 2)
+            # ✅ MANTIENI total_duration_seconds come intero
         
-        return dict(stats)
-    
+        return dict(stats)    
     def _load_cdr_data(self, json_file_path: str) -> Optional[Dict]:
         """Carica dati dal file JSON CDR"""
         try:
@@ -535,6 +573,7 @@ class CDRAnalyticsIntegrated:
             timestamp = now.strftime("%Y%m%d_%H%M%S")
             current_month = now.strftime("%m")
             filename = f"SUMMARY_CATEGORIES_{current_month}_{timestamp}.json"
+            filename = f"SUMMARY_CATEGORIES_{current_month}.json"
             filepath = self.analytics_directory / filename
             
             # Aggrega dati globali
