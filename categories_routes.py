@@ -7,13 +7,14 @@ Aggiunge endpoint per CRUD delle macro categorie nell'interfaccia web
 import json
 import logging
 from datetime import datetime
+import os  # ✅ IMPORT MANCANTE AGGIUNTO
 from flask import request, jsonify, render_template, Response
 import csv
 import io
 
 logger = logging.getLogger(__name__)
 
-def add_categories_routes(app, cdr_analytics_enhanced):
+def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
     """
     Aggiunge le route per la gestione delle categorie CDR
     
@@ -25,20 +26,61 @@ def add_categories_routes(app, cdr_analytics_enhanced):
     
     @app.route('/categories')
     def categories_page():
-        """Pagina principale gestione categorie"""
+        """Pagina principale gestione categorie con info configurazione"""
         try:
             categories = categories_manager.get_all_categories()
             stats = categories_manager.get_statistics()
             conflicts = categories_manager.validate_patterns_conflicts()
             
+            # ✅ INFO CONFIGURAZIONE DA .env
+            config_info = {
+                'config_directory': secure_config.get_config()['config_directory'],
+                'config_file_name': secure_config.get_config()['categories_config_file'],
+                'config_file_path': str(categories_manager.config_file),
+                'config_exists': categories_manager.config_file.exists(),
+                'config_size_bytes': categories_manager.config_file.stat().st_size if categories_manager.config_file.exists() else 0,
+                'config_readable': os.access(categories_manager.config_file, os.R_OK) if categories_manager.config_file.exists() else False,
+                'config_writable': os.access(categories_manager.config_file, os.W_OK) if categories_manager.config_file.exists() else False
+            }
+            
             return render_template('categories.html', 
                                  categories=categories,
                                  stats=stats,
-                                 conflicts=conflicts)
+                                 conflicts=conflicts,
+                                 config_info=config_info)
         except Exception as e:
             logger.error(f"Errore caricamento pagina categorie: {e}")
             return render_template('error.html', 
                                  error_message=f"Errore caricamento categorie: {e}")
+        
+    @app.route('/api/config/info')
+    def get_config_info():
+        """API per ottenere informazioni sulla configurazione"""
+        try:
+            config = secure_config.get_config()
+            
+            info = {
+                'success': True,
+                'directories': {
+                    'config_directory': config['config_directory'],
+                    'output_directory': config['output_directory'],
+                    'categories_file': config['categories_config_file']
+                },
+                'paths': {
+                    'config_full_path': str(categories_manager.config_file),
+                    'config_exists': categories_manager.config_file.exists(),
+                    'config_absolute': str(categories_manager.config_file.resolve())
+                },
+                'permissions': {
+                    'config_readable': os.access(categories_manager.config_file, os.R_OK) if categories_manager.config_file.exists() else None,
+                    'config_writable': os.access(categories_manager.config_file, os.W_OK) if categories_manager.config_file.exists() else None
+                }
+            }
+            
+            return jsonify(info)
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500        
     
     @app.route('/api/categories', methods=['GET'])
     def get_categories():

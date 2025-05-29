@@ -98,6 +98,12 @@ def main():
         # Inizializza configurazione sicura
         secure_config = SecureConfig()
         
+        # Mostra info configurazione
+        config_info = secure_config.get_config()
+        log_info(f"Directory config: {config_info['config_directory']}")
+        log_info(f"Directory output: {config_info['output_directory']}")
+        log_info(f"File categorie: {config_info['categories_config_file']}")
+
         # Carica configurazione da .env.local se più recente
         load_config_from_env_local(secure_config)
         
@@ -108,12 +114,14 @@ def main():
         processor = FTPProcessor(secure_config.get_config())
         
         # ✅ INTEGRA IL NUOVO SISTEMA CATEGORIE CDR (sostituisce i vecchi sistemi)
-        log_info("Integrazione Sistema Categorie CDR 2.0...")
-        processor = integrate_enhanced_cdr_system(app, processor)
-        
+        # log_info("Integrazione Sistema Categorie CDR 2.0...")
+        # processor = integrate_enhanced_cdr_system(app, processor)
+        log_info("Integrazione Sistema CDR con configurazione da .env...")
+        processor = integrate_enhanced_cdr_system(app, processor, secure_config)
+
         # ✅ AGGIUNGI ROUTE PER GESTIONE CATEGORIE
         log_info("Registrazione route gestione categorie...")
-        categories_info = add_categories_routes(app, processor.cdr_analytics)
+        categories_info = add_categories_routes(app, processor.cdr_analytics, secure_config)
         log_success(f"Route categorie registrate: {categories_info['routes_count']} endpoint")
         
         # Inizializza scheduler

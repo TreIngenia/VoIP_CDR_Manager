@@ -107,6 +107,9 @@ class SecureConfig:
             'download_all_files': self._str_to_bool(os.getenv('DOWNLOAD_ALL_FILES', 'false')),
             'specific_filename': os.getenv('SPECIFIC_FILENAME', ''),
             'output_directory': os.getenv('OUTPUT_DIRECTORY', 'output'),
+            'config_directory': os.getenv('CONFIG_DIRECTORY', 'config'),
+            'output_directory': os.getenv('OUTPUT_DIRECTORY', 'output'),
+            'categories_config_file': os.getenv('CATEGORIES_CONFIG_FILE', 'cdr_categories.json'),
             'file_naming_pattern': os.getenv('FILE_NAMING_PATTERN', 'monthly'),
             'custom_pattern': os.getenv('CUSTOM_PATTERN', ''),
             'schedule_type': os.getenv('SCHEDULE_TYPE', 'monthly'),
@@ -130,14 +133,61 @@ class SecureConfig:
             'APP_PORT': self._str_to_int(os.getenv('APP_PORT', '5001'), 5001),
             'APP_HOST': os.getenv('APP_HOST', '127.0.0.1'),
         }
+
+    def get_config_file_path(self, filename: str = None) -> Path:
+        """
+        Restituisce il percorso completo per un file di configurazione
+        
+        Args:
+            filename: Nome del file (se None, usa categories_config_file)
+        
+        Returns:
+            Path completo del file di configurazione
+        """
+        if filename is None:
+            filename = self.config['categories_config_file']
+        
+        config_dir = Path(self.config['config_directory'])
+        return config_dir / filename
     
+    def ensure_config_directory(self):
+        """Assicura che la directory di configurazione esista"""
+        config_dir = Path(self.config['config_directory'])
+        config_dir.mkdir(parents=True, exist_ok=True)
+        log_info(f"Directory config: {config_dir.resolve()}")
+        return config_dir
+        
     def _validate_config(self):
         """Valida configurazione"""
-        # Valida directory output
+        # # Valida directory output
+        # output_dir = Path(self.config['output_directory'])
+        # if not output_dir.is_absolute():
+        #     self.config['output_directory'] = str(Path.cwd() / output_dir)
+        
+        # Directory di configurazione
+        config_dir = self.ensure_config_directory()
+        
+        # Directory output
         output_dir = Path(self.config['output_directory'])
         if not output_dir.is_absolute():
-            self.config['output_directory'] = str(Path.cwd() / output_dir)
+            # Percorso relativo
+            output_dir = Path.cwd() / output_dir
         
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            self.config['output_directory'] = str(output_dir.resolve())
+            log_info(f"Directory output: {output_dir.resolve()}")
+        except Exception as e:
+            log_error(f"Impossibile creare directory output: {e}")
+            # Fallback
+            self.config['output_directory'] = str(Path.cwd() / "output")
+        
+        # Validazione nome file categorie
+        categories_file = self.config['categories_config_file']
+        if not categories_file or not categories_file.endswith('.json'):
+            log_warning(f"Nome file categorie non valido: {categories_file}")
+            self.config['categories_config_file'] = 'cdr_categories.json'
+
         # Valida pattern file
         if self.config['specific_filename']:
             if not self._validate_filename_pattern(self.config['specific_filename']):

@@ -113,11 +113,39 @@ class CDRCategoriesManager:
         )
     }
     
-    def __init__(self, config_file: str = 'cdr_categories.json'):
-        self.config_file = Path(config_file)
-        self.categories: Dict[str, CDRCategory] = {}
-        self.load_categories()
+    # def __init__(self, config_file: str = 'cdr_categories.json'):
+    #     self.config_file = Path(config_file)
+    #     self.categories: Dict[str, CDRCategory] = {}
+    #     self.load_categories()
     
+    def __init__(self, config_file: str = None, secure_config: 'SecureConfig' = None):
+        """
+        Inizializza il manager con configurazione da .env
+        
+        Args:
+            config_file: Percorso specifico del file (opzionale)
+            secure_config: Istanza SecureConfig per leggere configurazione da .env
+        """
+        
+        if config_file is not None:
+            # Percorso specifico fornito
+            self.config_file = Path(config_file)
+        elif secure_config is not None:
+            # Usa configurazione da .env tramite SecureConfig
+            self.config_file = secure_config.get_config_file_path()
+            secure_config.ensure_config_directory()
+        else:
+            # ✅ FALLBACK: Leggi direttamente da variabili d'ambiente
+            import os
+            config_dir = Path(os.getenv('CONFIG_DIRECTORY', 'config'))
+            config_dir.mkdir(parents=True, exist_ok=True)
+            categories_file = os.getenv('CATEGORIES_CONFIG_FILE', 'cdr_categories.json')
+            self.config_file = config_dir / categories_file
+        
+        self.categories: Dict[str, CDRCategory] = {}
+        logger.info(f"🔧 CDR Categories Manager - File config: {self.config_file}")
+        self.load_categories()
+
     def load_categories(self):
         """Carica le categorie dal file di configurazione"""
         try:

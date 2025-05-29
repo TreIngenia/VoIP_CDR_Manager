@@ -194,7 +194,25 @@ class FTPProcessor:
                 except Exception as e:
                     logger.warning(f"Impossibile rimuovere file temporaneo {temp_path}: {e}")
 
-    
+    def cleanup_output_directory(self, pattern="*.tmp"):
+        """Pulisce file temporanei nella directory di output"""
+        try:
+            output_dir = Path(self.config['output_directory'])
+            temp_files = list(output_dir.glob(pattern))
+            
+            for temp_file in temp_files:
+                try:
+                    temp_file.unlink()
+                    logger.debug(f"File temporaneo rimosso: {temp_file}")
+                except Exception as e:
+                    logger.warning(f"Impossibile rimuovere {temp_file}: {e}")
+            
+            if temp_files:
+                logger.info(f"Puliti {len(temp_files)} file temporanei")
+                
+        except Exception as e:
+            logger.error(f"Errore pulizia directory: {e}")
+
     def match_pattern(self, filename, pattern):
         """
         Verifica se un filename corrisponde al pattern specificato
@@ -232,7 +250,46 @@ class FTPProcessor:
             logger.error(f"Errore nel pattern matching '{pattern}' per file '{filename}': {e}")
             return False
 
-    
+    def expand_temporal_pattern(self, pattern):
+        """
+        Espande le variabili temporali in un pattern
+        Supporta sia wildcard (*) che variabili temporali (%Y, %m, etc.)
+        """
+        try:
+            now = datetime.now()
+            
+            # Sostituisci le variabili temporali
+            expanded_pattern = pattern
+            
+            # Variabili base
+            expanded_pattern = expanded_pattern.replace('%Y', str(now.year))
+            expanded_pattern = expanded_pattern.replace('%y', str(now.year)[-2:])
+            expanded_pattern = expanded_pattern.replace('%m', f"{now.month:02d}")
+            expanded_pattern = expanded_pattern.replace('%d', f"{now.day:02d}")
+            
+            # Variabili orario
+            expanded_pattern = expanded_pattern.replace('%H', f"{now.hour:02d}")
+            expanded_pattern = expanded_pattern.replace('%M', f"{now.minute:02d}")
+            expanded_pattern = expanded_pattern.replace('%S', f"{now.second:02d}")
+            
+            # Variabili settimana
+            expanded_pattern = expanded_pattern.replace('%U', f"{now.strftime('%U')}")
+            expanded_pattern = expanded_pattern.replace('%W', f"{now.strftime('%W')}")
+            
+            # Variabili mese testuale
+            expanded_pattern = expanded_pattern.replace('%b', now.strftime('%b'))  # Jan, Feb, etc.
+            expanded_pattern = expanded_pattern.replace('%B', now.strftime('%B'))  # January, February, etc.
+            
+            # Variabili giorno settimana
+            expanded_pattern = expanded_pattern.replace('%a', now.strftime('%a'))  # Mon, Tue, etc.
+            expanded_pattern = expanded_pattern.replace('%A', now.strftime('%A'))  # Monday, Tuesday, etc.
+            
+            logger.info(f"Pattern espanso: '{pattern}' -> '{expanded_pattern}'")
+            return expanded_pattern
+            
+        except Exception as e:
+            logger.error(f"Errore nell'espansione del pattern '{pattern}': {e}")
+            return pattern
     
     def filter_files_by_pattern(self, files, pattern):
         """
@@ -576,10 +633,28 @@ class FTPProcessor:
             logger.error(f"Errore nella conversione di {file_path}: {e}")
             return None
 
-
+    def convert_to_json_as_cdr(self, file_path):
+        """
+        Funzione helper per convertire specificamente file CDR
+        """
+        try:
+            # Usa la stessa logica della funzione principale ma forza il tipo CDR
+            original_name = file_path.name
+            file_path = Path(file_path)
+            
+            # Simula estensione .cdr per forzare il parsing CDR
+            temp_path = file_path.parent / (file_path.stem + '.cdr')
+            if not temp_path.exists():
+                temp_path = file_path
+            
+            return self.convert_to_json(temp_path)
+            
+        except Exception as e:
+            logger.error(f"Errore nella conversione CDR di {file_path}: {e}")
+            return None
 
     def process_files(self):
-        """Processo completo: download e conversione"""
+        """Processo completo: download e conversione con risultato JSON-safe"""
         try:
             logger.info("Inizio processo di elaborazione file")
             
@@ -588,28 +663,93 @@ class FTPProcessor:
             
             if not downloaded_files:
                 logger.warning("Nessun file scaricato")
-                return {'success': False, 'message': 'Nessun file scaricato'}
+                return {
+                    'success': False, 
+                    'message': 'Nessun file scaricato',
+                    'timestamp': datetime.now().isoformat()
+                }
             
             # Conversione in JSON
             converted_files = []
-            for file_path in downloaded_files:
-                json_path = self.convert_to_json(file_path)
-                if json_path:
-                    converted_files.append(json_path)
+            conversion_errors = []
             
+            for file_path in downloaded_files:
+                try:
+                    json_path = self.convert_to_json(file_path)
+                    if json_path:
+                        converted_files.append(json_path)
+                    else:
+                        conversion_errors.append(f"Conversione fallita per: {file_path}")
+                except Exception as e:
+                    conversion_errors.append(f"Errore conversione {file_path}: {str(e)}")
+            
+            # ✅ RISULTATO PULITO E SERIALIZZABILE
             result = {
                 'success': True,
-                'downloaded_files': downloaded_files,
-                'converted_files': converted_files,
+                'message': f'Processo completato: {len(converted_files)} file convertiti',
+                'downloaded_files': [str(f) for f in downloaded_files],  # Converti Path in string
+                'converted_files': [str(f) for f in converted_files],    # Converti Path in string
+                'total_downloaded': len(downloaded_files),
+                'total_converted': len(converted_files),
+                'conversion_errors': conversion_errors,
                 'timestamp': datetime.now().isoformat()
             }
+            
+            # ✅ ELABORAZIONE CDR SE DISPONIBILE (con pulizia)
+            if hasattr(self, 'cdr_analytics') and converted_files:
+                try:
+                    cdr_results = []
+                    
+                    for json_file in converted_files:
+                        if hasattr(self, '_is_cdr_file') and self._is_cdr_file(json_file):
+                            cdr_result = self.cdr_analytics.process_cdr_file(json_file)
+                            
+                            # ✅ PULISCI RISULTATO CDR
+                            if isinstance(cdr_result, dict):
+                                clean_cdr_result = {
+                                    'success': cdr_result.get('success', False),
+                                    'message': cdr_result.get('message', ''),
+                                    'source_file': str(cdr_result.get('source_file', '')),
+                                    'total_records': cdr_result.get('total_records', 0),
+                                    'total_contracts': cdr_result.get('total_contracts', 0),
+                                    'generated_files': [str(f) for f in cdr_result.get('generated_files', [])],
+                                    'categories_system_enabled': cdr_result.get('categories_system_enabled', False),
+                                    'processing_timestamp': cdr_result.get('processing_timestamp', datetime.now().isoformat())
+                                }
+                                
+                                # Aggiungi statistiche categorie se disponibili
+                                if 'category_stats' in cdr_result:
+                                    clean_cdr_result['category_stats'] = cdr_result['category_stats']
+                                
+                                cdr_results.append(clean_cdr_result)
+                    
+                    if cdr_results:
+                        result['cdr_analytics'] = {
+                            'processed_files': len(cdr_results),
+                            'successful_analyses': sum(1 for r in cdr_results if r.get('success')),
+                            'total_reports_generated': sum(len(r.get('generated_files', [])) for r in cdr_results),
+                            'categories_system_enabled': any(r.get('categories_system_enabled', False) for r in cdr_results),
+                            'results': cdr_results
+                        }
+                        
+                except Exception as e:
+                    logger.error(f"Errore elaborazione CDR: {e}")
+                    result['cdr_analytics'] = {
+                        'error': str(e),
+                        'processed_files': 0
+                    }
             
             logger.info(f"Processo completato: {len(converted_files)} file convertiti")
             return result
             
         except Exception as e:
             logger.error(f"Errore nel processo completo: {e}")
-            return {'success': False, 'message': str(e)}
+            return {
+                'success': False, 
+                'message': str(e),
+                'error_type': type(e).__name__,
+                'timestamp': datetime.now().isoformat()
+            }
 
     def test_pattern_matching(self, pattern):
         """

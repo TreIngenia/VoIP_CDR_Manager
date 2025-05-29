@@ -21,17 +21,27 @@ class CDRAnalyticsIntegrated:
     Sistema CDR integrato che utilizza CDRCategoriesManager per classificazione e pricing
     """
     
-    def __init__(self, output_directory: str = "output"):
+    # def __init__(self, output_directory: str = "output"):
+    #     self.output_directory = Path(output_directory)
+    #     self.analytics_directory = self.output_directory / "cdr_analytics"
+    #     self.analytics_directory.mkdir(exist_ok=True)
+        
+    #     # Inizializza il manager delle categorie
+    #     categories_file = self.analytics_directory / "cdr_categories.json"
+    #     self.categories_manager = CDRCategoriesManager(str(categories_file))
+        
+    #     logger.info("🔧 CDR Analytics Integrato inizializzato con sistema categorie")
+
+    def __init__(self, output_directory: str = "output", secure_config: 'SecureConfig' = None):
         self.output_directory = Path(output_directory)
         self.analytics_directory = self.output_directory / "cdr_analytics"
         self.analytics_directory.mkdir(exist_ok=True)
         
-        # Inizializza il manager delle categorie
-        categories_file = self.analytics_directory / "cdr_categories.json"
-        self.categories_manager = CDRCategoriesManager(str(categories_file))
+        # ✅ INIZIALIZZA MANAGER CON CONFIGURAZIONE DA .env
+        self.categories_manager = CDRCategoriesManager(secure_config=secure_config)
         
-        logger.info("🔧 CDR Analytics Integrato inizializzato con sistema categorie")
-    
+        logger.info("🔧 CDR Analytics Integrato inizializzato con configurazione da .env")
+
     def process_cdr_file(self, json_file_path: str) -> Dict[str, Any]:
         """
         Elabora un file CDR JSON utilizzando il sistema di categorie configurabile
@@ -904,17 +914,24 @@ class CDRAnalyticsIntegrated:
 
 
 # ✅ FUNZIONE DI INTEGRAZIONE PRINCIPALE
-def integrate_enhanced_cdr_system(app, processor):
+def integrate_enhanced_cdr_system(app, processor, secure_config):
     """
     Integra il sistema CDR potenziato nell'applicazione esistente
     Sostituisce completamente il vecchio sistema con quello basato su categorie
     """
     # Backup del vecchio sistema se presente
+    # if hasattr(processor, 'cdr_analytics'):
+    #     processor._old_cdr_analytics = processor.cdr_analytics
     if hasattr(processor, 'cdr_analytics'):
         processor._old_cdr_analytics = processor.cdr_analytics
-    
+
     # ✅ SOSTITUISCE CON IL NUOVO SISTEMA INTEGRATO
-    processor.cdr_analytics = CDRAnalyticsIntegrated(processor.config['output_directory'])
+    # processor.cdr_analytics = CDRAnalyticsIntegrated(processor.config['output_directory'])
+    # ✅ INIZIALIZZA CON CONFIGURAZIONE DA .env
+    processor.cdr_analytics = CDRAnalyticsIntegrated(
+        processor.config['output_directory'], 
+        secure_config=secure_config
+    )
     
     # ✅ MODIFICA IL PROCESS_FILES PER USARE IL NUOVO SISTEMA
     def enhanced_process_files_with_categories(self):
@@ -964,7 +981,8 @@ def integrate_enhanced_cdr_system(app, processor):
                     
                     logger.info(f"📈 Analisi CDR con categorie completata: {result['cdr_analytics']['total_reports_generated']} report generati")
             
-            return result
+            # return result
+            return processor
             
         except Exception as e:
             logger.error(f"❌ Errore processo CDR con categorie: {e}")

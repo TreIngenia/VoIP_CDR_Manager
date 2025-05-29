@@ -70,14 +70,68 @@ def create_routes(app, secure_config, processor, scheduler_manager):
 
     @app.route('/manual_run')
     def manual_run():
-        """Esecuzione manuale del processo"""
+        """Esecuzione manuale del processo con gestione serializzazione JSON corretta"""
         try:
             result = processor.process_files()
-            return jsonify(result)
+            
+            # ✅ PULIZIA RISULTATO PER JSON SERIALIZATION
+            if isinstance(result, dict):
+                # Rimuovi eventuali riferimenti a oggetti non serializzabili
+                clean_result = clean_for_json_serialization(result)
+                return jsonify(clean_result)
+            else:
+                # Fallback se result non è un dict
+                return jsonify({
+                    'success': True,
+                    'message': 'Processo completato',
+                    'details': str(result)
+                })
+                
         except Exception as e:
             logger.error(f"Errore esecuzione manuale: {e}")
-            return jsonify({'success': False, 'message': str(e)})
+            return jsonify({
+                'success': False, 
+                'message': str(e),
+                'error_type': type(e).__name__
+            })
 
+    def clean_for_json_serialization(data):
+        """
+        Pulisce i dati per renderli serializzabili in JSON
+        
+        Args:
+            data: Dati da pulire (dict, list, o altro)
+            
+        Returns:
+            Dati puliti serializzabili in JSON
+        """
+        if isinstance(data, dict):
+            cleaned = {}
+            for key, value in data.items():
+                try:
+                    cleaned[key] = clean_for_json_serialization(value)
+                except Exception as e:
+                    # Se il valore non è serializzabile, convertilo in stringa
+                    logger.warning(f"Valore non serializzabile per chiave '{key}': {e}")
+                    cleaned[key] = str(value)
+            return cleaned
+            
+        elif isinstance(data, list):
+            return [clean_for_json_serialization(item) for item in data]
+            
+        elif isinstance(data, (str, int, float, bool, type(None))):
+            return data
+            
+        elif hasattr(data, 'isoformat'):  # datetime objects
+            return data.isoformat()
+            
+        elif hasattr(data, '__dict__'):  # Custom objects
+            return str(data)
+            
+        else:
+            # Fallback per altri tipi
+            return str(data)
+        
     @app.route('/test_ftp')
     def test_ftp():
         """Test connessione FTP"""
