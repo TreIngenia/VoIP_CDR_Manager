@@ -1,29 +1,29 @@
-version: '3.8'
+version: "4.0"
 
 services:
-  ftp-scheduler:
-    build: .
+  unisco_app:
+    build:
+      context: .
     ports:
-      - "5000:5000"
+      - "5001:5001"
     volumes:
-      - ./output:/app/output
-      - ./logs:/app/logs
-      - ./app.log:/app/app.log
+      - ./app:/app
     environment:
-      - FLASK_ENV=production
-    restart: unless-stopped
-    
-  # Opzionale: server FTP di test
-  ftp-server:
-    image: stilliard/pure-ftpd
+      - FLASK_DEBUG=true
+      - FLASK_ENV=development      
+    working_dir: /app
+    command: python app.py
+    profiles:
+      - dev
+
+  unisco_app_prod:
+    build:
+      context: .
     ports:
-      - "21:21"
-      - "30000-30009:30000-30009"
-    volumes:
-      - ./ftp_test_data:/home/ftpusers/testuser
+      - "5001:5001"
     environment:
-      - PUBLICHOST=localhost
-      - FTP_USER_NAME=testuser
-      - FTP_USER_PASS=testpass
-      - FTP_USER_HOME=/home/ftpusers/testuser
-    restart: unless-stopped
+      - FLASK_DEBUG=false
+      - FLASK_ENV=production         
+    command: python app.py
+    profiles:
+      - prod

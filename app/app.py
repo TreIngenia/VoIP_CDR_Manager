@@ -19,7 +19,13 @@ except ImportError:
     print("⚠️ python-dotenv non installato - usando solo variabili d'ambiente del sistema")
 
 # Import moduli personalizzati
-from config import SecureConfig, save_config_to_env, load_config_from_env_local, log_success, log_error, log_warning, log_info
+from config import SecureConfig
+# Import moduli migliorati (aggiunti da migrazione)
+from logger_config import get_logger, log_success, log_error, log_warning, log_info
+from config_validator import ConfigValidator
+from performance_monitor import get_performance_monitor
+# from exception_handler import ExceptionHandler, log_success, log_error, log_warning, log_info
+from config import save_config_to_env, load_config_from_env_local
 from ftp_processor import FTPProcessor
 from scheduler import SchedulerManager
 from routes import create_routes
@@ -43,6 +49,18 @@ def create_app():
         SESSION_COOKIE_SAMESITE='Lax',
         PERMANENT_SESSION_LIFETIME=timedelta(hours=24)
     )
+    
+    
+    # Route performance monitoring (aggiunto da migrazione)
+    @app.route('/api/metrics/performance')
+    def get_performance_metrics():
+        monitor = get_performance_monitor()
+        return jsonify(monitor.get_application_metrics())
+    
+    @app.route('/api/health/detailed')
+    def get_detailed_health():
+        monitor = get_performance_monitor()
+        return jsonify(monitor.get_health_status())
     
     return app
 
@@ -169,11 +187,19 @@ def main():
         atexit.register(lambda: graceful_shutdown(scheduler_manager))
         
         # Avvia applicazione
-        if sys.platform.startswith('win'):
-            app.run(debug=app_debug, host=app_host, port=app_port, threaded=True, use_reloader=False)
-        else:
-            app.run(debug=app_debug, host=app_host, port=app_port, threaded=True)
-            
+        # if sys.platform.startswith('win'):
+        #     app.run(debug=app_debug, host=app_host, port=app_port, threaded=True, use_reloader=False)
+        # else:
+        #     app.run(debug=app_debug, host=app_host, port=app_port, threaded=True)
+
+        app.run(
+            debug=app_debug,
+            host=app_host,
+            port=app_port,
+            threaded=True,
+            use_reloader=app_debug  # reloader solo se debug è attivo
+        )
+
     except KeyboardInterrupt:
         log_info("Applicazione fermata dall'utente")
         if 'scheduler_manager' in locals():

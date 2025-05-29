@@ -1,10 +1,13 @@
 import json
 import logging
+from logger_config import get_logger
+from exception_handler import handle_exceptions, APIResponse, ExceptionHandler
+from performance_monitor import get_performance_monitor
 from pathlib import Path
 from datetime import datetime
 from flask import render_template, request, jsonify, redirect, url_for, Response
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def create_routes(app, secure_config, processor, scheduler_manager):
     """Crea tutte le route Flask"""
@@ -147,7 +150,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         """Visualizza i log dell'applicazione su pagina HTML"""
         try:
             config = secure_config.get_config()
-            log_file = Path() / 'app.log'
+            log_file = Path() / 'logs/app.log'
             last_logs = []
 
             if log_file.exists():

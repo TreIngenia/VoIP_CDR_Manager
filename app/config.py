@@ -6,84 +6,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # Setup logging sicuro
-def setup_logging():
-    """Setup logging con supporto Unicode cross-platform e rotazione file"""
-    from logging.handlers import RotatingFileHandler
-    
-    class UnicodeStreamHandler(logging.StreamHandler):
-        """StreamHandler che gestisce correttamente Unicode su Windows"""
-        
-        def emit(self, record):
-            try:
-                msg = self.format(record)
-                # Sostituisci emoji con testo su Windows
-                if sys.platform.startswith('win'):
-                    emoji_replacements = {
-                        '✅': '[OK]', '❌': '[ERROR]', '⚠️': '[WARNING]',
-                        '🕐': '[TIME]', '📁': '[FILE]', '📊': '[CHART]',
-                        '⚙️': '[CONFIG]', '📋': '[LOG]', '🔧': '[TOOL]',
-                        '🗂️': '[FOLDER]', '📡': '[SERVER]', '📅': '[CALENDAR]',
-                        '🚀': '[ROCKET]', '💾': '[DISK]', '🔍': '[SEARCH]',
-                        '🎯': '[TARGET]', '📦': '[PACKAGE]', '🔄': '[REFRESH]',
-                        '⏰': '[CLOCK]'
-                    }
-                    
-                    for emoji, replacement in emoji_replacements.items():
-                        msg = msg.replace(emoji, replacement)
-                
-                stream = self.stream
-                stream.write(msg + self.terminator)
-                self.flush()
-            except Exception:
-                self.handleError(record)
-    
-    # Configura formatter
-    formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    
-    # Handler per file con rotazione (NUOVO)
-    file_handler = RotatingFileHandler(
-        'app.log', 
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.INFO)
-    
-    # Handler per console (gestione Unicode)
-    console_handler = UnicodeStreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.INFO)
-    
-    # Configura logger root
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
-    root_logger.handlers.clear()
-    root_logger.addHandler(file_handler)  # Prima il file
-    root_logger.addHandler(console_handler)  # Poi console
+# Usa il nuovo sistema di logging standardizzato
+from logger_config import get_logger, log_success, log_error, log_warning, log_info
 
-setup_logging()
-logger = logging.getLogger(__name__)
-
-# Funzioni helper per logging cross-platform
-def log_success(message):
-    """Log messaggio di successo"""
-    logger.info(f"[OK] {message}")
-
-def log_error(message):
-    """Log messaggio di errore"""
-    logger.error(f"[ERROR] {message}")
-
-def log_warning(message):
-    """Log messaggio di warning"""
-    logger.warning(f"[WARNING] {message}")
-
-def log_info(message):
-    """Log messaggio informativo"""
-    logger.info(f"[INFO] {message}")
+# Inizializza logging
+logger = get_logger(__name__)
 
 class SecureConfig:
     """Gestione sicura della configurazione"""
@@ -108,7 +35,6 @@ class SecureConfig:
             'specific_filename': os.getenv('SPECIFIC_FILENAME', ''),
             'output_directory': os.getenv('OUTPUT_DIRECTORY', 'output'),
             'config_directory': os.getenv('CONFIG_DIRECTORY', 'config'),
-            'output_directory': os.getenv('OUTPUT_DIRECTORY', 'output'),
             'categories_config_file': os.getenv('CATEGORIES_CONFIG_FILE', 'cdr_categories.json'),
             'file_naming_pattern': os.getenv('FILE_NAMING_PATTERN', 'monthly'),
             'custom_pattern': os.getenv('CUSTOM_PATTERN', ''),
@@ -472,7 +398,6 @@ def load_config_from_env_local(secure_config):
                     'ftp_directory': os.getenv('FTP_DIRECTORY', '/'),
                     'download_all_files': secure_config._str_to_bool(os.getenv('DOWNLOAD_ALL_FILES', 'false')),
                     'specific_filename': os.getenv('SPECIFIC_FILENAME', ''),
-                    'output_directory': os.getenv('OUTPUT_DIRECTORY', 'output'),
                     'file_naming_pattern': os.getenv('FILE_NAMING_PATTERN', 'monthly'),
                     'custom_pattern': os.getenv('CUSTOM_PATTERN', ''),
                     'schedule_type': os.getenv('SCHEDULE_TYPE', 'monthly'),

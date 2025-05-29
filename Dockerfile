@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.13.3-slim
 
 WORKDIR /app
 
@@ -8,17 +8,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia requirements e installa dipendenze Python
-COPY requirements.txt .
+COPY app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copia il codice dell'applicazione
-COPY . .
+COPY app/ .
 
 # Crea directory necessarie
 RUN mkdir -p output logs templates
 
 # Espone la porta 5000
-EXPOSE 5000
+EXPOSE 5001
 
 # Avvia l'applicazione
 CMD ["python", "app.py"]
