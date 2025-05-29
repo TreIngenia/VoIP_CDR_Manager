@@ -194,25 +194,7 @@ class FTPProcessor:
                 except Exception as e:
                     logger.warning(f"Impossibile rimuovere file temporaneo {temp_path}: {e}")
 
-    def cleanup_output_directory(self, pattern="*.tmp"):
-        """Pulisce file temporanei nella directory di output"""
-        try:
-            output_dir = Path(self.config['output_directory'])
-            temp_files = list(output_dir.glob(pattern))
-            
-            for temp_file in temp_files:
-                try:
-                    temp_file.unlink()
-                    logger.debug(f"File temporaneo rimosso: {temp_file}")
-                except Exception as e:
-                    logger.warning(f"Impossibile rimuovere {temp_file}: {e}")
-            
-            if temp_files:
-                logger.info(f"Puliti {len(temp_files)} file temporanei")
-                
-        except Exception as e:
-            logger.error(f"Errore pulizia directory: {e}")
-
+    
     def match_pattern(self, filename, pattern):
         """
         Verifica se un filename corrisponde al pattern specificato
@@ -250,46 +232,7 @@ class FTPProcessor:
             logger.error(f"Errore nel pattern matching '{pattern}' per file '{filename}': {e}")
             return False
 
-    def expand_temporal_pattern(self, pattern):
-        """
-        Espande le variabili temporali in un pattern
-        Supporta sia wildcard (*) che variabili temporali (%Y, %m, etc.)
-        """
-        try:
-            now = datetime.now()
-            
-            # Sostituisci le variabili temporali
-            expanded_pattern = pattern
-            
-            # Variabili base
-            expanded_pattern = expanded_pattern.replace('%Y', str(now.year))
-            expanded_pattern = expanded_pattern.replace('%y', str(now.year)[-2:])
-            expanded_pattern = expanded_pattern.replace('%m', f"{now.month:02d}")
-            expanded_pattern = expanded_pattern.replace('%d', f"{now.day:02d}")
-            
-            # Variabili orario
-            expanded_pattern = expanded_pattern.replace('%H', f"{now.hour:02d}")
-            expanded_pattern = expanded_pattern.replace('%M', f"{now.minute:02d}")
-            expanded_pattern = expanded_pattern.replace('%S', f"{now.second:02d}")
-            
-            # Variabili settimana
-            expanded_pattern = expanded_pattern.replace('%U', f"{now.strftime('%U')}")
-            expanded_pattern = expanded_pattern.replace('%W', f"{now.strftime('%W')}")
-            
-            # Variabili mese testuale
-            expanded_pattern = expanded_pattern.replace('%b', now.strftime('%b'))  # Jan, Feb, etc.
-            expanded_pattern = expanded_pattern.replace('%B', now.strftime('%B'))  # January, February, etc.
-            
-            # Variabili giorno settimana
-            expanded_pattern = expanded_pattern.replace('%a', now.strftime('%a'))  # Mon, Tue, etc.
-            expanded_pattern = expanded_pattern.replace('%A', now.strftime('%A'))  # Monday, Tuesday, etc.
-            
-            logger.info(f"Pattern espanso: '{pattern}' -> '{expanded_pattern}'")
-            return expanded_pattern
-            
-        except Exception as e:
-            logger.error(f"Errore nell'espansione del pattern '{pattern}': {e}")
-            return pattern
+    
     
     def filter_files_by_pattern(self, files, pattern):
         """
@@ -633,25 +576,7 @@ class FTPProcessor:
             logger.error(f"Errore nella conversione di {file_path}: {e}")
             return None
 
-    def convert_to_json_as_cdr(self, file_path):
-        """
-        Funzione helper per convertire specificamente file CDR
-        """
-        try:
-            # Usa la stessa logica della funzione principale ma forza il tipo CDR
-            original_name = file_path.name
-            file_path = Path(file_path)
-            
-            # Simula estensione .cdr per forzare il parsing CDR
-            temp_path = file_path.parent / (file_path.stem + '.cdr')
-            if not temp_path.exists():
-                temp_path = file_path
-            
-            return self.convert_to_json(temp_path)
-            
-        except Exception as e:
-            logger.error(f"Errore nella conversione CDR di {file_path}: {e}")
-            return None
+
 
     def process_files(self):
         """Processo completo: download e conversione"""

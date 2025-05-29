@@ -89,36 +89,6 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             return jsonify({'success': False, 'message': str(e)})
 
     @app.route('/logs')
-    # def logs():
-    #     """Stato dell'applicazione senza dati sensibili - formato testo"""
-    #     try:
-    #         config = secure_config.get_config()
-    #         log_file = Path() / 'app.log'
-    #         last_logs = []
-
-    #         if log_file.exists():
-    #             try:
-    #                 # Prova con UTF-8
-    #                 with open(log_file, 'r', encoding='utf-8') as f:
-    #                     all_lines = f.readlines()
-    #             except UnicodeDecodeError as e:
-    #                 logger.warning(f"Errore UTF-8: {e} — uso codifica 'latin1'")
-    #                 # Fallback a latin1
-    #                 with open(log_file, 'r', encoding='latin1') as f:
-    #                     all_lines = f.readlines()
-    #             except Exception as e:
-    #                 logger.error(f"Errore nella lettura del file app.log: {e}")
-    #                 all_lines = ["Errore nella lettura del file di log."]
-
-    #             last_logs = [line.strip() for line in all_lines if line.strip()]
-    #         else:
-    #             last_logs = ["File di log non trovato."]
-
-    #         return Response("\n".join(last_logs), mimetype='text/plain')
-
-    #     except Exception as e:
-    #         logger.error(f"Errore endpoint logs: {e}")
-    #         return Response("Errore interno del server.", status=500, mimetype='text/plain')
     def logs():
         """Visualizza i log dell'applicazione su pagina HTML"""
         try:
@@ -203,29 +173,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             logger.error(f"Errore endpoint status: {e}")
             return jsonify({'error': 'Errore interno del server'}), 500
         
-    @app.route('/env_status')
-    def env_status():
-        """Mostra lo stato delle variabili d'ambiente (senza password)"""
-        try:
-            import os
-            env_vars = {}
-            env_keys = [
-                'FTP_HOST', 'FTP_USER', 'FTP_DIRECTORY', 'DOWNLOAD_ALL_FILES',
-                'OUTPUT_DIRECTORY', 'FILE_NAMING_PATTERN', 'SCHEDULE_TYPE',
-                'SCHEDULE_DAY', 'SCHEDULE_HOUR', 'SCHEDULE_MINUTE'
-            ]
-            
-            for key in env_keys:
-                value = os.getenv(key)
-                env_vars[key] = value if value else '(non impostato)'
-            
-            # Mostra se la password è impostata senza rivelare il valore
-            env_vars['FTP_PASSWORD'] = 'IMPOSTATA' if os.getenv('FTP_PASSWORD') else '(non impostata)'
-            
-            return jsonify(env_vars)
-        except Exception as e:
-            logger.error(f"Errore env_status: {e}")
-            return jsonify({'error': 'Errore interno del server'}), 500
+    
 
     @app.route('/test_pattern', methods=['POST'])
     def test_pattern():
@@ -525,7 +473,6 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         try:
             # Ottieni statistiche
             reports = processor.cdr_analytics.list_generated_reports()
-            
             # Separa report individuali e summary
             individual_reports = [r for r in reports if not r['is_summary']]
             summary_reports = [r for r in reports if r['is_summary']]
@@ -542,10 +489,10 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             }
             
             return render_template('cdr_dashboard.html', 
-                                reports=reports[:10],  # Ultimi 10
+                                reports=reports,  # Ultimi 10
                                 stats=stats,
-                                individual_reports=individual_reports[:5],
-                                summary_reports=summary_reports[:5])
+                                individual_reports=individual_reports,
+                                summary_reports=summary_reports)
                                 
         except Exception as e:
             logger.error(f"Errore dashboard CDR: {e}")
@@ -664,58 +611,9 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             logger.error(f"Errore dettagli report: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
         
-    @app.route('/cdr_analytics/voip_test', methods=['POST'])
-    def test_voip_pricing():
-        """Testa il calcolo prezzi VoIP per diversi tipi di chiamata"""
-        try:
-            data = request.get_json()
-            if not data:
-                return jsonify({'success': False, 'message': 'Dati non validi'}), 400
-            
-            tipo_chiamata = data.get('tipo_chiamata', '')
-            durata_secondi = int(data.get('durata_secondi', 60))
-            
-            if not hasattr(processor, 'cdr_analytics') or not processor.cdr_analytics.voip_config:
-                return jsonify({
-                    'success': False, 
-                    'message': 'Configurazione VoIP non disponibile'
-                }), 400
-            
-            # Calcola costo con configurazione VoIP
-            calcolo = processor.cdr_analytics.voip_config.calculate_cost(tipo_chiamata, durata_secondi)
-            
-            return jsonify({
-                'success': True,
-                'input': {
-                    'tipo_chiamata': tipo_chiamata,
-                    'durata_secondi': durata_secondi
-                },
-                'risultato': calcolo
-            })
-            
-        except Exception as e:
-            logger.error(f"Errore test prezzi VoIP: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
+    
 
-    @app.route('/cdr_analytics/categories')
-    def get_voip_categories():
-        """Restituisce tutte le categorie VoIP e relativi pattern"""
-        try:
-            if not hasattr(processor, 'cdr_analytics') or not processor.cdr_analytics.voip_config:
-                return jsonify({
-                    'success': False,
-                    'message': 'Configurazione VoIP non disponibile'
-                })
-            
-            categories_info = processor.cdr_analytics.get_voip_categories_info()
-            return jsonify({
-                'success': True,
-                'data': categories_info
-            })
-            
-        except Exception as e:
-            logger.error(f"Errore recupero categorie VoIP: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
+    
     
     @app.route('/api/cdr/process_with_categories/<path:filename>')
     def process_single_cdr_with_categories(filename):

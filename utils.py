@@ -331,28 +331,6 @@ def sanitize_env_value(value):
     
     return value
 
-def create_sample_env_file(config_dict, output_path='.env.sample'):
-    """Crea un file .env di esempio da un dizionario di configurazione"""
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(f"# File .env di esempio generato il {datetime.now().isoformat()}\n")
-            f.write("# Copia questo file in .env e modifica i valori secondo le tue necessità\n\n")
-            
-            for key, value in config_dict.items():
-                # Nascondi valori sensibili
-                if any(sensitive in key.lower() for sensitive in ['password', 'key', 'secret', 'token']):
-                    example_value = 'your_secure_value_here'
-                else:
-                    example_value = sanitize_env_value(value)
-                
-                f.write(f"{key}={example_value}\n")
-        
-        logger.info(f"File .env di esempio creato: {output_path}")
-        return True
-    except Exception as e:
-        logger.error(f"Errore creazione file .env di esempio: {e}")
-        return False
-
 class ProgressTracker:
     """Classe per tracciare il progresso di operazioni lunghe"""
     
