@@ -9,15 +9,30 @@ from flask import render_template, request, jsonify, redirect, url_for, Response
 
 logger = get_logger(__name__)
 
+
 def create_routes(app, secure_config, processor, scheduler_manager):
+    from routes.menu_routes import menu_bp, register_menu_globals, render_with_menu_context
     """Crea tutte le route Flask"""
+    # Registra blueprint menu
+    app.register_blueprint(menu_bp)
     
-    @app.route('/')
+    # Registra funzioni globali menu
+    register_menu_globals(app)
+
+    @app.route('/', endpoint='index')
     def index():
         """Pagina principale"""
-        return render_template('index.html', config=secure_config.get_config())
+        dashboard_data = {
+            'config': secure_config.get_safe_config(),
+            'stats': {
+                'scheduler_running': scheduler_manager.is_running(),
+                'total_jobs': len(scheduler_manager.get_job_info()),
+            }
+        }
+        # return render_template('index.html', config=secure_config.get_config())
+        return render_with_menu_context('index.html', 'Dashboard', dashboard_data)
 
-    @app.route('/config', methods=['GET', 'POST'])
+    @app.route('/config', endpoint='config_page', methods=['GET', 'POST'])
     def config_page():
         """Pagina configurazione con validazione migliorata"""
         if request.method == 'POST':

@@ -103,7 +103,7 @@ class EndpointAnalyzer:
         print("🔍 Analisi diretta del file routes.py...")
         
         try:
-            routes_file = Path('routes.py')
+            routes_file = Path('routes/default_routes.py')
             if not routes_file.exists():
                 print("❌ File routes.py non trovato")
                 return

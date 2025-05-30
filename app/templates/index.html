@@ -1,401 +1,424 @@
-{% extends "base.html" %}
-
-{% block title %}Dashboard - FTP Scheduler{% endblock %}
+<!--layout-partial:partials/base.html-->
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Dashboard</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <button type="button" class="btn btn-success" onclick="manualRun()">
-                <i class="fas fa-play"></i> Esecuzione Manuale
-            </button>
-            <button type="button" class="btn btn-info" onclick="testFTP()">
-                <i class="fas fa-network-wired"></i> Test FTP
-            </button>
+<div class="row">
+    <!-- Stats Cards -->
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                            <i class="ki-outline ki-chart-line text-primary fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small">Report Totali</div>
+                        <div class="fs-2 fw-bold">{{ stats.total_reports if stats else 0 }}</div>
+                        <div class="text-success small">
+                            <i class="ki-outline ki-arrow-up"></i>
+                            Sistema Attivo
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="btn-group me-2">
-            <button class="btn btn-outline-warning dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="fas fa-clock"></i> Schedulazione Rapida
-            </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_10_seconds')">
-                    <i class="fas fa-bolt"></i> Ogni 10 secondi (TEST)
-                </a></li>
-                <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_minute')">
-                    <i class="fas fa-stopwatch"></i> Ogni minuto
-                </a></li>
-                <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_30_minutes')">
-                    <i class="fas fa-clock"></i> Ogni 30 minuti
-                </a></li>
-                <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_hour')">
-                    <i class="fas fa-hourglass-half"></i> Ogni ora
-                </a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" onclick="showScheduleInfo()">
-                    <i class="fas fa-info-circle"></i> Info Schedulazione
-                </a></li>
-            </ul>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                            <i class="ki-outline ki-timer text-success fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small">Scheduler</div>
+                        <div class="fs-5 fw-bold">
+                            {% if stats.scheduler_running %}
+                                <span class="text-success">In Esecuzione</span>
+                            {% else %}
+                                <span class="text-danger">Fermo</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small">Processo automatico</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info bg-opacity-10 rounded-3 p-3">
+                            <i class="ki-outline ki-wifi text-info fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small">Server FTP</div>
+                        <div class="fs-5 fw-bold">
+                            {% if stats.ftp_configured %}
+                                <span class="text-success">Configurato</span>
+                            {% else %}
+                                <span class="text-warning">Da Configurare</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small">Connessione dati</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                            <i class="ki-outline ki-pulse text-warning fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small">Stato Sistema</div>
+                        <div class="fs-5 fw-bold">
+                            {% if system_status.overall_status == 'healthy' %}
+                                <span class="text-success">Sano</span>
+                            {% elif system_status.overall_status == 'warning' %}
+                                <span class="text-warning">Attenzione</span>
+                            {% else %}
+                                <span class="text-danger">Errore</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small">Monitoraggio attivo</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Status Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card status-card h-100">
+<div class="row">
+    <!-- Quick Actions -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-server"></i> Server FTP
+                <h5 class="card-title mb-0">
+                    <i class="ki-outline ki-rocket me-2"></i>
+                    Azioni Rapide
                 </h5>
             </div>
             <div class="card-body">
-                <strong>Host:</strong> {{ config.ftp_host or 'Non configurato' }}<br>
-                <strong>Utente:</strong> {{ config.ftp_user or 'Non configurato' }}<br>
-                <strong>Directory:</strong> {{ config.ftp_directory }}
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="/manual_run" class="btn btn-primary btn-lg w-100">
+                            <i class="ki-outline ki-play me-2"></i>
+                            Esecuzione Manuale
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/test_ftp" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="ki-outline ki-wifi me-2"></i>
+                            Test FTP
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/config" class="btn btn-outline-secondary btn-lg w-100">
+                            <i class="ki-outline ki-setting-2 me-2"></i>
+                            Configurazione
+                        </a>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="/cdr_dashboard" class="btn btn-success btn-lg w-100">
+                            <i class="ki-outline ki-chart-pie-simple me-2"></i>
+                            Dashboard CDR
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/categories" class="btn btn-outline-success btn-lg w-100">
+                            <i class="ki-outline ki-tag me-2"></i>
+                            Gestione Categorie
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card status-card h-100">
+    
+    <!-- System Status -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-file-download"></i> Download
+                <h5 class="card-title mb-0">
+                    <i class="ki-outline ki-information me-2"></i>
+                    Stato Sistema
                 </h5>
             </div>
             <div class="card-body">
-                <strong>Modalità:</strong> 
-                {% if config.download_all_files %}
-                    Tutti i file
+                {% if system_status %}
+                    {% for check_name, check_status in system_status.checks.items() %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0">
+                                {% if check_status == 'ok' %}
+                                    <span class="status-indicator status-healthy"></span>
+                                {% elif check_status == 'warning' %}
+                                    <span class="status-indicator status-warning"></span>
+                                {% else %}
+                                    <span class="status-indicator status-error"></span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 ms-2">
+                                <div class="fw-bold text-capitalize">{{ check_name }}</div>
+                                <div class="text-muted small">
+                                    {% if check_status == 'ok' %}
+                                        Funzionante
+                                    {% elif check_status == 'warning' %}
+                                        Attenzione
+                                    {% elif check_status == 'error' %}
+                                        Errore
+                                    {% else %}
+                                        Sconosciuto
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    {% if system_status.issues %}
+                        <hr class="my-3">
+                        <div class="text-muted small mb-2">Problemi rilevati:</div>
+                        {% for issue in system_status.issues %}
+                            <div class="alert alert-warning alert-sm py-2 px-3 mb-2">
+                                <small>{{ issue }}</small>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
                 {% else %}
-                    File specifico
-                {% endif %}<br>
-                <strong>Pattern:</strong> {{ config.file_naming_pattern }}<br>
-                <strong>Output:</strong> {{ config.output_directory }}
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card status-card h-100">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-clock"></i> Schedulazione
-                </h5>
-            </div>
-            <div class="card-body">
-                <strong>Tipo:</strong> {{ config.schedule_type }}<br>
-                <strong>Frequenza:</strong> 
-                {% if config.schedule_type == 'monthly' %}
-                    Giorno {{ config.schedule_day }} di ogni mese
-                {% elif config.schedule_type == 'interval' %}
-                    Ogni {{ config.interval_days }} giorni
-                {% else %}
-                    {{ config.schedule_type }}
-                {% endif %}<br>
-                <strong>Orario:</strong> {{ "%02d:%02d"|format(config.schedule_hour, config.schedule_minute) }}
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card status-card h-100">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-phone"></i> Prezzi VoIP + CDR
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="text-secondary">
-                    <div class="fw-bold float-start">Base Fisso:</div> <div class="fw-bold float-end"> {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min</div><br>
-                    <div class="fw-bold float-start">Base Mobile:</div> <div class="fw-bold float-end"> {{ config.voip_price_mobile or 0 }} {{ config.voip_currency or 'EUR' }}/min</div><br>
+                    <div class="text-center text-muted">
+                        <i class="ki-outline ki-information fs-2x mb-3"></i>
+                        <div>Stato sistema non disponibile</div>
+                    </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <a href="/status_page" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="ki-outline ki-eye me-1"></i>
+                        Visualizza Dettagli
+                    </a>
                 </div>
-                <div class="fw-bold float-start">Ricarico:</div> <div class="fw-bold float-end"> {{ "%.0f"|format(config.voip_markup_percent or 0) }}%</div><br>
-                <hr class="my-2">
-                <span class="text-success">
-                    <div class="fw-bold float-start">Finale Fisso:</div><div class="fw-bold float-end"> {{ "%.4f"|format(config.voip_price_fixed_final or 0) }} {{ config.voip_currency or 'EUR' }}/min</div><br>
-                    <div class="fw-bold float-start">Utente Finale Mobile:</div> <div class="fw-bold float-end">{{ "%.4f"|format(config.voip_price_mobile_final or 0) }} {{ config.voip_currency or 'EUR' }}/min</div><br>
-                    <span class="badge bg-info">Applicato a CDR</span>
-                </span>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Seconda riga di card per informazioni aggiuntive -->
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card bg-light h-100">
-            <div class="card-body">
-                <h6 class="card-title">
-                    <i class="fas fa-calculator"></i> Calcolo Prezzi VoIP
-                </h6>
-                <div class="row">
-                    <div class="col-6">
-                        <small>
-                            <strong>Prezzo Base Fisso:</strong><br>
-                            {{ config.voip_price_fixed or 0 }} {{ config.voip_currency or 'EUR' }}/min
-                        </small>
-                    </div>
-                    <div class="col-6">
-                        <small>
-                            <strong>+ Ricarico {{ "%.0f"|format(config.voip_markup_percent or 0) }}%:</strong><br>
-                            <span class="text-success fw-bold">{{ "%.4f"|format(config.voip_price_fixed_final or 0) }} {{ config.voip_currency or 'EUR' }}/min</span>
-                        </small>
-                    </div>
-                </div>
-                <hr class="my-2">
-                <div class="row">
-                    <div class="col-6">
-                        <small>
-                            <strong>Prezzo Base Mobile:</strong><br>
-                            {{ config.voip_price_mobile or 0 }} {{ config.voip_currency or 'EUR' }}/min
-                        </small>
-                    </div>
-                    <div class="col-6">
-                        <small>
-                            <strong>+ Ricarico {{ "%.0f"|format(config.voip_markup_percent or 0) }}%:</strong><br>
-                            <span class="text-success fw-bold">{{ "%.4f"|format(config.voip_price_mobile_final or 0) }} {{ config.voip_currency or 'EUR' }}/min</span>
-                        </small>
-                    </div>
-                </div>
-                <hr class="my-2">
-                <div class="text-center">
-                    <small class="text-muted">
-                        <strong>Esempio:</strong> Chiamata <strong>5 min fisso</strong> = <span class="fw-bold">{{ "%.4f"|format((config.voip_price_fixed_final or 0) * 5) }} {{ config.voip_currency or 'EUR' }}</span>
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card bg-light h-100">
-            <div class="card-body">
-                <h6 class="card-title">
-                    <i class="fas fa-info-circle"></i> Informazioni Sistema
-                </h6>
-                <small>
-                    <strong>Unità Fatturazione:</strong> {{ 'Al minuto' if config.voip_price_unit == 'per_minute' else 'Al secondo' }}<br>
-                    <strong>Valuta:</strong> {{ config.voip_currency or 'EUR' }}<br>
-                    <strong>Modalità Download:</strong> {{ 'Tutti i file' if config.download_all_files else 'Specifico/Pattern' }}<br>
-                    <strong>Directory Output:</strong> {{ config.output_directory }}<br>
-                    <strong>Schedulazione:</strong> {{ config.schedule_type|title }}
-                </small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Results Section -->
+<!-- Recent Activity -->
+{% if recent_activity %}
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5><i class="fas fa-chart-line"></i> Risultati Operazioni</h5>
+                <h5 class="card-title mb-0">
+                    <i class="ki-outline ki-notification-bing me-2"></i>
+                    Attività Recenti
+                </h5>
             </div>
             <div class="card-body">
-                <div id="results-container">
-                    <p class="text-muted">Nessuna operazione eseguita ancora. Usa i pulsanti sopra per testare la configurazione.</p>
+                <div class="timeline">
+                    {% for activity in recent_activity %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-message">{{ activity.message }}</div>
+                                <div class="timeline-time text-muted small">{{ activity.timestamp }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="/logs" class="btn btn-outline-primary">
+                        <i class="ki-outline ki-notepad me-1"></i>
+                        Visualizza Tutti i Log
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 
-<!-- File Preview Modal -->
-<div class="modal fade" id="filePreviewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Anteprima File</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <pre id="filePreviewContent"></pre>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Custom Styles for Timeline -->
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: var(--bs-border-color);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0.25rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--bs-primary);
+}
+
+.timeline-content {
+    padding-left: 1rem;
+}
+
+.timeline-message {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.timeline-time {
+    margin-top: 0.25rem;
+}
+
+.alert-sm {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .btn-lg {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+</style>
+
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script>
-function manualRun() {
-    showLoading('Esecuzione in corso...');
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh stats every 30 seconds
+    function refreshStats() {
+        fetch('/api/dashboard/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update stats display
+                    updateStatsDisplay(data.stats);
+                }
+            })
+            .catch(error => {
+                console.warn('Errore aggiornamento statistiche:', error);
+            });
+    }
     
-    fetch('/manual_run')
-        .then(response => response.json())
-        .then(data => {
-            hideLoading();
-            displayResults(data, 'Esecuzione Manuale');
-        })
-        .catch(error => {
-            hideLoading();
-            displayError('Errore durante l\'esecuzione: ' + error.message);
-        });
-}
-
-function testFTP() {
-    showLoading('Test connessione FTP...');
+    function updateStatsDisplay(stats) {
+        // Update report count
+        const reportCountEl = document.querySelector('[data-stat="total_reports"]');
+        if (reportCountEl && stats.total_reports !== undefined) {
+            reportCountEl.textContent = stats.total_reports;
+        }
+        
+        // Update scheduler status
+        const schedulerStatusEl = document.querySelector('[data-stat="scheduler_status"]');
+        if (schedulerStatusEl && stats.scheduler_running !== undefined) {
+            schedulerStatusEl.textContent = stats.scheduler_running ? 'In Esecuzione' : 'Fermo';
+            schedulerStatusEl.className = stats.scheduler_running ? 'text-success' : 'text-danger';
+        }
+    }
     
-    fetch('/test_ftp')
-        .then(response => response.json())
-        .then(data => {
-            hideLoading();
-            if (data.success) {
-                displayResults({
-                    success: true,
-                    message: 'Connessione FTP riuscita',
-                    files: data.files
-                }, 'Test FTP');
-            } else {
-                displayError('Errore connessione FTP: ' + data.message);
+    // Refresh every 30 seconds
+    setInterval(refreshStats, 30000);
+    
+    // Quick action handlers
+    document.querySelectorAll('[data-action]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const action = this.dataset.action;
+            
+            if (action === 'manual_run') {
+                e.preventDefault();
+                runManualExecution();
+            } else if (action === 'test_ftp') {
+                e.preventDefault();
+                testFTPConnection();
             }
-        })
-        .catch(error => {
-            hideLoading();
-            displayError('Errore durante il test FTP: ' + error.message);
         });
-}
-
-function displayResults(data, operation) {
-    const container = document.getElementById('results-container');
-    const timestamp = new Date().toLocaleString('it-IT');
+    });
     
-    let html = `
-        <div class="alert ${data.success ? 'alert-success' : 'alert-danger'}" role="alert">
-            <h6><i class="fas fa-${data.success ? 'check-circle' : 'exclamation-circle'}"></i> 
-                ${operation} - ${timestamp}</h6>
-            <p><strong>Risultato:</strong> ${data.success ? 'Successo' : 'Errore'}</p>
-    `;
-    
-    if (data.message) {
-        html += `<p><strong>Messaggio:</strong> ${data.message}</p>`;
+    function runManualExecution() {
+        const button = document.querySelector('[data-action="manual_run"]');
+        const originalText = button.innerHTML;
+        
+        button.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Esecuzione...';
+        button.disabled = true;
+        
+        FTPScheduler.apiCall('/api/manual_run')
+            .then(data => {
+                if (data.success) {
+                    FTPScheduler.showToast('Esecuzione completata con successo', 'success');
+                    // Redirect to results
+                    setTimeout(() => {
+                        window.location.href = '/manual_run';
+                    }, 2000);
+                } else {
+                    FTPScheduler.showToast(`Errore: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                FTPScheduler.showToast(`Errore esecuzione: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
     }
     
-    if (data.downloaded_files && data.downloaded_files.length > 0) {
-        html += `<p><strong>File scaricati:</strong></p><ul>`;
-        data.downloaded_files.forEach(file => {
-            html += `<li>${file}</li>`;
-        });
-        html += `</ul>`;
+    function testFTPConnection() {
+        const button = document.querySelector('[data-action="test_ftp"]');
+        const originalText = button.innerHTML;
+        
+        button.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Test...';
+        button.disabled = true;
+        
+        FTPScheduler.apiCall('/api/test_ftp')
+            .then(data => {
+                if (data.success) {
+                    FTPScheduler.showToast(`Connessione FTP OK - ${data.files.length} file trovati`, 'success');
+                } else {
+                    FTPScheduler.showToast(`Errore FTP: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                FTPScheduler.showToast(`Errore test FTP: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
     }
-    
-    if (data.converted_files && data.converted_files.length > 0) {
-        html += `<p><strong>File convertiti:</strong></p><ul>`;
-        data.converted_files.forEach(file => {
-            html += `<li>${file}</li>`;
-        });
-        html += `</ul>`;
-    }
-    
-    if (data.files && data.files.length > 0) {
-        html += `<p><strong>File trovati sul server:</strong></p><ul>`;
-        data.files.forEach(file => {
-            html += `<li>${file}</li>`;
-        });
-        html += `</ul>`;
-    }
-    
-    html += `</div>`;
-    
-    container.innerHTML = html + container.innerHTML;
-}
-
-function displayError(message) {
-    const container = document.getElementById('results-container');
-    if (container) {
-        const html = `<div class="alert alert-danger alert-sm">
-            <i class="fas fa-exclamation-circle"></i> ${message}
-        </div>`;
-        container.innerHTML = html + container.innerHTML;
-    } else {
-        alert(message);
-    }
-}
-
-function quickSchedule(scheduleType) {
-    showLoading('Configurazione schedulazione...');
-    
-    fetch(`/quick_schedule/${scheduleType}`)
-        .then(response => response.json())
-        .then(data => {
-            hideLoading();
-            if (data.success) {
-                displayResults({
-                    success: true,
-                    message: data.message,
-                    schedule_info: data.schedule_description,
-                    next_jobs: data.next_jobs
-                }, 'Schedulazione Rapida');
-                
-                // Aggiorna la pagina dopo 2 secondi per riflettere le modifiche
-                setTimeout(() => {
-                    location.reload();
-                }, 2000);
-            } else {
-                displayError('Errore configurazione: ' + data.message);
-            }
-        })
-        .catch(error => {
-            hideLoading();
-            displayError('Errore nella configurazione: ' + error.message);
-        });
-}
-
-function showScheduleInfo() {
-    showLoading('Caricamento info schedulazione...');
-    
-    fetch('/schedule_info')
-        .then(response => response.json())
-        .then(data => {
-            hideLoading();
-            if (data.success) {
-                let info = {
-                    success: true,
-                    message: 'Informazioni schedulazione corrente',
-                    schedule_description: data.schedule_description,
-                    active_jobs: data.active_jobs,
-                    scheduler_running: data.scheduler_running
-                };
-                displayResults(info, 'Info Schedulazione');
-            } else {
-                displayError('Errore recupero info: ' + data.message);
-            }
-        })
-        .catch(error => {
-            hideLoading();
-            displayError('Errore nella richiesta: ' + error.message);
-        });
-}
-
-function showLoading(message) {
-    const container = document.getElementById('results-container');
-    const html = `
-        <div class="alert alert-info" id="loading-alert" role="alert">
-            <div class="d-flex align-items-center">
-                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                <span>${message}</span>
-            </div>
-        </div>
-    `;
-    container.innerHTML = html + container.innerHTML;
-}
-
-function hideLoading() {
-    const loadingAlert = document.getElementById('loading-alert');
-    if (loadingAlert) {
-        loadingAlert.remove();
-    }
-}
-
-// Auto-refresh status ogni 30 secondi
-setInterval(() => {
-    fetch('/status')
-        .then(response => response.json())
-        .then(data => {
-            // Aggiorna informazioni di stato se necessario
-            console.log('Status update:', data);
-        })
-        .catch(error => console.error('Error fetching status:', error));
-}, 30000);
+});
 </script>
 {% endblock %}
