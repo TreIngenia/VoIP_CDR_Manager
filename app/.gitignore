@@ -16,3 +16,6 @@ endpoints_report_*_*.md
 backup_20250525_205813
 cdr_analytics copy.py
 backup_20250529_132311
+templates_new
+assets
+*_backup_*

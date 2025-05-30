@@ -20,18 +20,6 @@ class CDRAnalyticsIntegrated:
     """
     Sistema CDR integrato che utilizza CDRCategoriesManager per classificazione e pricing
     """
-    
-    # def __init__(self, output_directory: str = "output"):
-    #     self.output_directory = Path(output_directory)
-    #     self.analytics_directory = self.output_directory / "cdr_analytics"
-    #     self.analytics_directory.mkdir(exist_ok=True)
-        
-    #     # Inizializza il manager delle categorie
-    #     categories_file = self.analytics_directory / "cdr_categories.json"
-    #     self.categories_manager = CDRCategoriesManager(str(categories_file))
-        
-    #     logger.info("🔧 CDR Analytics Integrato inizializzato con sistema categorie")
-
     def __init__(self, output_directory: str = "output", secure_config: 'SecureConfig' = None):
         self.output_directory = Path(output_directory)
         self.analytics_directory = self.output_directory / "cdr_analytics"

@@ -28,18 +28,18 @@ from performance_monitor import get_performance_monitor
 from config import save_config_to_env, load_config_from_env_local
 from ftp_processor import FTPProcessor
 from scheduler import SchedulerManager
-from routes import create_routes
+from routes.default_routes import create_routes
 
 # ✅ NUOVO: Import del sistema categorie integrato invece dei vecchi sistemi
 from cdr_integration_enhanced import integrate_enhanced_cdr_system
 from categories_routes import add_categories_routes
 
 # Import Flask
-from flask import Flask
+from flask import Flask, send_from_directory
 
 def create_app():
     """Factory function per creare l'app Flask"""
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="templates")
     
     # Configurazione Flask sicura
     app.config.update(
@@ -148,7 +148,12 @@ def main():
         
         # Crea tutte le route standard
         app = create_routes(app, secure_config, processor, scheduler_manager)
-              
+        
+        # Scarico l'elenco dei contrtti CDR
+        from cdr_contract_extractor import integrate_contract_extraction
+        contracts_info = integrate_contract_extraction(app, secure_config, processor)
+        log_success(f"Sistema contratti integrato: {contracts_info['routes_count']} endpoint")
+
         # Avvia scheduler
         try:
             scheduler_manager.restart_scheduler()

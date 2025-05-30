@@ -54,6 +54,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
                 
                 # Aggiorna processore
                 processor.config = secure_config.get_config()
+                processor.ensure_output_directory()
                 
                 # Aggiorna e riavvia scheduler
                 scheduler_manager.set_config(secure_config.get_config())
@@ -844,5 +845,9 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         except Exception as e:
             return render_template('error.html', 
                                  error_message=f"Errore dashboard categorie: {e}")
+    @app.route('/gestione_contratti')
+    def gestione_utenti():
+        """Pagina principale"""
+        return render_template('gestione_contratti.html', config=secure_config.get_config())    
            
     return app

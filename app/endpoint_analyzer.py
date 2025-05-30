@@ -31,7 +31,7 @@ class EndpointAnalyzer:
             from config import SecureConfig
             from ftp_processor import FTPProcessor  
             from scheduler import SchedulerManager
-            from routes import create_routes
+            from app.routes.default_routes import create_routes
             
             print("🔍 Inizializzazione componenti app...")
             
