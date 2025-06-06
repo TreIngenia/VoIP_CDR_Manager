@@ -22,13 +22,14 @@ MENU_ITEMS = [
                 'icon': 'ki-outline ki-element-11',
             },
             {
-                'endpoint': 'cdr_categories',
+                'endpoint': 'cdr_categories_page',
                 'title': 'Modifica categorie',
                 'icon': 'ki-outline ki-notepad-edit ',
             },
              {
-                'endpoint': 'index',
-                'title': 'Report Annuali',
+                'endpoint': 'cdr_categories_page_new',
+                'title': 'Modifica categorie NEW',
+                'icon': 'ki-outline ki-notepad-edit ',
             }
         ]
     },

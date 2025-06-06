@@ -2,44 +2,76 @@
   "FISSI": {
     "name": "FISSI",
     "display_name": "Chiamate Fisso",
-    "price_per_minute": 0.02,
+    "price_per_minute": 1.0,
     "currency": "EUR",
     "patterns": [
-      "INTERRURBANE URBANE",
-      "INTERURBANE URBANE",
-      "URBANE",
-      "FISSO",
-      "RETE FISSA",
-      "TELEFONIA FISSA",
-      "LOCALE",
-      "DISTRETTUALE"
+      "INTERURBANA"
     ],
-    "description": "Tutte le chiamate ai fissi",
+    "description": "",
     "is_active": true,
     "created_at": "2025-05-26T18:59:31.217053",
-    "updated_at": "2025-06-05T18:00:58.843074"
+    "updated_at": "2025-06-06T15:07:18.910851",
+    "custom_markup_percent": 0.0,
+    "price_with_markup": 1.0
   },
   "MOBILI": {
     "name": "MOBILI",
     "display_name": "Chiamate Mobile",
-    "price_per_minute": 0.15,
+    "price_per_minute": 2.0,
     "currency": "EUR",
     "patterns": [
-      "CELLULARE",
-      "MOBILE",
-      "RETE MOBILE",
-      "TELEFONIA MOBILE",
-      "GSM",
-      "UMTS",
-      "LTE",
-      "WIND",
-      "TIM",
-      "VODAFONE",
-      "ILIAD"
+      "CELLULARE"
     ],
     "description": "Chiamate verso numeri mobili",
     "is_active": true,
     "created_at": "2025-05-26T18:59:31.217065",
-    "updated_at": "2025-06-05T16:48:00.745870"
+    "updated_at": "2025-06-06T15:07:35.399451",
+    "custom_markup_percent": 0.0,
+    "price_with_markup": 2.0
+  },
+  "NUMERO VERDE": {
+    "name": "NUMERO VERDE",
+    "display_name": "Numero Verde",
+    "price_per_minute": 3.0,
+    "currency": "EUR",
+    "patterns": [
+      "NUMERO VERDE"
+    ],
+    "description": "",
+    "is_active": true,
+    "created_at": "2025-06-06T15:08:07.776380",
+    "updated_at": "2025-06-06T15:08:32.308485",
+    "custom_markup_percent": 0.0,
+    "price_with_markup": 3.0
+  },
+  "INTERNAZIONALE": {
+    "name": "INTERNAZIONALE",
+    "display_name": "Internazionale",
+    "price_per_minute": 4.0,
+    "currency": "EUR",
+    "patterns": [
+      "internazionale"
+    ],
+    "description": "",
+    "is_active": true,
+    "created_at": "2025-06-06T15:08:58.950625",
+    "updated_at": "2025-06-06T15:08:58.950635",
+    "custom_markup_percent": 0.0,
+    "price_with_markup": 4.0
+  },
+  "ND": {
+    "name": "ND",
+    "display_name": "Non Disponibile",
+    "price_per_minute": 10000.0,
+    "currency": "EUR",
+    "patterns": [
+      "N.D."
+    ],
+    "description": "",
+    "is_active": true,
+    "created_at": "2025-06-06T15:09:33.223458",
+    "updated_at": "2025-06-06T15:09:51.892518",
+    "custom_markup_percent": 0.0,
+    "price_with_markup": 10000.0
   }
 }

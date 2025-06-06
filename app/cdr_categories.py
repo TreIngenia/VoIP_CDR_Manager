@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 CDR Categories Manager - Gestione Macro Categorie per CDR Analytics
-Modulo per gestire categorie di chiamate con prezzi specifici e pattern di riconoscimento
+Modulo per gestire categorie di chiamate con prezzi specifici, pattern di riconoscimento e markup personalizzabili
 """
 
 import json
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CDRCategory:
-    """Classe per rappresentare una categoria CDR"""
+    """Classe per rappresentare una categoria CDR con markup personalizzabile"""
     name: str
     display_name: str
     price_per_minute: float
@@ -25,11 +25,57 @@ class CDRCategory:
     is_active: bool = True
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+    # ✅ NUOVI CAMPI PER MARKUP PERSONALIZZABILE
+    custom_markup_percent: Optional[float] = None  # Markup specifico per questa categoria (se None usa quello globale)
+    price_with_markup: Optional[float] = None      # Prezzo finale calcolato con markup
     
     def __post_init__(self):
         if self.created_at is None:
             self.created_at = datetime.now().isoformat()
         self.updated_at = datetime.now().isoformat()
+        
+        # ✅ CALCOLA AUTOMATICAMENTE IL PREZZO CON MARKUP SE NON SPECIFICATO
+        if self.price_with_markup is None:
+            self._calculate_price_with_markup()
+    
+    def _calculate_price_with_markup(self, global_markup_percent: float = 0.0):
+        """Calcola il prezzo finale applicando il markup (personalizzato o globale)"""
+        try:
+            # Usa markup personalizzato se disponibile, altrimenti quello globale
+            markup_to_apply = self.custom_markup_percent if self.custom_markup_percent is not None else global_markup_percent
+            
+            # Calcola prezzo con markup
+            markup_multiplier = 1 + (markup_to_apply / 100)
+            self.price_with_markup = round(self.price_per_minute * markup_multiplier, 4)
+            
+            logger.debug(f"Categoria {self.name}: prezzo base {self.price_per_minute} + {markup_to_apply}% = {self.price_with_markup}")
+            
+        except Exception as e:
+            logger.error(f"Errore calcolo markup per categoria {self.name}: {e}")
+            self.price_with_markup = self.price_per_minute
+    
+    def update_markup(self, custom_markup_percent: Optional[float] = None, global_markup_percent: float = 0.0):
+        """Aggiorna il markup per questa categoria"""
+        self.custom_markup_percent = custom_markup_percent
+        self._calculate_price_with_markup(global_markup_percent)
+        self.updated_at = datetime.now().isoformat()
+    
+    def get_effective_markup_percent(self, global_markup_percent: float = 0.0) -> float:
+        """Restituisce il markup effettivo utilizzato (personalizzato o globale)"""
+        return self.custom_markup_percent if self.custom_markup_percent is not None else global_markup_percent
+    
+    def get_pricing_info(self, global_markup_percent: float = 0.0) -> Dict[str, Any]:
+        """Restituisce informazioni complete sui prezzi"""
+        effective_markup = self.get_effective_markup_percent(global_markup_percent)
+        
+        return {
+            'price_base': self.price_per_minute,
+            'markup_percent': effective_markup,
+            'markup_source': 'custom' if self.custom_markup_percent is not None else 'global',
+            'price_with_markup': self.price_with_markup,
+            'markup_amount': round(self.price_with_markup - self.price_per_minute, 4),
+            'currency': self.currency
+        }
     
     def matches_pattern(self, call_type: str) -> bool:
         """Verifica se un tipo di chiamata corrisponde ai pattern della categoria"""
@@ -44,22 +90,29 @@ class CDRCategory:
         
         return False
     
-    def calculate_cost(self, duration_seconds: int, unit: str = 'per_minute') -> Dict[str, Any]:
-        """Calcola il costo per una chiamata"""
+    def calculate_cost(self, duration_seconds: int, unit: str = 'per_minute', use_markup: bool = True) -> Dict[str, Any]:
+        """Calcola il costo per una chiamata con opzione markup"""
+        # Prezzo da utilizzare (con o senza markup)
+        price_to_use = self.price_with_markup if use_markup and self.price_with_markup else self.price_per_minute
+        
         if unit == 'per_second':
-            cost = self.price_per_minute * (duration_seconds / 60.0)
+            cost = price_to_use * (duration_seconds / 60.0)
             duration_billed = duration_seconds
             unit_label = 'secondi'
         else:  # per_minute (default)
             duration_minutes = duration_seconds / 60.0
-            cost = self.price_per_minute * duration_minutes
+            cost = price_to_use * duration_minutes
             duration_billed = duration_minutes
             unit_label = 'minuti'
         
         return {
             'category_name': self.name,
             'category_display_name': self.display_name,
-            'price_per_minute': self.price_per_minute,
+            'price_per_minute': self.price_per_minute,  # Mantieni compatibilità
+            'price_per_minute_base': self.price_per_minute,
+            'price_per_minute_with_markup': self.price_with_markup,
+            'price_per_minute_used': price_to_use,
+            'markup_applied': use_markup,
             'duration_billed': round(duration_billed, 4),
             'unit_label': unit_label,
             'cost_calculated': round(cost, 4),
@@ -68,7 +121,7 @@ class CDRCategory:
 
 
 class CDRCategoriesManager:
-    """Manager per gestire le categorie CDR"""
+    """Manager per gestire le categorie CDR con supporto markup personalizzabili"""
     
     DEFAULT_CATEGORIES = {
         'FISSI': CDRCategory(
@@ -113,11 +166,6 @@ class CDRCategoriesManager:
         )
     }
     
-    # def __init__(self, config_file: str = 'cdr_categories.json'):
-    #     self.config_file = Path(config_file)
-    #     self.categories: Dict[str, CDRCategory] = {}
-    #     self.load_categories()
-    
     def __init__(self, config_file: str = None, secure_config: 'SecureConfig' = None):
         """
         Inizializza il manager con configurazione da .env
@@ -130,10 +178,14 @@ class CDRCategoriesManager:
         if config_file is not None:
             # Percorso specifico fornito
             self.config_file = Path(config_file)
+            self.global_markup_percent = 0.0  # Default se non c'è secure_config
         elif secure_config is not None:
             # Usa configurazione da .env tramite SecureConfig
             self.config_file = secure_config.get_config_file_path()
             secure_config.ensure_config_directory()
+            # ✅ LEGGI MARKUP GLOBALE DA CONFIGURAZIONE
+            config = secure_config.get_config()
+            self.global_markup_percent = float(config.get('voip_markup_percent', 0.0))
         else:
             # ✅ FALLBACK: Leggi direttamente da variabili d'ambiente
             import os
@@ -141,9 +193,11 @@ class CDRCategoriesManager:
             config_dir.mkdir(parents=True, exist_ok=True)
             categories_file = os.getenv('CATEGORIES_CONFIG_FILE', 'cdr_categories.json')
             self.config_file = config_dir / categories_file
+            self.global_markup_percent = float(os.getenv('VOIP_MARKUP_PERCENT', 0.0))
         
         self.categories: Dict[str, CDRCategory] = {}
         logger.info(f"🔧 CDR Categories Manager - File config: {self.config_file}")
+        logger.info(f"💰 Markup globale da config: {self.global_markup_percent}%")
         self.load_categories()
 
     def load_categories(self):
@@ -157,7 +211,16 @@ class CDRCategoriesManager:
                 for cat_name, cat_data in data.items():
                     # Converti il dizionario in CDRCategory
                     if isinstance(cat_data, dict):
-                        self.categories[cat_name] = CDRCategory(**cat_data)
+                        # ✅ GESTISCI RETROCOMPATIBILITÀ PER FILE SENZA CAMPI MARKUP
+                        if 'custom_markup_percent' not in cat_data:
+                            cat_data['custom_markup_percent'] = None
+                        if 'price_with_markup' not in cat_data:
+                            cat_data['price_with_markup'] = None
+                        
+                        category = CDRCategory(**cat_data)
+                        # ✅ RICALCOLA PREZZI CON MARKUP GLOBALE AGGIORNATO
+                        category._calculate_price_with_markup(self.global_markup_percent)
+                        self.categories[cat_name] = category
                     else:
                         logger.warning(f"Categoria {cat_name} ha formato non valido")
                 
@@ -166,12 +229,18 @@ class CDRCategoriesManager:
                 # Prima esecuzione: usa categorie di default
                 logger.info("File categorie non trovato, creo categorie di default")
                 self.categories = self.DEFAULT_CATEGORIES.copy()
+                # ✅ APPLICA MARKUP GLOBALE ALLE CATEGORIE DEFAULT
+                for category in self.categories.values():
+                    category._calculate_price_with_markup(self.global_markup_percent)
                 self.save_categories()
                 
         except Exception as e:
             logger.error(f"Errore caricamento categorie: {e}")
             logger.info("Uso categorie di default")
             self.categories = self.DEFAULT_CATEGORIES.copy()
+            # ✅ APPLICA MARKUP ANCHE IN CASO DI ERRORE
+            for category in self.categories.values():
+                category._calculate_price_with_markup(self.global_markup_percent)
     
     def save_categories(self):
         """Salva le categorie nel file di configurazione"""
@@ -199,7 +268,8 @@ class CDRCategoriesManager:
             return False
     
     def add_category(self, name: str, display_name: str, price_per_minute: float, 
-                    patterns: List[str], currency: str = 'EUR', description: str = '') -> bool:
+                    patterns: List[str], currency: str = 'EUR', description: str = '',
+                    custom_markup_percent: Optional[float] = None) -> bool:
         """Aggiunge una nuova categoria"""
         try:
             # Validazioni
@@ -217,6 +287,13 @@ class CDRCategoriesManager:
             if not patterns or not any(p.strip() for p in patterns):
                 raise ValueError("Almeno un pattern è obbligatorio")
             
+            # ✅ VALIDAZIONE MARKUP PERSONALIZZATO
+            if custom_markup_percent is not None:
+                if custom_markup_percent < -100:
+                    raise ValueError("Markup non può essere inferiore a -100%")
+                if custom_markup_percent > 1000:
+                    raise ValueError("Markup troppo alto (massimo 1000%)")
+            
             # Pulisci i pattern
             clean_patterns = [p.strip() for p in patterns if p.strip()]
             
@@ -227,8 +304,12 @@ class CDRCategoriesManager:
                 price_per_minute=float(price_per_minute),
                 currency=currency,
                 patterns=clean_patterns,
-                description=description.strip()
+                description=description.strip(),
+                custom_markup_percent=custom_markup_percent
             )
+            
+            # ✅ CALCOLA PREZZO CON MARKUP
+            category._calculate_price_with_markup(self.global_markup_percent)
             
             self.categories[name] = category
             
@@ -253,6 +334,8 @@ class CDRCategoriesManager:
                 raise ValueError(f"Categoria {name} non trovata")
             
             category = self.categories[name]
+            price_changed = False
+            markup_changed = False
             
             # Aggiorna i campi forniti
             if 'display_name' in kwargs:
@@ -263,6 +346,7 @@ class CDRCategoriesManager:
                 if price < 0:
                     raise ValueError("Prezzo deve essere positivo")
                 category.price_per_minute = price
+                price_changed = True
             
             if 'patterns' in kwargs:
                 patterns = kwargs['patterns']
@@ -279,6 +363,24 @@ class CDRCategoriesManager:
             if 'is_active' in kwargs:
                 category.is_active = bool(kwargs['is_active'])
             
+            # ✅ GESTIONE AGGIORNAMENTO MARKUP PERSONALIZZATO
+            if 'custom_markup_percent' in kwargs:
+                new_markup = kwargs['custom_markup_percent']
+                if new_markup is not None:
+                    new_markup = float(new_markup)
+                    if new_markup < -100:
+                        raise ValueError("Markup non può essere inferiore a -100%")
+                    if new_markup > 1000:
+                        raise ValueError("Markup troppo alto (massimo 1000%)")
+                
+                if category.custom_markup_percent != new_markup:
+                    category.custom_markup_percent = new_markup
+                    markup_changed = True
+            
+            # ✅ RICALCOLA PREZZO SE NECESSARIO
+            if price_changed or markup_changed:
+                category._calculate_price_with_markup(self.global_markup_percent)
+            
             # Aggiorna timestamp
             category.updated_at = datetime.now().isoformat()
             
@@ -291,6 +393,57 @@ class CDRCategoriesManager:
         except Exception as e:
             logger.error(f"Errore aggiornamento categoria {name}: {e}")
             return False
+    
+    def update_global_markup(self, new_global_markup_percent: float) -> bool:
+        """Aggiorna il markup globale e ricalcola tutti i prezzi delle categorie che lo utilizzano"""
+        try:
+            old_markup = self.global_markup_percent
+            self.global_markup_percent = float(new_global_markup_percent)
+            
+            # ✅ RICALCOLA PREZZI PER TUTTE LE CATEGORIE CHE USANO MARKUP GLOBALE
+            categories_updated = 0
+            for category in self.categories.values():
+                if category.custom_markup_percent is None:  # Usa markup globale
+                    old_price = category.price_with_markup
+                    category._calculate_price_with_markup(self.global_markup_percent)
+                    if old_price != category.price_with_markup:
+                        categories_updated += 1
+            
+            if self.save_categories():
+                logger.info(f"Markup globale aggiornato da {old_markup}% a {self.global_markup_percent}%")
+                logger.info(f"Prezzi ricalcolati per {categories_updated} categorie")
+                return True
+            else:
+                # Rollback
+                self.global_markup_percent = old_markup
+                return False
+                
+        except Exception as e:
+            logger.error(f"Errore aggiornamento markup globale: {e}")
+            return False
+    
+    def get_category_with_pricing(self, name: str) -> Optional[Dict[str, Any]]:
+        """Ottiene una categoria con informazioni complete sui prezzi"""
+        category = self.get_category(name)
+        if not category:
+            return None
+        
+        # ✅ RESTITUISCE TUTTE LE INFO PRICING
+        category_data = asdict(category)
+        category_data['pricing_info'] = category.get_pricing_info(self.global_markup_percent)
+        category_data['global_markup_percent'] = self.global_markup_percent
+        
+        return category_data
+    
+    def get_all_categories_with_pricing(self) -> Dict[str, Dict[str, Any]]:
+        """Ottiene tutte le categorie con informazioni pricing complete"""
+        result = {}
+        for name, category in self.categories.items():
+            category_data = asdict(category)
+            category_data['pricing_info'] = category.get_pricing_info(self.global_markup_percent)
+            result[name] = category_data
+        
+        return result
     
     def delete_category(self, name: str) -> bool:
         """Elimina una categoria"""
@@ -349,6 +502,9 @@ class CDRCategoriesManager:
             result = category.calculate_cost(duration_seconds, unit)
             result['matched'] = True
             result['original_call_type'] = call_type
+            # ✅ AGGIUNGI INFO MARKUP
+            result['markup_percent_applied'] = category.get_effective_markup_percent(self.global_markup_percent)
+            result['markup_source'] = 'custom' if category.custom_markup_percent is not None else 'global'
         else:
             # Fallback: categoria sconosciuta
             result = {
@@ -360,7 +516,9 @@ class CDRCategoriesManager:
                 'cost_calculated': 0.0,
                 'currency': 'EUR',
                 'matched': False,
-                'original_call_type': call_type
+                'original_call_type': call_type,
+                'markup_percent_applied': 0.0,
+                'markup_source': 'none'
             }
         
         return result
@@ -370,10 +528,21 @@ class CDRCategoriesManager:
         active_count = sum(1 for cat in self.categories.values() if cat.is_active)
         total_patterns = sum(len(cat.patterns) for cat in self.categories.values())
         
+        # ✅ STATISTICHE MARKUP
+        custom_markup_count = sum(1 for cat in self.categories.values() if cat.custom_markup_percent is not None)
+        global_markup_count = sum(1 for cat in self.categories.values() if cat.custom_markup_percent is None)
+        
         price_range = {
             'min': min((cat.price_per_minute for cat in self.categories.values()), default=0),
             'max': max((cat.price_per_minute for cat in self.categories.values()), default=0),
-            'avg': sum(cat.price_per_minute for cat in self.categories.values()) / len(self.categories) if self.categories else 0
+            'avg': sum(cat.price_per_minute for cat in self.categories.values()) / len(self.categories) if self.categories else 0,
+            # ✅ AGGIUNGI STATISTICHE MARKUP
+            'min_base': min((cat.price_per_minute for cat in self.categories.values()), default=0),
+            'max_base': max((cat.price_per_minute for cat in self.categories.values()), default=0),
+            'min_with_markup': min((cat.price_with_markup for cat in self.categories.values()), default=0),
+            'max_with_markup': max((cat.price_with_markup for cat in self.categories.values()), default=0),
+            'avg_base': sum(cat.price_per_minute for cat in self.categories.values()) / len(self.categories) if self.categories else 0,
+            'avg_with_markup': sum(cat.price_with_markup for cat in self.categories.values()) / len(self.categories) if self.categories else 0
         }
         
         return {
@@ -383,7 +552,17 @@ class CDRCategoriesManager:
             'total_patterns': total_patterns,
             'price_range': price_range,
             'currencies': list(set(cat.currency for cat in self.categories.values())),
-            'last_modified': max((cat.updated_at for cat in self.categories.values()), default=None)
+            'last_modified': max((cat.updated_at for cat in self.categories.values()), default=None),
+            # ✅ NUOVE STATISTICHE MARKUP
+            'markup_statistics': {
+                'global_markup_percent': self.global_markup_percent,
+                'categories_using_global_markup': global_markup_count,
+                'categories_using_custom_markup': custom_markup_count,
+                'custom_markup_range': {
+                    'min': min((cat.custom_markup_percent for cat in self.categories.values() if cat.custom_markup_percent is not None), default=None),
+                    'max': max((cat.custom_markup_percent for cat in self.categories.values() if cat.custom_markup_percent is not None), default=None),
+                }
+            }
         }
     
     def export_categories(self, format: str = 'json') -> str:
@@ -400,7 +579,7 @@ class CDRCategoriesManager:
             writer = csv.writer(output)
             
             # Header
-            writer.writerow(['Name', 'Display Name', 'Price per Minute', 'Currency', 
+            writer.writerow(['Name', 'Display Name', 'Price per Minute', 'Custom Markup %', 'Price With Markup', 'Currency', 
                            'Patterns', 'Description', 'Active', 'Created', 'Updated'])
             
             # Data
@@ -409,6 +588,8 @@ class CDRCategoriesManager:
                     category.name,
                     category.display_name,
                     category.price_per_minute,
+                    category.custom_markup_percent if category.custom_markup_percent is not None else 'Global',
+                    category.price_with_markup,
                     category.currency,
                     '; '.join(category.patterns),
                     category.description,
@@ -432,7 +613,15 @@ class CDRCategoriesManager:
                 
                 for cat_name, cat_data in imported_data.items():
                     if isinstance(cat_data, dict):
+                        # ✅ GESTIONE RETROCOMPATIBILITÀ
+                        if 'custom_markup_percent' not in cat_data:
+                            cat_data['custom_markup_percent'] = None
+                        if 'price_with_markup' not in cat_data:
+                            cat_data['price_with_markup'] = None
+                        
                         category = CDRCategory(**cat_data)
+                        # ✅ RICALCOLA MARKUP
+                        category._calculate_price_with_markup(self.global_markup_percent)
                         self.categories[cat_name.upper()] = category
                 
                 return self.save_categories()
@@ -471,6 +660,9 @@ class CDRCategoriesManager:
         """Ripristina le categorie di default"""
         try:
             self.categories = self.DEFAULT_CATEGORIES.copy()
+            # ✅ APPLICA MARKUP GLOBALE ALLE CATEGORIE DEFAULT
+            for category in self.categories.values():
+                category._calculate_price_with_markup(self.global_markup_percent)
             if self.save_categories():
                 logger.info("Categorie ripristinate ai valori di default")
                 return True
@@ -508,6 +700,9 @@ def test_category_classification():
         print(f"  Prezzo: {result['price_per_minute']} {result['currency']}/min")
         print(f"  Costo 5 min: {result['cost_calculated']} {result['currency']}")
         print(f"  Match: {'✅' if result['matched'] else '❌'}")
+        # ✅ AGGIUNGI INFO MARKUP
+        if 'markup_percent_applied' in result:
+            print(f"  Markup: {result['markup_percent_applied']}% ({result['markup_source']})")
         print()
 
 if __name__ == "__main__":
