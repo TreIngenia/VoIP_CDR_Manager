@@ -12,26 +12,26 @@ MENU_ITEMS = [
         'type': 'section',  # Nessun titolo
         'title': 'Report'
     },
-    # {
-    #     'title': 'Report',
-    #     'icon': 'ki-outline ki-minus-folder fs-2',
-    #     'children': [
-    #         {
-    #             'endpoint': 'index',
-    #             'title': 'Report Mensili',
-    #             'icon': 'ki-outline ki-element-11',
-    #         },
-    #         {
-    #             'endpoint': 'index',
-    #             'title': 'Report Annuali',
-    #             'icon': 'ki-outline ki-setting-2 ',
-    #         },
-    #          {
-    #             'endpoint': 'index',
-    #             'title': 'Report Annuali',
-    #         }
-    #     ]
-    # },
+    {
+        'title': 'Gestione categorie',
+        'icon': 'ki-outline ki-minus-folder fs-2',
+        'children': [
+            {
+                'endpoint': 'cdr_categories_dashboard',
+                'title': 'Dashboard categorie',
+                'icon': 'ki-outline ki-element-11',
+            },
+            {
+                'endpoint': 'cdr_categories',
+                'title': 'Modifica categorie',
+                'icon': 'ki-outline ki-notepad-edit ',
+            },
+             {
+                'endpoint': 'index',
+                'title': 'Report Annuali',
+            }
+        ]
+    },
     {
         'type': 'section',
         'title': 'Anagrafiche'
@@ -39,17 +39,27 @@ MENU_ITEMS = [
     {
         'endpoint': 'gestione_utenti',
         'title': 'Gestione contratti',
-        'icon': 'ki-outline ki-setting-2 fs-2 ',
+        'icon': 'ki-outline ki-briefcase fs-2 ',
     },
     {
         'type': 'section',
-        'title': 'Impostazioni'
+        'title': 'Impostazioni sistema'
     },
     {
         'endpoint': 'config_page',
         'title': 'Impostazioni',
         'icon': 'ki-outline ki-setting-2 fs-2 ',
-    }
+    },
+    {
+        'endpoint': 'logs',
+        'title': 'Logs',
+        'icon': 'ki-outline ki-devices fs-2 ',
+    },
+    {
+        'endpoint': 'status_page',
+        'title': 'Stato del sistema',
+        'icon': 'ki-outline ki-pulse fs-2 ',
+    },
 ]
 
 # MENU_ITEMS = [

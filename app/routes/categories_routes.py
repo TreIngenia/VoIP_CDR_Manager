@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Categories Routes - Route Flask per gestione categorie CDR
 Aggiunge endpoint per CRUD delle macro categorie nell'interfaccia web
@@ -15,6 +14,7 @@ import io
 logger = logging.getLogger(__name__)
 
 def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
+    from routes.menu_routes import menu_bp, register_menu_globals, render_with_menu_context
     """
     Aggiunge le route per la gestione delle categorie CDR
     
@@ -24,8 +24,8 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
     """
     categories_manager = cdr_analytics_enhanced.get_categories_manager()
     
-    @app.route('/categories')
-    def categories_page():
+    @app.route('/cdr_categories')
+    def cdr_categories():
         """Pagina principale gestione categorie con info configurazione"""
         try:
             categories = categories_manager.get_all_categories()
@@ -43,11 +43,11 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                 'config_writable': os.access(categories_manager.config_file, os.W_OK) if categories_manager.config_file.exists() else False
             }
             
-            return render_template('categories.html', 
-                                 categories=categories,
-                                 stats=stats,
-                                 conflicts=conflicts,
-                                 config_info=config_info)
+            return render_with_menu_context('categories.html', {
+                                 "categories":categories,
+                                 "stats":stats,
+                                 "conflicts":conflicts,
+                                 "config_info":config_info})
         except Exception as e:
             logger.error(f"Errore caricamento pagina categorie: {e}")
             return render_template('error.html', 

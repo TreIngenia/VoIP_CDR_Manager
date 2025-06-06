@@ -9,7 +9,6 @@ from flask import render_template, request, jsonify, redirect, url_for, Response
 
 logger = get_logger(__name__)
 
-
 def create_routes(app, secure_config, processor, scheduler_manager):
     from routes.menu_routes import menu_bp, register_menu_globals, render_with_menu_context
     """Crea tutte le route Flask"""
@@ -30,7 +29,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             }
         }
         # return render_template('index.html', config=secure_config.get_config())
-        return render_with_menu_context('index.html', 'Dashboard', dashboard_data)
+        return render_with_menu_context('index.html', dashboard_data)
 
     @app.route('/config', endpoint='config_page', methods=['GET', 'POST'])
     def config_page():
@@ -85,7 +84,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
                                      config=secure_config.get_config(),
                                      error=f"Errore nell'aggiornamento: {str(e)}")
         
-        return render_template('config.html', config=secure_config.get_config())
+        return render_with_menu_context('config.html', {'config':secure_config.get_config()})
 
     @app.route('/manual_run')
     def manual_run():
@@ -181,7 +180,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             else:
                 last_logs = ["⚠️ File di log non trovato."]
 
-            return render_template('logs.html', logs=last_logs)
+            return render_with_menu_context('logs.html', {'logs':last_logs})
 
         except Exception as e:
             logger.error(f"Errore endpoint logs: {e}")
@@ -858,11 +857,14 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             return render_template('cdr_categories_dashboard.html', **dashboard_data)
             
         except Exception as e:
-            return render_template('error.html', 
-                                 error_message=f"Errore dashboard categorie: {e}")
+            return render_template('error.html', error_message=f"Errore dashboard categorie: {e}")
+        
     @app.route('/gestione_contratti')
     def gestione_utenti():
-        """Pagina principale"""
-        return render_template('gestione_contratti.html', config=secure_config.get_config())    
-           
+        return render_with_menu_context('gestione_contratti.html', {'config':secure_config.get_config()})    
+    
+    @app.route('/default_page')
+    def default_page():
+        return render_with_menu_context('index_base.html', {'config':secure_config.get_config()})    
+               
     return app

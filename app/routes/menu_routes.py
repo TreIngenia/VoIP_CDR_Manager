@@ -21,45 +21,119 @@ def process_partials_recursive(content, base_dir='templates_new'):
     
     return re.sub(pattern, replacer, content)
 
-# def render_with_menu_context(template_path, page_title, additional_context=None):
-#     """Render template with menu context and partials processing."""
-#     try:
-#         if template_path.startswith('templates_new/'):
-#             file_path = template_path
-#         else:
-#             file_path = f'templates_new/{template_path}'
-            
-#         with open(file_path, 'r', encoding='utf-8') as f:
-#             content = f.read()
-            
-#         processed_html = process_partials_recursive(content)
+# ✅ CLASSE BREADCRUMB BUILDER (DEVE ESSERE PRIMA DELLA FUNZIONE CHE LA USA)
+class BreadcrumbBuilder:
+    """Classe per costruire breadcrumb dai menu items"""
+    
+    def __init__(self, menu_items):
+        self.menu_items = menu_items
+    
+    def find_menu_path(self, endpoint, items=None, path=None):
+        """Trova il percorso di un endpoint nella struttura menu"""
+        if items is None:
+            items = self.menu_items
+        if path is None:
+            path = []
         
-#         # Context base con menu items
-#         context = {
-#             'menu_items': MENU_ITEMS,
-#             'page_title': page_title,
-#             'current_endpoint': request.endpoint
-#         }
-        
-#         # Aggiungi context aggiuntivo se fornito
-#         if additional_context:
-#             context.update(additional_context)
+        for item in items:
+            current_path = path + [item]
             
-#         return render_template_string(processed_html, **context)
+            if item.get('endpoint') == endpoint:
+                return current_path
+            
+            if 'children' in item:
+                result = self.find_menu_path(endpoint, item['children'], current_path)
+                if result:
+                    return result
         
-#     except Exception as e:
-#         # Fallback con template Flask standard
-#         from flask import render_template
-#         context = {
-#             'menu_items': MENU_ITEMS,
-#             'page_title': page_title,
-#             'error_message': str(e)
-#         }
-#         if additional_context:
-#             context.update(additional_context)
-#         return render_template('error.html', **context)
-def render_with_menu_context(template_path, page_title, additional_context=None):
-    """Render template con menu + breadcrumb"""
+        return None
+    
+    def build_breadcrumb(self, endpoint, include_home=True):
+        """Costruisce il breadcrumb per un endpoint"""
+        breadcrumb = []
+
+        if self._endpoint_to_title(endpoint) == 'Index': 
+            return breadcrumb    
+        
+        # Aggiungi Home se richiesto
+       
+        if include_home:
+            if self._endpoint_to_title(endpoint) != 'Index': 
+                breadcrumb.append({
+                    'title': 'Dashboard',
+                    'url': self._safe_url_for('index'),
+                    'is_active': endpoint == 'index',
+                    'icon': 'ki-outline ki-home fs-3'
+                })
+        
+        # Trova il percorso nel menu
+        menu_path = self.find_menu_path(endpoint)
+        
+        if menu_path:
+            for i, item in enumerate(menu_path):
+                is_last = (i == len(menu_path) - 1)
+                
+                # Salta sezioni senza endpoint
+                if item.get('type') == 'section' and 'endpoint' not in item:
+                    continue
+                
+                breadcrumb_item = {
+                    'title': item.get('title', 'Senza titolo'),
+                    'url': self._safe_url_for(item.get('endpoint')) if item.get('endpoint') and not is_last else None,
+                    'is_active': is_last,
+                    'icon': item.get('icon', '')
+                }
+                
+                breadcrumb.append(breadcrumb_item)
+        else:
+            # Fallback per endpoint non in menu
+            breadcrumb.append({
+                'title': self._endpoint_to_title(endpoint),
+                'url': None,
+                'is_active': True,
+                'icon': ''
+            })
+        
+        return breadcrumb
+    
+    def _safe_url_for(self, endpoint):
+        """Genera URL in modo sicuro"""
+        if not endpoint:
+            return '#'
+        try:
+            return url_for(endpoint)
+        except:
+            return '#'
+    
+    def _endpoint_to_title(self, endpoint):
+        """Converte endpoint in titolo"""
+        if not endpoint:
+            return 'Pagina'
+        
+        if '.' in endpoint:
+            endpoint = endpoint.split('.')[-1]
+        
+        title = endpoint.replace('_', ' ').title()
+        
+        replacements = {
+            'Config': 'Configurazione',
+            'Cdr': 'CDR',
+            'Api': 'API',
+            'Ftp': 'FTP',
+            'Gestione Utenti': 'Gestione Contratti'
+        }
+        
+        for old, new in replacements.items():
+            title = title.replace(old, new)
+        
+        return title
+
+# ✅ ISTANZA GLOBALE (DOPO LA CLASSE)
+_breadcrumb_builder = BreadcrumbBuilder(MENU_ITEMS)
+
+# ✅ FUNZIONE RENDER (DOPO L'ISTANZA GLOBALE)
+def render_with_menu_context(template_path, additional_context=None):
+    """Render template con menu + breadcrumb integrato"""
     try:
         if template_path.startswith(os.getenv("TEMPLATE_FOLDER", "templates_new")+'/'):
             file_path = template_path
@@ -71,40 +145,14 @@ def render_with_menu_context(template_path, page_title, additional_context=None)
         
         processed_html = process_partials_recursive(content)
 
-        # Calcolo breadcrumb
-        breadcrumb = []
+        # ✅ CALCOLO BREADCRUMB INTEGRATO
         endpoint = request.endpoint
-
-        def find_breadcrumb(items, trail=None):
-            trail = trail or []
-            for item in items:
-                if 'endpoint' in item:
-                    if item['endpoint'] == endpoint:
-                        return trail + [item]
-                elif 'children' in item:
-                    result = find_breadcrumb(item['children'], trail + [item])
-                    if result:
-                        return result
-            return None
-
-        path = find_breadcrumb(MENU_ITEMS)
-        for item in (path or []):
-            url = '#'
-            if 'endpoint' in item:
-                try:
-                    url = url_for(item['endpoint'])
-                except:
-                    url = '#'
-            breadcrumb.append({
-                'title': item.get('title', ''),
-                'url': url
-            })
+        breadcrumb = _breadcrumb_builder.build_breadcrumb(endpoint)
 
         context = {
             'menu_items': MENU_ITEMS,
-            'page_title': page_title,
-            'current_endpoint': request.endpoint,
-            'breadcrumb': breadcrumb  # 🔥 incluso automaticamente
+            'current_endpoint': endpoint,
+            'breadcrumb': breadcrumb,  # ✅ BREADCRUMB AUTOMATICO
         }
 
         if additional_context:
@@ -116,13 +164,58 @@ def render_with_menu_context(template_path, page_title, additional_context=None)
         from flask import render_template
         context = {
             'menu_items': MENU_ITEMS,
-            'page_title': page_title,
-            'error_message': str(e)
+            'error_message': str(e),
+            'breadcrumb': []  # ✅ BREADCRUMB VUOTO IN CASO ERRORE
         }
         if additional_context:
             context.update(additional_context)
         return render_template('error.html', **context)
 
+# ✅ ROUTE API BREADCRUMB
+@menu_bp.route('/api/breadcrumb')
+def get_breadcrumb_api():
+    """API per ottenere breadcrumb dell'endpoint corrente"""
+    try:
+        include_home = request.args.get('include_home', 'true').lower() == 'true'
+        endpoint = request.args.get('endpoint', request.endpoint)
+        
+        breadcrumb = _breadcrumb_builder.build_breadcrumb(endpoint, include_home)
+        
+        return jsonify({
+            'success': True,
+            'breadcrumb': breadcrumb,
+            'current_endpoint': endpoint,
+            'timestamp': __import__('datetime').datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'breadcrumb': []
+        }), 500
+
+@menu_bp.route('/api/breadcrumb/<endpoint>')
+def get_breadcrumb_for_endpoint(endpoint):
+    """API per breadcrumb di un endpoint specifico"""
+    try:
+        include_home = request.args.get('include_home', 'true').lower() == 'true'
+        breadcrumb = _breadcrumb_builder.build_breadcrumb(endpoint, include_home)
+        
+        return jsonify({
+            'success': True,
+            'breadcrumb': breadcrumb,
+            'target_endpoint': endpoint
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'breadcrumb': []
+        }), 500
+
+# ✅ ROUTE MENU ESISTENTI
 @menu_bp.route('/api/menu/items')
 def get_menu_items():
     """API per ottenere elementi menu con URL processati"""
@@ -166,10 +259,50 @@ def get_menu_items():
             'message': f'Errore menu: {str(e)}'
         }), 500
 
-from flask import request, jsonify, url_for
-from menu import MENU_ITEMS
-
+# ✅ FUNZIONI TEMPLATE GLOBALI
+def register_breadcrumb_globals(app):
+    """Registra funzioni template globali per breadcrumb"""
     
+    @app.template_global()
+    def get_breadcrumb(endpoint=None, include_home=True):
+        """Template global per ottenere breadcrumb"""
+        if endpoint is None:
+            endpoint = request.endpoint
+        return _breadcrumb_builder.build_breadcrumb(endpoint, include_home)
+    
+    @app.template_global()
+    def breadcrumb_html(endpoint=None, include_home=True, css_classes="breadcrumb"):
+        """Template global per HTML breadcrumb"""
+        breadcrumb = get_breadcrumb(endpoint, include_home)
+        
+        html_parts = [f'<ol class="{css_classes}">']
+        
+        for item in breadcrumb:
+            li_class = "breadcrumb-item"
+            if item['is_active']:
+                li_class += " active"
+            
+            html_parts.append(f'<li class="{li_class}">')
+            
+            if item['url'] and not item['is_active']:
+                icon_html = f'<i class="{item["icon"]} me-1"></i>' if item['icon'] else ''
+                html_parts.append(f'<a href="{item["url"]}" class="text-decoration-none">{icon_html}{item["title"]}</a>')
+            else:
+                icon_html = f'<i class="{item["icon"]} me-1"></i>' if item['icon'] else ''
+                html_parts.append(f'{icon_html}{item["title"]}')
+            
+            html_parts.append('</li>')
+        
+        html_parts.append('</ol>')
+        return ''.join(html_parts)
+    
+    @app.template_global()
+    def breadcrumb_json(endpoint=None, include_home=True):
+        """Template global per breadcrumb JSON"""
+        import json
+        breadcrumb = get_breadcrumb(endpoint, include_home)
+        return json.dumps(breadcrumb)
+
 def register_menu_globals(app):
     """Registra funzioni globali per menu nei template"""
     

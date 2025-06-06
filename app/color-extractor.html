@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Estrazione Colori da CSS</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f9f9f9;
+    }
+
+    input[type="file"] {
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: #eee;
+    }
+
+    .color-box {
+      width: 100px;
+      height: 100px;
+      border: 1px solid #666;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Estrazione Colori da File CSS</h1>
+  <input type="file" accept=".css" id="cssFileInput" />
+
+  <table>
+    <thead>
+      <tr>
+        <th>Selettore</th>
+        <th>Proprietà</th>
+        <th>Valore</th>
+        <th>Anteprima</th>
+      </tr>
+    </thead>
+    <tbody id="colorTableBody"></tbody>
+  </table>
+
+<script>
+  const colorRegex = /(color|background-color|border-color|fill|stroke)\s*:\s*([^;{}]+);/gi;
+  const varRegex = /var\((--[^)]+)\)/g;
+  const varInFuncRegex = /rgba?\((.*?)\)/gi;
+
+  document.getElementById('cssFileInput').addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const css = e.target.result;
+      const variables = extractCssVariables(css);
+      parseCSS(css, variables);
+    };
+    reader.readAsText(file);
+  });
+
+  function extractCssVariables(css) {
+    const varMap = {};
+    const rootMatch = css.match(/:root\s*{([^}]+)}/);
+    if (rootMatch) {
+      const declarations = rootMatch[1].split(';');
+      declarations.forEach(decl => {
+        const [key, value] = decl.split(':').map(s => s.trim());
+        if (key && value && key.startsWith('--')) {
+          varMap[key] = value;
+        }
+      });
+    }
+    return varMap;
+  }
+
+  function resolveCssValue(value, variables) {
+    // Sostituisce var(--varname) con valore se esiste
+    value = value.replace(varRegex, (_, varName) => variables[varName] || varName);
+
+    // Gestione di funzioni tipo rgba(var(--var), x, y)
+    value = value.replace(varInFuncRegex, (match, inner) => {
+      const resolved = inner.split(',').map(part => {
+        const varMatch = part.trim().match(/^var\((--[^)]+)\)$/);
+        if (varMatch && variables[varMatch[1]]) {
+          return variables[varMatch[1]];
+        }
+        return part.trim();
+      });
+      return match.split('(')[0] + '(' + resolved.join(', ') + ')';
+    });
+
+    return value;
+  }
+
+  function parseCSS(css, variables) {
+    const table = document.getElementById('colorTableBody');
+    table.innerHTML = '';
+
+    const rules = css.split('}');
+    rules.forEach(rule => {
+      const parts = rule.split('{');
+      if (parts.length !== 2) return;
+
+      const selectors = parts[0].trim().split(',').map(s => s.trim());
+      const declarations = parts[1];
+
+      let match;
+      while ((match = colorRegex.exec(declarations)) !== null) {
+        const property = match[1].trim();
+        let value = match[2].trim();
+
+        const resolvedValue = resolveCssValue(value, variables);
+
+        selectors.forEach(selector => {
+          const row = document.createElement('tr');
+
+          const tdSelector = document.createElement('td');
+          tdSelector.textContent = selector;
+
+          const tdProperty = document.createElement('td');
+          tdProperty.textContent = property;
+
+          const tdValue = document.createElement('td');
+          tdValue.textContent = resolvedValue;
+
+          const tdPreview = document.createElement('td');
+          const preview = document.createElement('div');
+          preview.className = 'color-box';
+
+          // Solo se il valore è un colore valido, lo applichiamo
+          try {
+            preview.style.backgroundColor = resolvedValue;
+          } catch (e) {
+            preview.style.backgroundColor = 'transparent';
+          }
+
+          tdPreview.appendChild(preview);
+
+          row.append(tdSelector, tdProperty, tdValue, tdPreview);
+          table.appendChild(row);
+        });
+      }
+    });
+  }
+</script>
+
+
+</body>
+</html>

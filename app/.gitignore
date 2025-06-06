@@ -19,3 +19,6 @@ backup_20250529_132311
 templates_new
 assets
 *_backup_*
+*.json.backup.*
+*copy.py
+*.pyNEW

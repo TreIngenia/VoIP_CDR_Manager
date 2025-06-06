@@ -209,7 +209,7 @@ def add_cdr_contract_routes(app, secure_config, processor):
             if 'contract_name' in data:
                 contract['contract_name'] = data['contract_name'].strip()
             if 'odoo_client_id' in data:
-                contract['odoo_client_id'] = int(data['odoo_client_id'])
+                contract['odoo_client_id'] = data['odoo_client_id'].strip()
             if 'notes' in data:
                 contract['notes'] = data['notes'].strip()
             

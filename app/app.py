@@ -32,10 +32,10 @@ from routes.default_routes import create_routes
 
 # ✅ NUOVO: Import del sistema categorie integrato invece dei vecchi sistemi
 from cdr_integration_enhanced import integrate_enhanced_cdr_system
-from categories_routes import add_categories_routes
+from routes.categories_routes import add_categories_routes
 
 # Import Flask
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 
 def create_app():
     """Factory function per creare l'app Flask"""
@@ -208,6 +208,11 @@ def main():
             use_reloader=app_debug  # reloader solo se debug è attivo
         )
 
+        # ✅ REGISTRA BREADCRUMB GLOBALS
+        from routes.menu_routes import register_breadcrumb_globals
+        register_breadcrumb_globals(app)
+        log_success("Funzioni breadcrumb registrate")
+        
     except KeyboardInterrupt:
         log_info("Applicazione fermata dall'utente")
         if 'scheduler_manager' in locals():
