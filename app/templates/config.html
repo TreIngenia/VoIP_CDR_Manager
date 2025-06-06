@@ -3,408 +3,416 @@
 {% block title %}Configurazione - FTP Scheduler{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Configurazione</h1>
-</div>
+<div id="kt_app_content" class="app-content  flex-column-fluid " >
+    <div id="kt_app_content_container" class="app-container  container-fluid ">
+        <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
 
-<form method="POST" class="needs-validation" novalidate>
-    <!-- Configurazione FTP -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5><i class="fas fa-server"></i> Configurazione FTP</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="ftp_host" class="form-label">Host FTP *</label>
-                    <input type="text" class="form-control" id="ftp_host" name="ftp_host" 
-                           value="{{ config.ftp_host }}" required>
-                    <div class="invalid-feedback">Inserisci l'host del server FTP.</div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="ftp_user" class="form-label">Username *</label>
-                    <input type="text" class="form-control" id="ftp_user" name="ftp_user" 
-                           value="{{ config.ftp_user }}" required>
-                    <div class="invalid-feedback">Inserisci l'username FTP.</div>
-                </div>
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Configurazione</h1>
             </div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="ftp_password" class="form-label">Password *</label>
-                    <input type="password" class="form-control" id="ftp_password" name="ftp_password" 
-                           value="{{ config.ftp_password }}" required>
-                    <div class="invalid-feedback">Inserisci la password FTP.</div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="ftp_directory" class="form-label">Directory</label>
-                    <input type="text" class="form-control" id="ftp_directory" name="ftp_directory" 
-                           value="{{ config.ftp_directory }}" placeholder="/">
-                    <div class="form-text">Directory sul server FTP (default: /)</div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Configurazione Download -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5><i class="fas fa-download"></i> Configurazione Download</h5>
-        </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="download_all_files" 
-                           name="download_all_files" {% if config.download_all_files %}checked{% endif %}>
-                    <label class="form-check-label" for="download_all_files">
-                        Scarica tutti i file presenti nella directory
-                    </label>
-                </div>
-            </div>
-            
-            <div id="specific-file-config" {% if config.download_all_files %}style="display:none;"{% endif %}>
-                <div class="mb-3">
-                    <label for="specific_filename" class="form-label">Nome file specifico o Pattern</label>
-                    <input type="text" class="form-control" id="specific_filename" name="specific_filename" 
-                           value="{{ config.specific_filename }}" placeholder="RIV_12345_MESE_*_*.CDR">
-                    <div class="form-text">
-                        <strong>Esempi:</strong><br>
-                        • Nome esatto: <code>RIV_12345_MESE_01_2025-01-05-14.16.27.CDR</code><br>
-                        • Qualsiasi mese: <code>RIV_12345_MESE_*_*.CDR</code><br>
-                        • Mese corrente: <code>RIV_12345_MESE_%m_*.CDR</code><br>
-                        • Anno corrente: <code>RIV_*_MESE_*_%Y-*.CDR</code><br>
-                        • Mese e anno: <code>RIV_*_MESE_%m_%Y-%m-*.CDR</code><br>
-                        <strong>Variabili:</strong> %Y=anno, %m=mese, %d=giorno, %H=ora, %M=minuto, %S=secondo
+            <form method="POST" class="needs-validation" novalidate>
+                <!-- Configurazione FTP -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-server"></i> Configurazione FTP</h5>
                     </div>
-                    <div class="mt-2">
-                        <button type="button" class="btn btn-sm btn-outline-info" onclick="testPattern()">
-                            <i class="fas fa-search"></i> Testa Pattern
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="listFtpFiles()">
-                            <i class="fas fa-list"></i> Lista File FTP
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-success" onclick="showPatternExamples()">
-                            <i class="fas fa-lightbulb"></i> Esempi
-                        </button>
-                        <div id="pattern-test-result" class="mt-2"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="file_selection_mode" id="use_specific_name" value="specific" checked>
-                        <label class="form-check-label" for="use_specific_name">
-                            Usa nome/pattern specifico sopra
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="file_selection_mode" id="use_pattern_generator" value="generator">
-                        <label class="form-check-label" for="use_pattern_generator">
-                            Genera automaticamente con pattern temporale
-                        </label>
-                    </div>
-                </div>
-                
-                <div id="pattern-generator" style="display:none;">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="file_naming_pattern" class="form-label">Pattern nome file</label>
-                            <select class="form-select" id="file_naming_pattern" name="file_naming_pattern">
-                                <option value="monthly" {% if config.file_naming_pattern == 'monthly' %}selected{% endif %}>
-                                    Mensile (report_2025_01.csv)
-                                </option>
-                                <option value="weekly" {% if config.file_naming_pattern == 'weekly' %}selected{% endif %}>
-                                    Settimanale (report_2025_W01.csv)
-                                </option>
-                                <option value="daily" {% if config.file_naming_pattern == 'daily' %}selected{% endif %}>
-                                    Giornaliero (report_2025_01_15.csv)
-                                </option>
-                                <option value="quarterly" {% if config.file_naming_pattern == 'quarterly' %}selected{% endif %}>
-                                    Trimestrale (report_2025_Q1.csv)
-                                </option>
-                                <option value="yearly" {% if config.file_naming_pattern == 'yearly' %}selected{% endif %}>
-                                    Annuale (report_2025.csv)
-                                </option>
-                                <option value="cdr_monthly" {% if config.file_naming_pattern == 'cdr_monthly' %}selected{% endif %}>
-                                    CDR Mese Corrente (RIV_*_MESE_01_*.CDR)
-                                </option>
-                                <option value="cdr_any_month" {% if config.file_naming_pattern == 'cdr_any_month' %}selected{% endif %}>
-                                    CDR Qualsiasi Mese (RIV_*_MESE_*_*.CDR)
-                                </option>
-                                <option value="cdr_current_year" {% if config.file_naming_pattern == 'cdr_current_year' %}selected{% endif %}>
-                                    CDR Anno Corrente (RIV_*_MESE_*_2025-*.CDR)
-                                </option>
-                                <option value="custom" {% if config.file_naming_pattern == 'custom' %}selected{% endif %}>
-                                    Personalizzato
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3" id="custom-pattern-container" 
-                             {% if config.file_naming_pattern != 'custom' %}style="display:none;"{% endif %}>
-                            <label for="custom_pattern" class="form-label">Pattern personalizzato</label>
-                            <input type="text" class="form-control" id="custom_pattern" name="custom_pattern" 
-                                   value="{{ config.custom_pattern }}" placeholder="RIV_%Y%m%d_%H%M%S.CDR">
-                            <div class="form-text">
-                                <strong>Codici disponibili:</strong><br>
-                                %Y=anno, %m=mese, %d=giorno<br>
-                                %H=ora (24h), %M=minuto, %S=secondo<br>
-                                *=qualsiasi, ?=carattere singolo<br>
-                                <strong>Esempio:</strong> RIV_%Y%m%d_*.CDR o RIV_*_MESE_%m_*.CDR
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="ftp_host" class="form-label">Host FTP *</label>
+                                <input type="text" class="form-control" id="ftp_host" name="ftp_host" 
+                                    value="{{ config.ftp_host }}" required>
+                                <div class="invalid-feedback">Inserisci l'host del server FTP.</div>
                             </div>
-                            <div class="mt-2">
-                                <small class="text-muted">Anteprima: <span id="filename-preview">-</span></small>
+                            <div class="col-md-6 mb-3">
+                                <label for="ftp_user" class="form-label">Username *</label>
+                                <input type="text" class="form-control" id="ftp_user" name="ftp_user" 
+                                    value="{{ config.ftp_user }}" required>
+                                <div class="invalid-feedback">Inserisci l'username FTP.</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="ftp_password" class="form-label">Password *</label>
+                                <input type="password" class="form-control" id="ftp_password" name="ftp_password" 
+                                    value="{{ config.ftp_password }}" required>
+                                <div class="invalid-feedback">Inserisci la password FTP.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="ftp_directory" class="form-label">Directory</label>
+                                <input type="text" class="form-control" id="ftp_directory" name="ftp_directory" 
+                                    value="{{ config.ftp_directory }}" placeholder="/">
+                                <div class="form-text">Directory sul server FTP (default: /)</div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="mb-3">
-                <label for="output_directory" class="form-label">Directory di output</label>
-                <input type="text" class="form-control" id="output_directory" name="output_directory" 
-                       value="{{ config.output_directory }}" required>
-                <div class="form-text">Directory locale dove salvare i file scaricati e convertiti</div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Configurazione Prezzi VoIP -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5><i class="fas fa-phone"></i> Configurazione Prezzi VoIP</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label for="voip_price_fixed" class="form-label">Prezzo Base Fisso</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" id="voip_price_fixed" name="voip_price_fixed" 
-                               value="{{ config.voip_price_fixed }}" step="0.0001" min="0" required>
-                        <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
+                <!-- Configurazione Download -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-download"></i> Configurazione Download</h5>
                     </div>
-                    <div class="form-text">Prezzo base per chiamate verso numeri fissi</div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label for="voip_price_mobile" class="form-label">Prezzo Base Mobile</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" id="voip_price_mobile" name="voip_price_mobile" 
-                               value="{{ config.voip_price_mobile }}" step="0.0001" min="0" required>
-                        <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="download_all_files" 
+                                    name="download_all_files" {% if config.download_all_files %}checked{% endif %}>
+                                <label class="form-check-label" for="download_all_files">
+                                    Scarica tutti i file presenti nella directory
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="specific-file-config" {% if config.download_all_files %}style="display:none;"{% endif %}>
+                            <div class="mb-3">
+                                <label for="specific_filename" class="form-label">Nome file specifico o Pattern</label>
+                                <input type="text" class="form-control" id="specific_filename" name="specific_filename" 
+                                    value="{{ config.specific_filename }}" placeholder="RIV_12345_MESE_*_*.CDR">
+                                <div class="form-text">
+                                    <strong>Esempi:</strong><br>
+                                    • Nome esatto: <code>RIV_12345_MESE_01_2025-01-05-14.16.27.CDR</code><br>
+                                    • Qualsiasi mese: <code>RIV_12345_MESE_*_*.CDR</code><br>
+                                    • Mese corrente: <code>RIV_12345_MESE_%m_*.CDR</code><br>
+                                    • Anno corrente: <code>RIV_*_MESE_*_%Y-*.CDR</code><br>
+                                    • Mese e anno: <code>RIV_*_MESE_%m_%Y-%m-*.CDR</code><br>
+                                    <strong>Variabili:</strong> %Y=anno, %m=mese, %d=giorno, %H=ora, %M=minuto, %S=secondo
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="testPattern()">
+                                        <i class="fas fa-search"></i> Testa Pattern
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="listFtpFiles()">
+                                        <i class="fas fa-list"></i> Lista File FTP
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="showPatternExamples()">
+                                        <i class="fas fa-lightbulb"></i> Esempi
+                                    </button>
+                                    <div id="pattern-test-result" class="mt-2"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="file_selection_mode" id="use_specific_name" value="specific" checked>
+                                    <label class="form-check-label" for="use_specific_name">
+                                        Usa nome/pattern specifico sopra
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="file_selection_mode" id="use_pattern_generator" value="generator">
+                                    <label class="form-check-label" for="use_pattern_generator">
+                                        Genera automaticamente con pattern temporale
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="pattern-generator" style="display:none;">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="file_naming_pattern" class="form-label">Pattern nome file</label>
+                                        <select class="form-select" id="file_naming_pattern" name="file_naming_pattern">
+                                            <option value="monthly" {% if config.file_naming_pattern == 'monthly' %}selected{% endif %}>
+                                                Mensile (report_2025_01.csv)
+                                            </option>
+                                            <option value="weekly" {% if config.file_naming_pattern == 'weekly' %}selected{% endif %}>
+                                                Settimanale (report_2025_W01.csv)
+                                            </option>
+                                            <option value="daily" {% if config.file_naming_pattern == 'daily' %}selected{% endif %}>
+                                                Giornaliero (report_2025_01_15.csv)
+                                            </option>
+                                            <option value="quarterly" {% if config.file_naming_pattern == 'quarterly' %}selected{% endif %}>
+                                                Trimestrale (report_2025_Q1.csv)
+                                            </option>
+                                            <option value="yearly" {% if config.file_naming_pattern == 'yearly' %}selected{% endif %}>
+                                                Annuale (report_2025.csv)
+                                            </option>
+                                            <option value="cdr_monthly" {% if config.file_naming_pattern == 'cdr_monthly' %}selected{% endif %}>
+                                                CDR Mese Corrente (RIV_*_MESE_01_*.CDR)
+                                            </option>
+                                            <option value="cdr_any_month" {% if config.file_naming_pattern == 'cdr_any_month' %}selected{% endif %}>
+                                                CDR Qualsiasi Mese (RIV_*_MESE_*_*.CDR)
+                                            </option>
+                                            <option value="cdr_current_year" {% if config.file_naming_pattern == 'cdr_current_year' %}selected{% endif %}>
+                                                CDR Anno Corrente (RIV_*_MESE_*_2025-*.CDR)
+                                            </option>
+                                            <option value="custom" {% if config.file_naming_pattern == 'custom' %}selected{% endif %}>
+                                                Personalizzato
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3" id="custom-pattern-container" 
+                                        {% if config.file_naming_pattern != 'custom' %}style="display:none;"{% endif %}>
+                                        <label for="custom_pattern" class="form-label">Pattern personalizzato</label>
+                                        <input type="text" class="form-control" id="custom_pattern" name="custom_pattern" 
+                                            value="{{ config.custom_pattern }}" placeholder="RIV_%Y%m%d_%H%M%S.CDR">
+                                        <div class="form-text">
+                                            <strong>Codici disponibili:</strong><br>
+                                            %Y=anno, %m=mese, %d=giorno<br>
+                                            %H=ora (24h), %M=minuto, %S=secondo<br>
+                                            *=qualsiasi, ?=carattere singolo<br>
+                                            <strong>Esempio:</strong> RIV_%Y%m%d_*.CDR o RIV_*_MESE_%m_*.CDR
+                                        </div>
+                                        <div class="mt-2">
+                                            <small class="text-muted">Anteprima: <span id="filename-preview">-</span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="output_directory" class="form-label">Directory di output</label>
+                            <input type="text" class="form-control" id="output_directory" name="output_directory" 
+                                value="{{ config.output_directory }}" required>
+                            <div class="form-text">Directory locale dove salvare i file scaricati e convertiti</div>
+                        </div>
                     </div>
-                    <div class="form-text">Prezzo base per chiamate verso numeri mobili</div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label for="voip_markup_percent" class="form-label">Ricarico Percentuale</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" id="voip_markup_percent" name="voip_markup_percent" 
-                               value="{{ config.voip_markup_percent or 0 }}" step="1" min="0" max="1000">
-                        <span class="input-group-text">%</span>
+
+                <!-- Configurazione Prezzi VoIP -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-phone"></i> Configurazione Prezzi VoIP</h5>
                     </div>
-                    <div class="form-text">Ricarico da applicare ai prezzi base</div>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label for="voip_price_fixed_final" class="form-label">Prezzo Finale Fisso</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control bg-light" id="voip_price_fixed_final" name="voip_price_fixed_final" 
-                               value="{{ config.voip_price_fixed_final }}" step="0.0001" min="0" readonly>
-                        <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
-                    </div>
-                    <div class="form-text">Prezzo finale per fisso (base + ricarico)</div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label for="voip_price_mobile_final" class="form-label">Prezzo Finale Mobile</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control bg-light" id="voip_price_mobile_final" name="voip_price_mobile_final" 
-                               value="{{ config.voip_price_mobile_final }}" step="0.0001" min="0" readonly>
-                        <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
-                    </div>
-                    <div class="form-text">Prezzo finale per mobile (base + ricarico)</div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label for="voip_currency" class="form-label">Valuta</label>
-                    <select class="form-select" id="voip_currency" name="voip_currency">
-                        <option value="EUR" {% if config.voip_currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
-                        <option value="USD" {% if config.voip_currency == 'USD' %}selected{% endif %}>USD ($)</option>
-                        <option value="GBP" {% if config.voip_currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
-                        <option value="CHF" {% if config.voip_currency == 'CHF' %}selected{% endif %}>CHF</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="voip_price_unit" class="form-label">Unità di Fatturazione</label>
-                    <select class="form-select" id="voip_price_unit" name="voip_price_unit">
-                        <option value="per_minute" {% if config.voip_price_unit == 'per_minute' %}selected{% endif %}>Per Minuto</option>
-                        <option value="per_second" {% if config.voip_price_unit == 'per_second' %}selected{% endif %}>Per Secondo</option>
-                    </select>
-                    <div class="form-text">Come vengono calcolati i prezzi nelle chiamate</div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <div class="card bg-light">
-                        <div class="card-body">
-                            <h6 class="card-title">Anteprima Prezzi</h6>
-                            <div id="price-preview">
-                                <div><strong>Base Fisso:</strong> <span id="preview-base-fixed">{{ config.voip_price_fixed or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
-                                <div><strong>Base Mobile:</strong> <span id="preview-base-mobile">{{ config.voip_price_mobile or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
-                                <div><strong>Ricarico:</strong> <span id="preview-markup">{{ config.voip_markup_percent or 0}}</span>%</div>
-                                <hr class="my-2">
-                                <div class="text-success"><strong>Finale Fisso:</strong> <span id="preview-final-fixed">{{ config.voip_price_fixed_final or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
-                                <div class="text-success"><strong>Finale Mobile:</strong> <span id="preview-final-mobile">{{ config.voip_price_mobile_final or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
-                                <div class="text-muted small mt-2">
-                                    Esempio: Chiamata 5 min fisso = <span id="preview-calc-final-fixed">{{ "%.2f"|format((config.voip_price_fixed_final or 0) * 5) }}</span> {{ config.voip_currency or 'EUR' }}
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="voip_price_fixed" class="form-label">Prezzo Base Fisso</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="voip_price_fixed" name="voip_price_fixed" 
+                                        value="{{ config.voip_price_fixed }}" step="0.0001" min="0" required>
+                                    <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
+                                </div>
+                                <div class="form-text">Prezzo base per chiamate verso numeri fissi</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="voip_price_mobile" class="form-label">Prezzo Base Mobile</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="voip_price_mobile" name="voip_price_mobile" 
+                                        value="{{ config.voip_price_mobile }}" step="0.0001" min="0" required>
+                                    <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
+                                </div>
+                                <div class="form-text">Prezzo base per chiamate verso numeri mobili</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="voip_markup_percent" class="form-label">Ricarico Percentuale</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="voip_markup_percent" name="voip_markup_percent" 
+                                        value="{{ config.voip_markup_percent or 0 }}" step="1" min="0" max="1000">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Ricarico da applicare ai prezzi base</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="voip_price_fixed_final" class="form-label">Prezzo Finale Fisso</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control bg-light" id="voip_price_fixed_final" name="voip_price_fixed_final" 
+                                        value="{{ config.voip_price_fixed_final }}" step="0.0001" min="0" readonly>
+                                    <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
+                                </div>
+                                <div class="form-text">Prezzo finale per fisso (base + ricarico)</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="voip_price_mobile_final" class="form-label">Prezzo Finale Mobile</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control bg-light" id="voip_price_mobile_final" name="voip_price_mobile_final" 
+                                        value="{{ config.voip_price_mobile_final }}" step="0.0001" min="0" readonly>
+                                    <span class="input-group-text">{{ config.voip_currency or 'EUR' }}</span>
+                                </div>
+                                <div class="form-text">Prezzo finale per mobile (base + ricarico)</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="voip_currency" class="form-label">Valuta</label>
+                                <select class="form-select" id="voip_currency" name="voip_currency">
+                                    <option value="EUR" {% if config.voip_currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                                    <option value="USD" {% if config.voip_currency == 'USD' %}selected{% endif %}>USD ($)</option>
+                                    <option value="GBP" {% if config.voip_currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
+                                    <option value="CHF" {% if config.voip_currency == 'CHF' %}selected{% endif %}>CHF</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="voip_price_unit" class="form-label">Unità di Fatturazione</label>
+                                <select class="form-select" id="voip_price_unit" name="voip_price_unit">
+                                    <option value="per_minute" {% if config.voip_price_unit == 'per_minute' %}selected{% endif %}>Per Minuto</option>
+                                    <option value="per_second" {% if config.voip_price_unit == 'per_second' %}selected{% endif %}>Per Secondo</option>
+                                </select>
+                                <div class="form-text">Come vengono calcolati i prezzi nelle chiamate</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Anteprima Prezzi</h6>
+                                        <div id="price-preview">
+                                            <div><strong>Base Fisso:</strong> <span id="preview-base-fixed">{{ config.voip_price_fixed or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                            <div><strong>Base Mobile:</strong> <span id="preview-base-mobile">{{ config.voip_price_mobile or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                            <div><strong>Ricarico:</strong> <span id="preview-markup">{{ config.voip_markup_percent or 0}}</span>%</div>
+                                            <hr class="my-2">
+                                            <div class="text-success"><strong>Finale Fisso:</strong> <span id="preview-final-fixed">{{ config.voip_price_fixed_final or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                            <div class="text-success"><strong>Finale Mobile:</strong> <span id="preview-final-mobile">{{ config.voip_price_mobile_final or 0}}</span> {{ config.voip_currency or 'EUR' }}/min</div>
+                                            <div class="text-muted small mt-2">
+                                                Esempio: Chiamata 5 min fisso = <span id="preview-calc-final-fixed">{{ "%.2f"|format((config.voip_price_fixed_final or 0) * 5) }}</span> {{ config.voip_currency or 'EUR' }}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Card informativa CDR + VoIP -->
-    <div class="card mb-4 bg-light border-info">
-        <div class="card-header bg-info text-white">
-            <h6><i class="fas fa-info-circle"></i> Integrazione CDR Analytics + VoIP</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-8">
-                    <p class="small mb-2">
-                        <strong>I prezzi VoIP configurati sopra vengono utilizzati automaticamente 
-                        per ricalcolare i costi nei report CDR.</strong>
-                    </p>
-                    <ul class="small mb-0">
-                        <li><strong>FISSI:</strong> Usa "Prezzo Finale Fisso" per chiamate urbane, interurbane</li>
-                        <li><strong>MOBILI:</strong> Usa "Prezzo Finale Mobile" per chiamate cellulari</li>
-                        <li><strong>FAX:</strong> Usa prezzo fisso</li>
-                        <li><strong>NUMERI VERDI:</strong> Costo zero</li>
-                        <li><strong>INTERNAZIONALI:</strong> Usa prezzo mobile</li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <div class="text-center">
-                        <i class="fas fa-calculator fa-3x text-info mb-2"></i>
-                        <p class="small text-muted">
-                        Tutti i file CDR processati includeranno il campo 
-                        <code>costo_cliente_euro</code> calcolato con questi prezzi.
-                        </p>
+                <!-- Card informativa CDR + VoIP -->
+                <div class="card mb-4 bg-light border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6><i class="fas fa-info-circle"></i> Integrazione CDR Analytics + VoIP</h6>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Configurazione Schedulazione -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5><i class="fas fa-clock"></i> Configurazione Schedulazione</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="mb-3 col-3">
-                    <label for="schedule_type" class="form-label">Tipo di schedulazione</label>
-                    <select class="form-select" id="schedule_type" name="schedule_type">
-                        <option value="monthly" {% if config.schedule_type == 'monthly' %}selected{% endif %}>
-                            Mensile (giorno specifico del mese)
-                        </option>
-                        <option value="weekly" {% if config.schedule_type == 'weekly' %}selected{% endif %}>
-                            Settimanale (giorno specifico della settimana)
-                        </option>
-                        <option value="daily" {% if config.schedule_type == 'daily' %}selected{% endif %}>
-                            Giornaliero
-                        </option>
-                        <option value="interval" {% if config.schedule_type == 'interval' %}selected{% endif %}>
-                            Intervallo (ogni X giorni)
-                        </option>
-                        <option value="cron" {% if config.schedule_type == 'cron' %}selected{% endif %}>
-                            Espressione Cron personalizzata
-                        </option>
-                    </select>
-                </div>
-                
-                <!-- Configurazioni specifiche per tipo schedulazione -->
-                <div id="monthly-config" class="col-3 schedule-config" 
-                    {% if config.schedule_type != 'monthly' %}style="display:none;"{% endif %}>
-                    <label for="schedule_day_monthly" class="form-label">Giorno del mese</label>
-                    <input type="number" class="form-control" id="schedule_day_monthly" name="schedule_day" 
-                        value="{{ config.schedule_day }}" min="1" max="31">
-                </div>
-                
-                <div id="weekly-config" class="col-3 schedule-config" 
-                    {% if config.schedule_type != 'weekly' %}style="display:none;"{% endif %}>
-
-                            <label for="schedule_day_weekly" class="form-label">Giorno della settimana</label>
-                            <select class="form-select" id="schedule_day_weekly" name="schedule_day">
-                                <option value="0" {% if config.schedule_day == 0 %}selected{% endif %}>Lunedì</option>
-                                <option value="1" {% if config.schedule_day == 1 %}selected{% endif %}>Martedì</option>
-                                <option value="2" {% if config.schedule_day == 2 %}selected{% endif %}>Mercoledì</option>
-                                <option value="3" {% if config.schedule_day == 3 %}selected{% endif %}>Giovedì</option>
-                                <option value="4" {% if config.schedule_day == 4 %}selected{% endif %}>Venerdì</option>
-                                <option value="5" {% if config.schedule_day == 5 %}selected{% endif %}>Sabato</option>
-                                <option value="6" {% if config.schedule_day == 6 %}selected{% endif %}>Domenica</option>
-                            </select>
-
-                </div>
-                
-                <div id="interval-config" class="col-3 schedule-config" 
-                    {% if config.schedule_type != 'interval' %}style="display:none;"{% endif %}>
-
-                            <label for="interval_days" class="form-label">Ogni X giorni</label>
-                            <input type="number" class="form-control" id="interval_days" name="interval_days" 
-                                value="{{ config.interval_days }}" min="1">
-
-                </div>
-                
-                <div id="cron-config" class="col-3 schedule-config" 
-                    {% if config.schedule_type != 'cron' %}style="display:none;"{% endif %}>
-                    <div class="mb-3">
-                        <label for="cron_expression" class="form-label">Espressione Cron</label>
-                        <input type="text" class="form-control" id="cron_expression" name="cron_expression" 
-                            value="{{ config.cron_expression }}" placeholder="0 9 1 * *">
-                        <div class="form-text">
-                            Formato: minuto ora giorno mese giorno_settimana<br>
-                            Esempio: "0 9 1 * *" = alle 9:00 del primo giorno di ogni mese
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <p class="small mb-2">
+                                    <strong>I prezzi VoIP configurati sopra vengono utilizzati automaticamente 
+                                    per ricalcolare i costi nei report CDR.</strong>
+                                </p>
+                                <ul class="small mb-0">
+                                    <li><strong>FISSI:</strong> Usa "Prezzo Finale Fisso" per chiamate urbane, interurbane</li>
+                                    <li><strong>MOBILI:</strong> Usa "Prezzo Finale Mobile" per chiamate cellulari</li>
+                                    <li><strong>FAX:</strong> Usa prezzo fisso</li>
+                                    <li><strong>NUMERI VERDI:</strong> Costo zero</li>
+                                    <li><strong>INTERNAZIONALI:</strong> Usa prezzo mobile</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-calculator fa-3x text-info mb-2"></i>
+                                    <p class="small text-muted">
+                                    Tutti i file CDR processati includeranno il campo 
+                                    <code>costo_cliente_euro</code> calcolato con questi prezzi.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Orario (comune per tutti tranne interval) -->
-                <div class="col-6 d-line"  id="time-config" {% if config.schedule_type == 'interval' %}style="display:none;"{% endif %}>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label for="schedule_hour" class="form-label">Ora</label>
-                            <input type="number" class="form-control" id="schedule_hour" name="schedule_hour" 
-                                value="{{ config.schedule_hour }}" min="0" max="23">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label for="schedule_minute" class="form-label">Minuto</label>
-                            <input type="number" class="form-control" id="schedule_minute" name="schedule_minute" 
-                                value="{{ config.schedule_minute }}" min="0" max="59">
+
+                <!-- Configurazione Schedulazione -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-clock"></i> Configurazione Schedulazione</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="mb-3 col-3">
+                                <label for="schedule_type" class="form-label">Tipo di schedulazione</label>
+                                <select class="form-select" id="schedule_type" name="schedule_type">
+                                    <option value="monthly" {% if config.schedule_type == 'monthly' %}selected{% endif %}>
+                                        Mensile (giorno specifico del mese)
+                                    </option>
+                                    <option value="weekly" {% if config.schedule_type == 'weekly' %}selected{% endif %}>
+                                        Settimanale (giorno specifico della settimana)
+                                    </option>
+                                    <option value="daily" {% if config.schedule_type == 'daily' %}selected{% endif %}>
+                                        Giornaliero
+                                    </option>
+                                    <option value="interval" {% if config.schedule_type == 'interval' %}selected{% endif %}>
+                                        Intervallo (ogni X giorni)
+                                    </option>
+                                    <option value="cron" {% if config.schedule_type == 'cron' %}selected{% endif %}>
+                                        Espressione Cron personalizzata
+                                    </option>
+                                </select>
+                            </div>
+                            
+                            <!-- Configurazioni specifiche per tipo schedulazione -->
+                            <div id="monthly-config" class="col-3 schedule-config" 
+                                {% if config.schedule_type != 'monthly' %}style="display:none;"{% endif %}>
+                                <label for="schedule_day_monthly" class="form-label">Giorno del mese</label>
+                                <input type="number" class="form-control" id="schedule_day_monthly" name="schedule_day" 
+                                    value="{{ config.schedule_day }}" min="1" max="31">
+                            </div>
+                            
+                            <div id="weekly-config" class="col-3 schedule-config" 
+                                {% if config.schedule_type != 'weekly' %}style="display:none;"{% endif %}>
+
+                                        <label for="schedule_day_weekly" class="form-label">Giorno della settimana</label>
+                                        <select class="form-select" id="schedule_day_weekly" name="schedule_day">
+                                            <option value="0" {% if config.schedule_day == 0 %}selected{% endif %}>Lunedì</option>
+                                            <option value="1" {% if config.schedule_day == 1 %}selected{% endif %}>Martedì</option>
+                                            <option value="2" {% if config.schedule_day == 2 %}selected{% endif %}>Mercoledì</option>
+                                            <option value="3" {% if config.schedule_day == 3 %}selected{% endif %}>Giovedì</option>
+                                            <option value="4" {% if config.schedule_day == 4 %}selected{% endif %}>Venerdì</option>
+                                            <option value="5" {% if config.schedule_day == 5 %}selected{% endif %}>Sabato</option>
+                                            <option value="6" {% if config.schedule_day == 6 %}selected{% endif %}>Domenica</option>
+                                        </select>
+
+                            </div>
+                            
+                            <div id="interval-config" class="col-3 schedule-config" 
+                                {% if config.schedule_type != 'interval' %}style="display:none;"{% endif %}>
+
+                                        <label for="interval_days" class="form-label">Ogni X giorni</label>
+                                        <input type="number" class="form-control" id="interval_days" name="interval_days" 
+                                            value="{{ config.interval_days }}" min="1">
+
+                            </div>
+                            
+                            <div id="cron-config" class="col-3 schedule-config" 
+                                {% if config.schedule_type != 'cron' %}style="display:none;"{% endif %}>
+                                <div class="mb-3">
+                                    <label for="cron_expression" class="form-label">Espressione Cron</label>
+                                    <input type="text" class="form-control" id="cron_expression" name="cron_expression" 
+                                        value="{{ config.cron_expression }}" placeholder="0 9 1 * *">
+                                    <div class="form-text">
+                                        Formato: minuto ora giorno mese giorno_settimana<br>
+                                        Esempio: "0 9 1 * *" = alle 9:00 del primo giorno di ogni mese
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Orario (comune per tutti tranne interval) -->
+                            <div class="col-6 d-line"  id="time-config" {% if config.schedule_type == 'interval' %}style="display:none;"{% endif %}>
+                                <div class="row">
+                                    <div class="col-6 mb-3">
+                                        <label for="schedule_hour" class="form-label">Ora</label>
+                                        <input type="number" class="form-control" id="schedule_hour" name="schedule_hour" 
+                                            value="{{ config.schedule_hour }}" min="0" max="23">
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label for="schedule_minute" class="form-label">Minuto</label>
+                                        <input type="number" class="form-control" id="schedule_minute" name="schedule_minute" 
+                                            value="{{ config.schedule_minute }}" min="0" max="59">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <div class="mt-4 mb-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save"></i> Salva Configurazione
+                    </button>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-arrow-left"></i> Torna al Dashboard
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
-
-    <div class="mt-4 mb-4">
-        <button type="submit" class="btn btn-primary btn-lg">
-            <i class="fas fa-save"></i> Salva Configurazione
-        </button>
-        <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">
-            <i class="fas fa-arrow-left"></i> Torna al Dashboard
-        </a>
-    </div>
-</form>
+</div>            
 {% endblock %}
 
 {% block scripts %}
 <script>
 // Gestione visibilità campi basata su selezioni
 document.addEventListener('DOMContentLoaded', function() {
+ 
     const downloadAllCheckbox = document.getElementById('download_all_files');
     const specificFileConfig = document.getElementById('specific-file-config');
     

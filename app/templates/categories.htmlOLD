@@ -87,40 +87,40 @@
         <!-- TABS-->
         <div class="row">
             <div class="col-12">
-                <!-- <div class="card "> -->
-                    <!-- <div class="card-header card-header-stretch "> -->
-                        <!-- <div class="card-toolbar"> -->
+                <div class="card ">
+                    <div class="card-header card-header-stretch ">
+                        <div class="card-toolbar">
                             <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 border-0">
                                 <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0 btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 me-5 active" data-bs-toggle="tab" href="#categories-list">
+                                    <a class="nav-link active" data-bs-toggle="tab" href="#categories-list">
                                         <i class="fas fa-list me-3"></i> Lista Categorie
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0 btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 me-5" data-bs-toggle="tab" href="#add-category">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#add-category">
                                         <i class="fas fa-plus me-3"></i> Nuova Categoria
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 me-5" data-bs-toggle="tab" href="#test-classification">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#test-classification">
                                         <i class="fas fa-vial me-3"></i> Test Classificazione
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 me-5" data-bs-toggle="tab" href="#statistics">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#statistics">
                                         <i class="fas fa-chart-bar me-3"></i> Statistiche
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0" data-bs-toggle="tab" href="#import-export">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#import-export">
                                         <i class="fas fa-exchange-alt me-3"></i> Import/Export
                                     </a>
                                 </li>
                             </ul>
-                        <!-- </div> -->
-                    <!-- </div> -->
-                    <!-- <div class="card-body"> -->
-                        <div class="tab-content border border-1 rounded-bottom-3 p-3">
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
                             <!-- Elenco categorie-->
                             <div class="tab-pane fade show active" id="categories-list">
                                 <div id="conflictsAlert" style="display: none;">
@@ -136,7 +136,7 @@
                             <!-- Aggiungi categorie  -->
                             <div class="tab-pane fade" id="add-category">
                                 <div class="row">
-                                    <div class="col-md-9">
+                                    <div class="col-md-8">
                                         <div class="card shadow-sm h-100">
                                             <div class="card-header">
                                                 <h3 class="card-title"><i class="fas fa-server fs-1 me-4"></i>Dati della categoria</h3>
@@ -164,28 +164,14 @@
                                                     </div>
                         
                                                     <div class="row">
-                                                        <div class="col-md-4">
+                                                        <div class="col-md-6">
                                                             <div class="form-floating mb-3">
                                                                 <input type="number" class="form-control" id="categoryPrice" step="0.0001"
                                                                     min="0" required>
-                                                                <label for="categoryPrice">Prezzo base al minuto</label>
+                                                                <label for="categoryPrice">Prezzo per Minuto (EUR)</label>
                                                             </div>
                                                         </div>
-                                                        <div class="col-md-2">
-                                                            <div class="form-floating mb-3">
-                                                                <input type="number" class="form-control" id="categoryMarkup" step="1"
-                                                                    value="{{config_info.global_markup}}" min="0" >
-                                                                <label for="categoryMarkup">Ricarico in percentuale</label>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <div class="form-floating mb-3">
-                                                                <input type="number" class="form-control" id="categoryFinalPrice" step="0.0001"
-                                                                    min="0" required>
-                                                                <label for="categoryFinalPrice">Prezzo finale al minuto</label>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-6">
                                                             <div class="form-floating mb-3">
                                                                 <select class="form-control" id="categoryCurrency">
                                                                     <option value="EUR">EUR</option>
@@ -229,7 +215,7 @@
                                         </div>                                    
                                         
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <div class="card shadow-sm  h-100">
                                             <div class="card-header">
                                                 <h3 class="card-title"><i class="fas fa-info-circle fs-1 me-4"></i>Suggerimenti</h3>
@@ -433,8 +419,8 @@
                                 </div>
                             </div>
                         </div>
-                    <!-- </div> -->
-                <!-- </div> -->
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -450,33 +436,20 @@
                     <form id="editCategoryForm">
                         <input type="hidden" id="editCategoryName">
                         <div class="row">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="editCategoryDisplayName" required>
                                      <label for="editCategoryDisplayName">Nome Visualizzato</label>
                                 </div>
                             </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="form-floating mb-3">
                                     <input type="number" class="form-control" id="editCategoryPrice" step="0.0001" min="0" required>
-                                     <label for="editCategoryPrice">Prezzo base al minuto in euro</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-floating mb-3">
-                                    <input type="number" class="form-control" id="markup_FISSI" step="1" min="0" required>
-                                     <label for="markup_FISSI">Ricarico in percentuale</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-floating mb-3">
-                                    <input type="number" class="form-control" id="editFinalPrice" step="0.0001" min="0" disabled>
-                                     <label for="editFinalPrice">Prezzo finale al minuto in euro</label>
+                                     <label for="editCategoryPrice">Prezzo per Minuto</label>
                                 </div>
                             </div>
                         </div>
+
                         <div class="mb-3">
                             <label for="categoryPatterns" class="form-label">Pattern di Riconoscimento</label>
                             <div class="input-group">
@@ -520,6 +493,8 @@
 {% endblock %}
 
 {% block scripts %}
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script>
         // Global variables
         let categoriesData = {};
@@ -569,44 +544,7 @@
                     }
                 });
             }
-
         });
-        window.addEventListener("DOMContentLoaded", function () {
-            live_cal_final_price()
-        });
-
-        function live_cal_final_price(){
-            const markupInput = document.getElementById("markup_FISSI");
-            const priceInput = document.getElementById("editCategoryPrice");
-            const new_markupInput = document.getElementById("categoryMarkup");
-            const new_priceInput = document.getElementById("categoryPrice");
-
-            if (markupInput && priceInput) {
-                markupInput.addEventListener("input", updateFinalPrice);
-                markupInput.addEventListener("change", updateFinalPrice);
-                priceInput.addEventListener("input", updateFinalPrice);
-                priceInput.addEventListener("change", updateFinalPrice);
-            }
-
-            if (new_markupInput && new_priceInput) {
-                new_markupInput.addEventListener("input", updateFinalPriceNew);
-                new_markupInput.addEventListener("change", updateFinalPriceNew);
-                new_priceInput.addEventListener("input", updateFinalPriceNew);
-                new_priceInput.addEventListener("change", updateFinalPriceNew);
-            }
-
-            function updateFinalPrice() {
-                const price = parseFloat(document.getElementById("editCategoryPrice").value) || 0;
-                const markup = parseFloat(document.getElementById("markup_FISSI").value) || 0;
-                document.getElementById("editFinalPrice").value = applyMarkup(price, markup).toFixed(4);
-            }
-            
-            function updateFinalPriceNew() {
-                const price = parseFloat(document.getElementById("categoryPrice").value) || 0;
-                const markup = parseFloat(document.getElementById("categoryMarkup").value) || 0;
-                document.getElementById("categoryFinalPrice").value = applyMarkup(price, markup).toFixed(4);
-            }
-        }
 
         // Load categories from API
         function loadCategories() {
@@ -630,7 +568,7 @@
                 });
         }
 
-        // Display categories in cards 
+        // Display categories in cards
         function displayCategories() {
             const container = document.getElementById('categoriesContainer');
             
@@ -661,12 +599,7 @@
                 const patternsHtml = category.patterns.map(pattern => 
                     `<span class="badge badge-secondary m-1">${pattern}</span>`
                 ).join(' ');
-                let markup = ""
-                if(category.custom_markup_percent != null){
-                    markup = `<span class="badge badge-warning me-5">${category.pricing_info.markup_source}</span> <span class="fs-3">${category.custom_markup_percent}</span>% `
-                }else{
-                    markup = `<span class="badge badge-primary me-5">${category.pricing_info.markup_source}</span><span class="fs-3">${category.pricing_info.markup_percent}</span>%`
-                }
+                
                 html += `
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card shadow-sm  h-100 ${activeClass}">
@@ -690,20 +623,10 @@
                                 </div>
                                 <div class="separator separator-dashed my-3"></div>
                                 <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo base: </div>
-                                    <div><span class="fs-3">${formatEuro(category.price_per_minute)}</span> ${category.currency}/min</div>
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Costo: </div>
+                                    <div><span class="fs-3">${category.price_per_minute}</span> ${category.currency}/min</div>
                                 </div>
                                 <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Ricarico: </div>
-                                    <div class="d-flex align-items-center">${markup}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo finale: </div>
-                                    <div><span class="fs-3">${formatEuro(category.pricing_info.price_with_markup)}</span> ${category.pricing_info.currency}/min</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>                                
                                 <div class="d-block flex-stack">
                                     <div href="#" class="text-primary fw-semibold fs-6 me-2">Pattern: (${category.patterns.length})</div>
                                     <div>${patternsHtml}</div>
@@ -777,15 +700,10 @@
 
         // Create new category
         function createCategory() {
-            const fine_price = applyMarkup(document.getElementById('editCategoryPrice').value, document.getElementById('categoryMarkup').value).toFixed(4);
-
-                
             const formData = {
                 name: document.getElementById('categoryName').value.trim(),
                 display_name: document.getElementById('categoryDisplayName').value.trim(),
                 price_per_minute: parseFloat(document.getElementById('categoryPrice').value),
-                custom_markup_percent: parseFloat(document.getElementById('categoryMarkup').value),
-                final_price_per_minute: fine_price,
                 currency: document.getElementById('categoryCurrency').value,
                 patterns: currentPatterns,
                 description: document.getElementById('categoryDescription').value.trim()
@@ -838,19 +756,17 @@
             // Populate edit form
             document.getElementById('editCategoryName').value = category.name;
             document.getElementById('editCategoryDisplayName').value = category.display_name;
-            document.getElementById('editCategoryPrice').value = category.price_per_minute.toFixed(4);
+            document.getElementById('editCategoryPrice').value = category.price_per_minute;
             document.getElementById('editCategoryDescription').value = category.description || '';
             document.getElementById('editCategoryActive').checked = category.is_active;
-            document.getElementById('markup_FISSI').value = category.pricing_info.markup_percent;
-            document.getElementById('editFinalPrice').value = applyMarkup(category.price_per_minute, category.pricing_info.markup_percent).toFixed(4);
+            
             editCurrentPatterns = [...category.patterns];
             updateEditPatternsDisplay();
-
+            
             // Show modal
             new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
         }
 
-       
         // Add pattern to edit form
         function addEditPattern() {
             const input = document.getElementById('editNewPattern');
@@ -896,17 +812,13 @@
         // Update category
         function updateCategory() {
             const categoryName = document.getElementById('editCategoryName').value;
-            const fine_price = applyMarkup(document.getElementById('editCategoryPrice').value, document.getElementById('markup_FISSI').value);
-
+            
             const updateData = {
                 display_name: document.getElementById('editCategoryDisplayName').value.trim(),
                 price_per_minute: parseFloat(document.getElementById('editCategoryPrice').value),
-                custom_markup_percent: parseFloat(document.getElementById('markup_FISSI').value),
-                final_price_per_minute: fine_price,
                 patterns: editCurrentPatterns,
                 description: document.getElementById('editCategoryDescription').value.trim(),
                 is_active: document.getElementById('editCategoryActive').checked
-                
             };
             
             if (!updateData.display_name || !updateData.price_per_minute || editCurrentPatterns.length === 0) {

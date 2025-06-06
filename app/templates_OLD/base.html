@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8"/>
+    <title>FTP Scheduler - {{ page_title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link href="{{ url_for('static', filename='css/style.bundle.css') }}" rel="stylesheet"/>
+</head>
+<body id="kt_app_body" data-kt-app-layout="dark-sidebar">
+    <div class="d-flex flex-column flex-root app-root">
+        <div class="app-page flex-column flex-column-fluid">
+            <!-- Header con menu -->
+            <div id="kt_app_header" class="app-header">
+                <div class="app-container container-fluid d-flex align-items-stretch">
+                    <div class="app-header-menu app-header-mobile-drawer">
+                        <!-- Menu dinamico -->
+                         
+                        {% for item in menu_items %}
+                            {% if item.get('type') == 'section' %}
+                                <div class="menu-section">{{ item.title }}</div>
+                            {% elif item.get('children') %}
+                                <div class="menu-item menu-accordion">
+                                    <span class="menu-link">
+                                        <span class="menu-icon">
+                                            <i class="{{ get_menu_icon(item) }}"></i>
+                                        </span>
+                                        <span class="menu-title">{{ item.title }}</span>
+                                    </span>
+                                    <div class="menu-sub">
+                                        {% for child in item.children %}
+                                            <div class="menu-item">
+                                                <a class="menu-link {{ 'active' if is_menu_active(child.endpoint) }}" 
+                                                   href="{{ get_menu_url(child) }}">
+                                                    <span class="menu-title">{{ child.title }}</span>
+                                                </a>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="menu-item">
+                                    <a class="menu-link {{ 'active' if is_menu_active(item.endpoint) }}" 
+                                       href="{{ get_menu_url(item) }}">
+                                        <span class="menu-icon">
+                                            <i class="{{ get_menu_icon(item) }}"></i>
+                                        </span>
+                                        <span class="menu-title">{{ item.title }}</span>
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div class="app-wrapper flex-column flex-row-fluid">
+                <div class="app-main flex-column flex-row-fluid">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% block content %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/scripts.bundle.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

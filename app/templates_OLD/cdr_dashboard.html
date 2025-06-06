@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}CDR Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-line"></i> CDR Analytics Dashboard</h2>
+                <div>
+                    <button class="btn btn-primary" onclick="processAllCDR()">
+                        <i class="fas fa-play-circle"></i> Elabora Tutti i CDR
+                    </button>
+                    <button class="btn btn-success" onclick="refreshDashboard()">
+                        <i class="fas fa-sync"></i> Aggiorna
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche Generali -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_reports }}</h4>
+                            <p class="mb-0">Report Totali</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.individual_reports }}</h4>
+                            <p class="mb-0">Report Contratti</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-tie fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.summary_reports }}</h4>
+                            <p class="mb-0">Report Summary</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-pie fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_size_mb }} MB</h4>
+                            <p class="mb-0">Dimensione Totale</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-hdd fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Recenti -->
+    {% if reports %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Report Recenti</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Tipo</th>
+                                    <th>Dimensione</th>
+                                    <th>Creato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                <tr class="{{ 'table-warning' if report.is_summary else '' }}">
+                                    <td>
+                                        <i class="fas fa-{{ 'chart-pie' if report.is_summary else 'file-alt' }}"></i>
+                                        {{ report.filename }}
+                                    </td>
+                                    <td>
+                                        {% if report.is_summary %}
+                                        <span class="badge bg-warning">Summary</span>
+                                        {% else %}
+                                        <span class="badge bg-primary">Contratto</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ "%.2f"|format(report.size_bytes / (1024*1024)) }} MB</td>
+                                    <td>{{ report.created[:19]|replace('T', ' ') }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewReportDetails('{{ report.filename }}')">
+                                            <i class="fas fa-eye"></i> Dettagli
+                                        </button>
+                                        <a href="/cdr_analytics/reports/{{ report.filename }}" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Alert per Operazioni -->
+    <div id="cdr-alerts"></div>
+</div>
+
+<!-- Modal per Dettagli Report -->
+<div class="modal fade" id="reportDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dettagli Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="report-details-content">
+                    <p class="text-center">Caricamento...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funzioni JavaScript per CDR Dashboard
+function processAllCDR() {
+    showAlert('info', 'Elaborazione in corso...', 'Sto elaborando tutti i file CDR...');
+    
+    fetch('/cdr_analytics/process_all')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', 'Elaborazione Completata', 
+                    `Elaborati ${data.processed_files} file con successo. ${data.errors > 0 ? data.errors + ' errori.' : ''}`);
+                setTimeout(refreshDashboard, 2000);
+            } else {
+                showAlert('danger', 'Errore', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'Errore', 'Errore durante l\'elaborazione: ' + error);
+        });
+}
+
+function refreshDashboard() {
+    location.reload();
+}
+
+function viewReportDetails(filename) {
+    fetch(`/cdr_analytics/report_details/${filename}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayReportDetails(data.details);
+                new bootstrap.Modal(document.getElementById('reportDetailsModal')).show();
+            } else {
+                showAlert('danger', 'Errore', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'Errore', 'Errore caricamento dettagli: ' + error);
+        });
+}
+
+function displayReportDetails(details) {
+    const content = document.getElementById('report-details-content');
+    let html = '';
+    
+    console.log('Dettagli ricevuti:', details); // ✅ Debug per vedere cosa arriva
+    
+    if (details.is_summary) {
+        // ========== GESTIONE FILE SUMMARY ==========
+        html = `
+            <div class="alert alert-info">
+                <h5><i class="fas fa-chart-pie"></i> Report Summary Globale</h5>
+                <p>Questo è un report aggregato di tutti i contratti elaborati.</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>📊 Informazioni Generali</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>File:</strong> ${details.filename}</li>
+                        <li><strong>Tipo:</strong> <span class="badge bg-warning">Report Globale</span></li>
+                        <li><strong>Contratti Elaborati:</strong> ${details.client_city}</li>
+                        <li><strong>Generato:</strong> ${new Date(details.generation_date).toLocaleString('it-IT')}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>💰 Riassunto Costi VoIP</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Costo Originale:</strong> <span class="text-muted">€${details.total_cost || 0}</span></li>
+                        <li><strong>Costo Cliente VoIP:</strong> <span class="text-success">€${details.costo_cliente_totale_euro || details.total_cost || 0}</span></li>
+                        <li><strong>Differenza:</strong> 
+                            <span class="${(details.costo_cliente_totale_euro || 0) >= (details.total_cost || 0) ? 'text-success' : 'text-danger'}">
+                                €${((details.costo_cliente_totale_euro || 0) - (details.total_cost || 0)).toFixed(4)}
+                            </span>
+                        </li>
+                        <li><strong>VoIP Abilitato:</strong> 
+                            <span class="badge ${details.voip_enabled ? 'bg-success' : 'bg-warning'}">
+                                ${details.voip_enabled ? 'Sì' : 'No'}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>📈 Statistiche Totali</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Chiamate Totali:</strong> <span class="text-primary">${details.total_calls.toLocaleString()}</span></li>
+                        <li><strong>Durata Totale:</strong> <span class="text-success">${details.total_duration_minutes.toFixed(2)} minuti</span></li>
+                        <li><strong>Costo Totale:</strong> <span class="text-danger">€${details.total_cost.toFixed(4)}</span></li>
+                        <li><strong>Costo Medio/min:</strong> €${(details.total_cost / details.total_duration_minutes).toFixed(4)}</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        // ✅ Gestisce correttamente la struttura dati SUMMARY
+        // ✅ Breakdown per contratti singoli (AGGIORNATO)
+        if (details.call_types_breakdown && Object.keys(details.call_types_breakdown).length > 0) {
+            html += `
+                <h6 class="mt-3">📞 Breakdown per Tipo Chiamata</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Categoria VoIP</th>
+                                <th>Chiamate</th>
+                                <th>Durata (min)</th>
+                                <th>Costo Orig. (€)</th>
+                                <th>Costo Cliente (€)</th>
+                                <th>€/min Config</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            Object.entries(details.call_types_breakdown).forEach(([type, data]) => {
+                const durationMinutes = (data.durata_totale_secondi / 60).toFixed(2);
+                const costoOriginale = data.costo_totale_euro || 0;
+                const costoCliente = data.costo_cliente_totale_euro || costoOriginale;
+                const prezzoConfig = data.prezzo_voip_configurato || 0;
+                const categoriaVoip = data.categoria_voip || 'ALTRO';
+                
+                html += `
+                    <tr>
+                        <td><span class="badge bg-info">${type}</span></td>
+                        <td><span class="badge bg-secondary">${categoriaVoip}</span></td>
+                        <td class="text-center">${data.numero_chiamate}</td>
+                        <td class="text-end">${durationMinutes}</td>
+                        <td class="text-end">€${costoOriginale.toFixed(4)}</td>
+                        <td class="text-end"><strong>€${costoCliente.toFixed(4)}</strong></td>
+                        <td class="text-end">€${prezzoConfig.toFixed(4)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+        }
+        
+        // ✅ Top Contracts per SUMMARY
+        if (details.top_contracts && details.top_contracts.top_by_cost) {
+            html += `
+                <h6 class="mt-4">🥇 Top 5 Contratti per Costo</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Contratto</th><th>Città</th><th>Chiamate</th><th>Costo</th></tr></thead>
+                        <tbody>
+            `;
+            
+            details.top_contracts.top_by_cost.slice(0, 5).forEach((contract, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                html += `
+                    <tr>
+                        <td>${medal} ${contract.codice_contratto}</td>
+                        <td>${contract.cliente_finale_comune}</td>
+                        <td class="text-center">${contract.totale_chiamate}</td>
+                        <td class="text-end">€${contract.costo_totale_euro.toFixed(4)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+        }
+        
+    } else {
+        // ========== GESTIONE FILE CONTRATTO SINGOLO ==========
+        html = `
+            <div class="alert alert-primary">
+                <h5><i class="fas fa-file-alt"></i> Report Contratto Singolo</h5>
+                <p>Dettagli per il contratto ${details.contract_code}</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>📋 Informazioni Generali</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>File:</strong> ${details.filename}</li>
+                        <li><strong>Contratto:</strong> <span class="badge bg-primary">${details.contract_code || 'N/A'}</span></li>
+                        <li><strong>Cliente:</strong> ${details.client_city || 'N/A'}</li>
+                        <li><strong>Generato:</strong> ${new Date(details.generation_date).toLocaleString('it-IT')}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>📊 Statistiche</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Chiamate Totali:</strong> <span class="text-primary">${details.total_calls || 0}</span></li>
+                        <li><strong>Durata Totale:</strong> <span class="text-success">${details.total_duration_minutes || 0} min</span></li>
+                        <li><strong>Costo Totale:</strong> <span class="text-danger">€${details.total_cost || 0}</span></li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        // ✅ Breakdown per contratti singoli
+        if (details.call_types_breakdown && Object.keys(details.call_types_breakdown).length > 0) {
+            html += `
+                <h6 class="mt-3">📞 Breakdown per Tipo Chiamata</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead class="table-dark">
+                            <tr><th>Tipo</th><th>Chiamate</th><th>Durata (min)</th><th>Costo (€)</th><th>€/min</th></tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            Object.entries(details.call_types_breakdown).forEach(([type, data]) => {
+                const durationMinutes = (data.durata_totale_secondi / 60).toFixed(2);
+                const costPerMin = data.costo_al_minuto || 0;
+                html += `
+                    <tr>
+                        <td><span class="badge bg-info">${type}</span></td>
+                        <td class="text-center">${data.numero_chiamate}</td>
+                        <td class="text-end">${durationMinutes}</td>
+                        <td class="text-end">€${data.costo_totale_euro.toFixed(4)}</td>
+                        <td class="text-end">€${costPerMin.toFixed(4)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+        }
+        
+        // ✅ Daily breakdown per contratti singoli
+        if (details.daily_breakdown && Object.keys(details.daily_breakdown).length > 0) {
+            html += `
+                <h6 class="mt-4">📅 Breakdown Giornaliero</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Data</th><th>Chiamate</th><th>Durata (min)</th><th>Costo (€)</th></tr></thead>
+                        <tbody>
+            `;
+            
+            // Ordina le date
+            const sortedDates = Object.keys(details.daily_breakdown).sort();
+            sortedDates.forEach(date => {
+                const dayData = details.daily_breakdown[date];
+                html += `
+                    <tr>
+                        <td>${date}</td>
+                        <td class="text-center">${dayData.chiamate}</td>
+                        <td class="text-end">${dayData.durata_minuti.toFixed(2)}</td>
+                        <td class="text-end">€${dayData.costo_euro.toFixed(4)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+        }
+    }
+    
+    // ✅ Aggiungi sempre il pulsante di download
+    html += `
+        <div class="text-center mt-4">
+            <a href="/cdr_analytics/reports/${details.filename}" class="btn btn-success" download>
+                <i class="fas fa-download"></i> Scarica Report Completo
+            </a>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+}
+
+function debugReportDetails(filename) {
+    console.log('🔍 Debug: Richiesta dettagli per:', filename);
+    
+    fetch(`/cdr_analytics/report_details/${filename}`)
+        .then(response => {
+            console.log('📡 Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Dati ricevuti:', data);
+            if (data.success) {
+                console.log('✅ Successo - Dettagli:', data.details);
+                console.log('🔍 Tipo file:', data.details.is_summary ? 'SUMMARY' : 'CONTRATTO');
+            } else {
+                console.error('❌ Errore:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('💥 Errore fetch:', error);
+        });
+}
+
+function showAlert(type, title, message) {
+    const alertsContainer = document.getElementById('cdr-alerts');
+    const alertId = 'alert-' + Date.now();
+    
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" id="${alertId}">
+            <strong>${title}:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    alertsContainer.innerHTML = alertHtml;
+    
+    // Auto-remove dopo 5 secondi se non è errore
+    if (type !== 'danger') {
+        setTimeout(() => {
+            const alert = document.getElementById(alertId);
+            if (alert) {
+                bootstrap.Alert.getOrCreateInstance(alert).close();
+            }
+        }, 5000);
+    }
+}
+
+// Aggiorna dashboard ogni 30 secondi
+setInterval(function() {
+    // Aggiorna solo le statistiche senza ricaricare tutta la pagina
+    fetch('/cdr_analytics/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Aggiorna contatori se necessario
+                console.log('Dashboard aggiornata');
+            }
+        })
+        .catch(error => console.error('Errore aggiornamento:', error));
+}, 30000);
+</script>
+{% endblock %}

@@ -1,52 +1,70 @@
-
-    <h1>Gestione Contratti CDR</h1>
-    <p>Totale contratti: <span id="total-contracts">0</span></p>
-    <p>Ultimo aggiornamento: <span id="last-updated">-</span></p>
-    
-    <div id="loading">Caricamento contratti...</div>
-    <div id="error" style="color: red; display: none;"></div>
-    
-    <form id="contracts-form" style="display: none;">
-        <div class="table-responsive">
-            <table class="table table-rounded table-striped border gy-7 gs-7">
-                <thead>
-                    <tr class="fw-semibold fs-6 text-gray-800 border-bottom border-gray-200">
-                        <th>ID Contratto</th>
-                        <th>N. Telefono</th>
-                        <th>Nome Cliente</th>
-                        <th>Codice Odoo</th>
-                        <th>Note</th>
-                        <th>Azione</th>
-                    </tr>
-                </thead>
-                <tbody id="contracts-container">
-                    
-                </tbody>
-            </table>
+{% extends 'base.html' %}
+{% block title %}>Gestione Contratti CDR{% endblock %}
+{% block toolbar %}
+<div class=" align-items-center gap-2">
+    <div class="text-gray-700">Totale contratti: <span class="text-white" id="total-contracts">0</span></div>
+    <div class="text-gray-700">Ultimo aggiornamento: <span class="text-white" id="last-updated">-</span></div>
+</div>
+<div class="col-4">
+    <input type="text" id="mySearch" class="form-control form-control-sm" placeholder="Cerca...">
+</div>
+<div class="d-flex align-items-center gap-2">
+    <div class="btn-group">
+        <button id="edit_button" type="button" class="btn btn-sm btn-primary" ><i class="fa-solid fa-pen-to-square me-2 fs-3"></i>Modifica</button>
+        <button id="save_all" type="button" class="btn btn-sm btn-warning disabled" onclick="saveAllContracts()"><i class="fa-solid fa-floppy-disk me-2 fs-3"></i>Salva Tutti i Contratti</button>
+        <button id="reload" type="button" class="btn btn-sm btn-info" onclick="loadContracts('load')"><i class="fa-solid fa-arrows-rotate me-2 fs-3"></i>Ricarica Dati</button>
+    </div>
+</div>
+{% endblock %}     
+{% block content %}   
+<div id="kt_app_content" class="app-content  flex-column-fluid " >
+    <div id="kt_app_content_container" class="app-container  container-fluid ">
+        <div class="row">
+                <form id="contracts-form" style="display: none;">
+                    <div class="table-responsive">
+                        <table id="kt_datatable" class="table table-rounded table-striped border gy-5 gs-7 align-middle dataTable">
+                            <thead>
+                                <tr class="fw-semibold fs-6 text-gray-800 border-bottom border-gray-200">
+                                    <th>Contr. N.</th>
+                                    <th>N. Telefono</th>
+                                    <th>Nome Cliente</th>
+                                    <th>Codice Odoo</th>
+                                    <th>Note</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="contracts-container">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
         </div>
+    </div>
+</div>
+{% endblock %}
 
-        <div style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 20px;">
-            <button type="button" onclick="saveAllContracts()">Salva Tutti i Contratti</button>
-            <button type="button" onclick="loadContracts()">Ricarica Dati</button>
-            <span id="save-status" style="margin-left: 20px;"></span>
-        </div>
-    </form>
+{% block scripts %}
+ <script src="assets/plugins/custom/datatables/datatables.bundle.js"></script>
+ <script>
 
-    <script>
         let contractsData = {};
-        
+        let isEditMode = false;
+
         // Carica contratti all'avvio
         document.addEventListener('DOMContentLoaded', function() {
-            loadContracts();
+            loadContracts('load');
+            document.getElementById('edit_button').addEventListener('click', function () {
+                 toggle_button('edit_button', 'fa-pen-to-square', 'fa-circle-xmark', 'Modifica', 'Fine modifica', 'loadContracts("load")', 'loadContracts("edit")');
+            });
+            // document.getElementById('reload').addEventListener('click', function () {
+            //      toggle_button('edit_button', 'fa-pen-to-square', 'fa-circle-xmark', 'Modifica', 'Fine modifica', 'loadContracts("load")', 'loadContracts("edit")');
+            // });
         });
         
-        async function loadContracts() {
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
+        
+        async function loadContracts(action) {
             const form = document.getElementById('contracts-form');
-            
-            loading.style.display = 'block';
-            error.style.display = 'none';
             form.style.display = 'none';
             
             try {
@@ -55,24 +73,81 @@
                 
                 if (data.success) {
                     contractsData = data.data;
-                    displayContracts(contractsData.contracts);
+                    if(isEditMode === true) {
+                        $('#kt_datatable').DataTable().clear().destroy();
+                        editContracts(contractsData.contracts);
+                        enable_datatables('#kt_datatable');
+                    } else {
+                        $('#kt_datatable').DataTable().clear().destroy();
+                        displayContracts(contractsData.contracts);
+                        enable_datatables('#kt_datatable');
+                    }
+                    // displayContracts(contractsData.contracts);
                     
                     document.getElementById('total-contracts').textContent = data.contracts_count;
                     document.getElementById('last-updated').textContent = new Date(data.last_updated).toLocaleString('it-IT');
                     
-                    loading.style.display = 'none';
                     form.style.display = 'block';
+                    
                 } else {
                     throw new Error(data.message || 'Errore nel caricamento');
                 }
             } catch (err) {
-                loading.style.display = 'none';
-                error.style.display = 'block';
-                error.textContent = 'Errore nel caricamento dei contratti: ' + err.message;
+                toastr.error(`I contratti non sono stati caricati, riprova.`, "Errore caricamento contratti");
+            }
+        
+        }
+
+        function toggle_button(id, icon1, icon2, text1, text2, action1, action2) {
+            const this_button = document.getElementById('edit_button');
+            const icon = this_button.querySelector('i');
+            const isEdit = icon.classList.contains(icon1);
+
+            if (isEdit) {
+                isEditMode = true;
+                // Cambia in modalità "load"
+                icon.classList.replace(icon1, icon2);
+                this_button.innerHTML = `<i class="fas ${icon2}"></i> ${text2}`;
+                // this_button.setAttribute('onclick', action2);
+                loadContracts("edit");
+                
+            } else {
+                // Cambia in modalità "edit"
+                isEditMode = false;
+                icon.classList.replace(icon2, icon1);
+                this_button.innerHTML = `<i class="fas ${icon1}"></i> ${text1}`;
+                // this_button.setAttribute('onclick', action2);
+                loadContracts("load"); 
             }
         }
         
+        /**Funzione che abilita DataTables per la tabella specificata */
+        function enable_datatables(id){
+             var table = $(id).DataTable({
+                destroy: true,
+                autoWidth: false,
+                ColumnDefs: [
+                    { width: '1%', targets: 0 },
+                    { width: '26%', targets: 1 },
+                    { width: '24%', targets: 2 },
+                    { width: '24%', targets: 3 },
+                    { width: '24%', targets: 4 },
+                    { width: '1%', targets: 5 }
+                ],
+                    pageLength: 10,
+                    lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Tutti"] ]
+                // "scrollX": true
+            });
+
+            $('#mySearch').on('keyup', function () {
+                table.search(this.value).draw();
+            });
+        }
+
+
         function displayContracts(contracts) {
+            const save_all_button = document.getElementById('save_all');
+            save_all_button.classList.add('disabled');
             const container = document.getElementById('contracts-container');
             container.innerHTML = '';
             
@@ -87,56 +162,107 @@
                 contractDiv.innerHTML = `
                 			<tr>
                                 <td>${contractCode}</td>
-                                <td><input type="text" 
+                                <td>
+                                    ${getFirstNumber(contract.phone_numbers) || ''}
+                 
+                                </td>
+                                <td>
+                                    ${contract.contract_name || ''}
+        
+                                </td>
+                                <td>
+                                    ${contract.odoo_client_id || ''}
+                
+                                </td>
+                                <td>
+                                   ${contract.notes || ''}
+                                </td>
+                                <td class="text-center px-0">
+                                    <!--<button type="button" onclick="saveContract('${contractCode}')" class="btn btn-icon btn-sm btn-primary">
+                                        <i class="fa-solid fa-floppy-disk fs-2"></i>
+                                    </button>-->
+                                </td>
+                            </tr>
+                `;
+                container.appendChild(contractDiv);
+            });
+        }
+
+
+        function getFirstNumber(input) {
+            if (!input) return null;
+
+            const parts = input.includes(',') ? input.split(',') : [input];
+            const first = String(parts[0]).trim();
+            return parseInt(first, 10) || null;
+        }
+
+        function editContracts(contracts) {
+            const save_all_button = document.getElementById('save_all');
+            save_all_button.classList.remove('disabled');
+
+            const container = document.getElementById('contracts-container');
+            container.innerHTML = '';
+                                  
+            // Ordina contratti per codice (numericamente)
+            const sortedContracts = Object.entries(contracts).sort((a, b) => {
+                return parseInt(a[0]) - parseInt(b[0]);
+            });
+            
+            sortedContracts.forEach(([contractCode, contract]) => {
+                const contractDiv = document.createElement('tr');
+                
+                contractDiv.innerHTML = `
+                			<tr>
+                                <td>${contractCode}</td>
+                                <td><span class="fs-2"> ${getFirstNumber(contract.phone_numbers) || ''}</span>
+                                    <!--<input type="text" 
                                        value="${contract.phone_numbers || ''}" 
                                        placeholder="Inserisci nome cliente"
-                                       class="disabled" disabled
-                                       ></td>
+                                       class="disabled form-control form-control-sm" disabled>-->
+                                </td>
                                 <td>
                                     <input type="text" 
                                        id="name_${contractCode}" 
                                        name="name_${contractCode}"
                                        value="${contract.contract_name || ''}" 
-                                       placeholder="Inserisci nome cliente">
+                                       placeholder="Inserisci nome cliente" class="form-control form-control-sm">
                                 </td>
                                 <td>
-                                <input type="number" 
+                                <input type="text" 
                                        id="odoo_${contractCode}" 
                                        name="odoo_${contractCode}"
                                        value="${contract.odoo_client_id || ''}" 
-                                       placeholder="Inserisci ID cliente Odoo">
+                                       placeholder="Inserisci ID cliente Odoo" class="form-control form-control-sm">
                                 </td>
                                 <td>
                                     <textarea id="notes_${contractCode}" 
                                           name="notes_${contractCode}"
                                           placeholder="Note aggiuntive"
                                           rows="1"
-                                          style="resize: vertical;">${contract.notes || ''}</textarea>
+                                          style="resize: vertical;" class="form-control form-control-sm">${contract.notes || ''}</textarea>
                                 </td>
                                 <td>
-                                    <button type="button" 
-                                            onclick="saveContract('${contractCode}')"
-                                            style="padding: 8px 15px; background: #007cba; color: white; border: none; cursor: pointer;">
-                                        Salva Contratto ${contractCode}
+                                    <button type="button" onclick="saveContract('${contractCode}')" class="btn btn-icon btn-sm btn-primary">
+                                        <i class="fa-solid fa-floppy-disk fs-2"></i>
+                                        <span class="indicator-progress">
+                                            Attendi... 
+                                        <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                    </span>
                                     </button>
-                                    <span id="status_${contractCode}" style="margin-left: 10px; font-size: 0.9em;"></span>
+
+                                    <!--<span id="status_${contractCode}" style="margin-left: 10px; font-size: 0.9em;"></span>-->
                                 </td>
                             </tr>
-                
-                    
-      
-                    
-                    
                 `;
-                
                 container.appendChild(contractDiv);
             });
         }
         
         async function saveContract(contractCode) {
-            const statusElement = document.getElementById(`status_${contractCode}`);
-            statusElement.textContent = 'Salvando...';
-            statusElement.style.color = 'blue';
+            // const statusElement = document.getElementById(`status_${contractCode}`);
+            // statusElement.textContent = 'Salvando...';
+            // statusElement.style.color = 'blue';
             
             const contractName = document.getElementById(`name_${contractCode}`).value.trim();
             const odooClientId = document.getElementById(`odoo_${contractCode}`).value.trim();
@@ -145,13 +271,14 @@
             const updateData = {
                 contract_code: contractCode,
                 contract_name: contractName,
+                odoo_client_id: odooClientId,
                 notes: notes
             };
             
             // Aggiungi odoo_client_id solo se ha un valore
-            if (odooClientId) {
-                updateData.odoo_client_id = parseInt(odooClientId);
-            }
+            // if (odooClientId) {
+            //     updateData.odoo_client_id = parseInt(odooClientId);
+            // }
             
             try {
                 const response = await fetch('/api/cdr/update_contract', {
@@ -165,87 +292,116 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    statusElement.textContent = '✅ Salvato con successo';
-                    statusElement.style.color = 'green';
-                    
-                    // Rimuovi il messaggio dopo 3 secondi
-                    setTimeout(() => {
-                        statusElement.textContent = '';
-                    }, 3000);
+                    toastr.success(`Il contratto <span class="fs-3">${contractCode}</span> è stato salvato con successo.`, "Salvato con successo");
                 } else {
+                    toastr.error(`Il contratto <span class="fs-3">${contractCode}</span> non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
                     throw new Error(result.message || 'Errore nel salvataggio');
                 }
             } catch (error) {
-                statusElement.textContent = '❌ Errore: ' + error.message;
-                statusElement.style.color = 'red';
+                toastr.error(`Il contratto <span class="fs-3">${contractCode}</span> non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
             }
         }
         
         async function saveAllContracts() {
-            const saveStatus = document.getElementById('save-status');
-            saveStatus.textContent = 'Salvataggio in corso...';
-            saveStatus.style.color = 'blue';
-            
+            // const saveStatus = document.getElementById('save-status');
+            // saveStatus.textContent = 'Salvataggio in corso...';
+            // saveStatus.style.color = 'blue';
+            var target = document.querySelector("#kt_datatable_wrapper"); 
+            var blockUI = new KTBlockUI(target);
+            if (blockUI.isBlocked()) {
+                blockUI.release();
+            } else {
+                blockUI.block();
+            }
             let successCount = 0;
             let errorCount = 0;
-            
+            let isAnyModified = false; // <-- Nuova variabile globale al ciclo
             const contracts = Object.keys(contractsData.contracts);
+            let modifiedContracts = [];
             
             for (const contractCode of contracts) {
                 try {
+                    const original = contractsData.contracts[contractCode] || {};
                     const contractName = document.getElementById(`name_${contractCode}`).value.trim();
                     const odooClientId = document.getElementById(`odoo_${contractCode}`).value.trim();
                     const notes = document.getElementById(`notes_${contractCode}`).value.trim();
                     
-                    // Salva solo se almeno un campo è compilato
-                    if (contractName || odooClientId || notes) {
-                        const updateData = {
-                            contract_code: contractCode,
-                            contract_name: contractName,
-                            notes: notes
-                        };
+                    isModified =
+                        contractName !== (original.contract_name || '') ||
+                        odooClientId !== (original.odoo_client_id || '') ||
+                        notes !== (original.notes || '');
+
+                    if (isModified) {
+                        isAnyModified = true; // <-- segna che almeno una riga è stata modificata
+                        modifiedContracts.push(contractCode); // registra solo quelli effettivamente modificati
                         
-                        if (odooClientId) {
-                            updateData.odoo_client_id = parseInt(odooClientId);
-                        }
+                        // Salva solo se almeno un campo è compilato
+                        // if (contractName || odooClientId || notes) {
+                            const updateData = {
+                                contract_code: contractCode,
+                                contract_name: contractName,
+                                odoo_client_id: odooClientId,
+                                notes: notes
+                            };
+                            
+                            // if (odooClientId) {
+                            //     updateData.odoo_client_id = parseInt(odooClientId);
+                            // }
                         
-                        const response = await fetch('/api/cdr/update_contract', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(updateData)
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            successCount++;
-                            document.getElementById(`status_${contractCode}`).textContent = '✅';
-                            document.getElementById(`status_${contractCode}`).style.color = 'green';
-                        } else {
-                            errorCount++;
-                            document.getElementById(`status_${contractCode}`).textContent = '❌';
-                            document.getElementById(`status_${contractCode}`).style.color = 'red';
-                        }
+                            const response = await fetch('/api/cdr/update_contract', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(updateData)
+                            });
+                            console.log("Response:", updateData);
+                            const result = await response.json();
+                            
+                            if (result.success) {
+                                successCount++;
+                                isModified = true;
+                                // toastr.success(`Sono stati aggiornati <span class="fs-3">${successCount}</span> contratti con successo.`, "Dati aggiornati");
+                            } else {
+                                errorCount++;
+                                // toastr.error(`Il contratto non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
+                                throw new Error(result.message || 'Errore nel salvataggio');
+                            }
+                        // }
+                    }else{
+                        // toastr.warning(`Nessun contratto è stato modificato..`, "Nessuna modifica");
                     }
                 } catch (error) {
                     errorCount++;
-                    document.getElementById(`status_${contractCode}`).textContent = '❌';
-                    document.getElementById(`status_${contractCode}`).style.color = 'red';
+                    // toastr.error(`Il contratto non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
                 }
                 
                 // Piccola pausa per non sovraccaricare il server
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
+            if(isAnyModified){
+                toastr.success(`<span class="fs-3">${successCount}</span> contratti sono stati modificati con successo.`, "Dati aggiornati");
+            }else{
+                toastr.warning(`Nessun contratto è stato modificato.`, "Nessuna modifica");
+            }
+            // saveStatus.textContent = `Completato: ${successCount} salvati, ${errorCount} errori`;
+            // saveStatus.style.color = successCount > 0 ? 'green' : 'red';
             
-            saveStatus.textContent = `Completato: ${successCount} salvati, ${errorCount} errori`;
-            saveStatus.style.color = successCount > 0 ? 'green' : 'red';
-            
-            // Rimuovi il messaggio dopo 5 secondi
-            setTimeout(() => {
-                saveStatus.textContent = '';
-            }, 5000);
+            if (blockUI.isBlocked()) {
+                blockUI.release();
+                blockUI.destroy();
+            } else {
+                blockUI.block();
+            }
+
         }
+        
+        
     </script>
-<script src="assets/plugins/custom/datatables/datatables.bundle.js"></script>
+
+{% endblock scripts %}
+    
+    
+   
+
+   

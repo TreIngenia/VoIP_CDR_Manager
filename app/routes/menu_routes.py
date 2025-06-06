@@ -5,7 +5,7 @@ from menu import MENU_ITEMS
 
 menu_bp = Blueprint('menu', __name__)
 
-def process_partials_recursive(content, base_dir='templates_new'):
+def process_partials_recursive(content, base_dir=os.getenv("TEMPLATE_FOLDER", "templates")):
     """Process partials recursively in the content."""
     pattern = r'<!--layout-partial:(.*?)-->'
     
@@ -135,10 +135,10 @@ _breadcrumb_builder = BreadcrumbBuilder(MENU_ITEMS)
 def render_with_menu_context(template_path, additional_context=None):
     """Render template con menu + breadcrumb integrato"""
     try:
-        if template_path.startswith(os.getenv("TEMPLATE_FOLDER", "templates_new")+'/'):
+        if template_path.startswith(os.getenv("TEMPLATE_FOLDER", "templates")+'/'):
             file_path = template_path
         else:
-            file_path = os.getenv("TEMPLATE_FOLDER", "templates_new")+f'/{template_path}'
+            file_path = os.getenv("TEMPLATE_FOLDER", "templates")+f'/{template_path}'
         
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()

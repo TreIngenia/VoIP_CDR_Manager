@@ -1,0 +1,424 @@
+<!--layout-partial:partials/base.html-->
+
+{% block content %}
+<div class="row">
+    <!-- Stats Cards -->
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                            <i class="ki-outline ki-chart-line text-primary fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small">Report Totali</div>
+                        <div class="fs-2 fw-bold">{{ stats.total_reports if stats else 0 }}</div>
+                        <div class="text-success small">
+                            <i class="ki-outline ki-arrow-up"></i>
+                            Sistema Attivo
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                            <i class="ki-outline ki-timer text-success fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small">Scheduler</div>
+                        <div class="fs-5 fw-bold">
+                            {% if stats.scheduler_running %}
+                                <span class="text-success">In Esecuzione</span>
+                            {% else %}
+                                <span class="text-danger">Fermo</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small">Processo automatico</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info bg-opacity-10 rounded-3 p-3">
+                            <i class="ki-outline ki-wifi text-info fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small">Server FTP</div>
+                        <div class="fs-5 fw-bold">
+                            {% if stats.ftp_configured %}
+                                <span class="text-success">Configurato</span>
+                            {% else %}
+                                <span class="text-warning">Da Configurare</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small">Connessione dati</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                            <i class="ki-outline ki-pulse text-warning fs-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="text-muted small">Stato Sistema</div>
+                        <div class="fs-5 fw-bold">
+                            {% if system_status.overall_status == 'healthy' %}
+                                <span class="text-success">Sano</span>
+                            {% elif system_status.overall_status == 'warning' %}
+                                <span class="text-warning">Attenzione</span>
+                            {% else %}
+                                <span class="text-danger">Errore</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small">Monitoraggio attivo</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Actions -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="ki-outline ki-rocket me-2"></i>
+                    Azioni Rapide
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="/manual_run" class="btn btn-primary btn-lg w-100">
+                            <i class="ki-outline ki-play me-2"></i>
+                            Esecuzione Manuale
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/test_ftp" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="ki-outline ki-wifi me-2"></i>
+                            Test FTP
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/config" class="btn btn-outline-secondary btn-lg w-100">
+                            <i class="ki-outline ki-setting-2 me-2"></i>
+                            Configurazione
+                        </a>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="/cdr_dashboard" class="btn btn-success btn-lg w-100">
+                            <i class="ki-outline ki-chart-pie-simple me-2"></i>
+                            Dashboard CDR
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/categories" class="btn btn-outline-success btn-lg w-100">
+                            <i class="ki-outline ki-tag me-2"></i>
+                            Gestione Categorie
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Status -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="ki-outline ki-information me-2"></i>
+                    Stato Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if system_status %}
+                    {% for check_name, check_status in system_status.checks.items() %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0">
+                                {% if check_status == 'ok' %}
+                                    <span class="status-indicator status-healthy"></span>
+                                {% elif check_status == 'warning' %}
+                                    <span class="status-indicator status-warning"></span>
+                                {% else %}
+                                    <span class="status-indicator status-error"></span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 ms-2">
+                                <div class="fw-bold text-capitalize">{{ check_name }}</div>
+                                <div class="text-muted small">
+                                    {% if check_status == 'ok' %}
+                                        Funzionante
+                                    {% elif check_status == 'warning' %}
+                                        Attenzione
+                                    {% elif check_status == 'error' %}
+                                        Errore
+                                    {% else %}
+                                        Sconosciuto
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    {% if system_status.issues %}
+                        <hr class="my-3">
+                        <div class="text-muted small mb-2">Problemi rilevati:</div>
+                        {% for issue in system_status.issues %}
+                            <div class="alert alert-warning alert-sm py-2 px-3 mb-2">
+                                <small>{{ issue }}</small>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="ki-outline ki-information fs-2x mb-3"></i>
+                        <div>Stato sistema non disponibile</div>
+                    </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <a href="/status_page" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="ki-outline ki-eye me-1"></i>
+                        Visualizza Dettagli
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+{% if recent_activity %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="ki-outline ki-notification-bing me-2"></i>
+                    Attività Recenti
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for activity in recent_activity %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-message">{{ activity.message }}</div>
+                                <div class="timeline-time text-muted small">{{ activity.timestamp }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="/logs" class="btn btn-outline-primary">
+                        <i class="ki-outline ki-notepad me-1"></i>
+                        Visualizza Tutti i Log
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Custom Styles for Timeline -->
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: var(--bs-border-color);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0.25rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--bs-primary);
+}
+
+.timeline-content {
+    padding-left: 1rem;
+}
+
+.timeline-message {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.timeline-time {
+    margin-top: 0.25rem;
+}
+
+.alert-sm {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .btn-lg {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh stats every 30 seconds
+    function refreshStats() {
+        fetch('/api/dashboard/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update stats display
+                    updateStatsDisplay(data.stats);
+                }
+            })
+            .catch(error => {
+                console.warn('Errore aggiornamento statistiche:', error);
+            });
+    }
+    
+    function updateStatsDisplay(stats) {
+        // Update report count
+        const reportCountEl = document.querySelector('[data-stat="total_reports"]');
+        if (reportCountEl && stats.total_reports !== undefined) {
+            reportCountEl.textContent = stats.total_reports;
+        }
+        
+        // Update scheduler status
+        const schedulerStatusEl = document.querySelector('[data-stat="scheduler_status"]');
+        if (schedulerStatusEl && stats.scheduler_running !== undefined) {
+            schedulerStatusEl.textContent = stats.scheduler_running ? 'In Esecuzione' : 'Fermo';
+            schedulerStatusEl.className = stats.scheduler_running ? 'text-success' : 'text-danger';
+        }
+    }
+    
+    // Refresh every 30 seconds
+    setInterval(refreshStats, 30000);
+    
+    // Quick action handlers
+    document.querySelectorAll('[data-action]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const action = this.dataset.action;
+            
+            if (action === 'manual_run') {
+                e.preventDefault();
+                runManualExecution();
+            } else if (action === 'test_ftp') {
+                e.preventDefault();
+                testFTPConnection();
+            }
+        });
+    });
+    
+    function runManualExecution() {
+        const button = document.querySelector('[data-action="manual_run"]');
+        const originalText = button.innerHTML;
+        
+        button.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Esecuzione...';
+        button.disabled = true;
+        
+        FTPScheduler.apiCall('/api/manual_run')
+            .then(data => {
+                if (data.success) {
+                    FTPScheduler.showToast('Esecuzione completata con successo', 'success');
+                    // Redirect to results
+                    setTimeout(() => {
+                        window.location.href = '/manual_run';
+                    }, 2000);
+                } else {
+                    FTPScheduler.showToast(`Errore: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                FTPScheduler.showToast(`Errore esecuzione: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+    }
+    
+    function testFTPConnection() {
+        const button = document.querySelector('[data-action="test_ftp"]');
+        const originalText = button.innerHTML;
+        
+        button.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Test...';
+        button.disabled = true;
+        
+        FTPScheduler.apiCall('/api/test_ftp')
+            .then(data => {
+                if (data.success) {
+                    FTPScheduler.showToast(`Connessione FTP OK - ${data.files.length} file trovati`, 'success');
+                } else {
+                    FTPScheduler.showToast(`Errore FTP: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                FTPScheduler.showToast(`Errore test FTP: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+    }
+});
+</script>
+{% endblock %}

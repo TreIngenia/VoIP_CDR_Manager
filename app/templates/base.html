@@ -1,70 +1,129 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="utf-8"/>
-    <title>FTP Scheduler - {{ page_title }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link href="{{ url_for('static', filename='css/style.bundle.css') }}" rel="stylesheet"/>
-</head>
-<body id="kt_app_body" data-kt-app-layout="dark-sidebar">
-    <div class="d-flex flex-column flex-root app-root">
-        <div class="app-page flex-column flex-column-fluid">
-            <!-- Header con menu -->
-            <div id="kt_app_header" class="app-header">
-                <div class="app-container container-fluid d-flex align-items-stretch">
-                    <div class="app-header-menu app-header-mobile-drawer">
-                        <!-- Menu dinamico -->
-                         
-                        {% for item in menu_items %}
-                            {% if item.get('type') == 'section' %}
-                                <div class="menu-section">{{ item.title }}</div>
-                            {% elif item.get('children') %}
-                                <div class="menu-item menu-accordion">
-                                    <span class="menu-link">
-                                        <span class="menu-icon">
-                                            <i class="{{ get_menu_icon(item) }}"></i>
-                                        </span>
-                                        <span class="menu-title">{{ item.title }}</span>
-                                    </span>
-                                    <div class="menu-sub">
-                                        {% for child in item.children %}
-                                            <div class="menu-item">
-                                                <a class="menu-link {{ 'active' if is_menu_active(child.endpoint) }}" 
-                                                   href="{{ get_menu_url(child) }}">
-                                                    <span class="menu-title">{{ child.title }}</span>
-                                                </a>
-                                            </div>
-                                        {% endfor %}
+<!--
+Author: Keenthemes
+Product Name: MetronicProduct Version: 8.3.0
+Purchase: https://themeforest.net/item/metronic-responsive-admin-dashboard-template/4021469?irgwc=1&clickid=Qb1XFm3dIxyIUCez3ZXf1X0mUks0kb3cC2sEUQ0&iradid=275988&irpid=1330466&iradtype=ONLINE_TRACKING_LINK&irmptype=mediapartner&mp_value1=&utm_campaign=af_impact_radius_1330466&utm_medium=affiliate&utm_source=impact_radius
+Website: http://www.keenthemes.com
+Contact: support@keenthemes.com
+Follow: www.twitter.com/keenthemes
+Dribbble: www.dribbble.com/keenthemes
+Like: www.facebook.com/keenthemes
+License: For each use you must have a valid license purchased only from above link in order to legally use the theme for your project.
+-->
+<html lang="IT" >
+    <head><base href="{{ url_for('index') }}"/>
+        <title>Unisco Manager | {% block title %}{% endblock %}</title>
+        <meta charset="utf-8"/>
+        <meta name="description" content="
+     
+        "/>
+        <meta name="keywords" content="
+         
+        "/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta property="og:locale" content="it_IT" />
+        <meta property="og:type" content="application" />
+        <meta property="og:title" content="Unisco Manager" />
+        <meta property="og:url" content="https://www.unisco.pto"/>
+        <meta property="og:site_name" content="Unisco Manager" />
+        <link rel="canonical" href="http://unisco.pro"/>
+        <link rel="shortcut icon" href="assets/media/logos/favicon.ico"/>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700"/>        <!--end::Fonts-->
+        <link href="assets/plugins/custom/fullcalendar/fullcalendar.bundle.css" rel="stylesheet" type="text/css"/>
+        <link href="assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css"/>
+        <link href="assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css"/>
+        <link href="assets/css/style.bundle.css" rel="stylesheet" type="text/css"/>
+        <script>
+            // Frame-busting to prevent site from being loaded within a frame without permission (click-jacking)
+            if (window.top != window.self) {
+                window.top.location.replace(window.self.location.href);
+            }
+        </script>
+    </head>
+    <!--end::Head-->
+    <!--begin::Body-->
+    <body  id="kt_app_body" data-kt-app-page-loading-enabled="true" data-kt-app-page-loading="on" data-kt-app-layout="dark-sidebar" data-kt-app-header-fixed="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-hoverable="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true" data-kt-app-footer-fixed="true" data-kt-app-toolbar-fixed="true" class="app-default" >
+        {% include 'partials/theme-mode/_init.html' %}
+        {% include 'layout/partials/_page-loader.html' %}
+        
+        <!--begin::CONTENITORE PAGINE _DEFAULT.HTML-->
+            <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+                <div class="app-page  flex-column flex-column-fluid " id="kt_app_page">
+                    {% include 'layout/partials/_header.html' %}
+                    <div class="app-wrapper  flex-column flex-row-fluid " id="kt_app_wrapper">
+                        {% include 'layout/partials/_sidebar.html' %}
+                        <div class="app-main flex-column flex-row-fluid " id="kt_app_main">
+                            <div class="d-flex flex-column flex-column-fluid">
+                                 {% if self.toolbar()|trim %}
+                                <div id="kt_app_toolbar" class="app-toolbar py-3 border-0 shadow-sm">
+                                    <div id="kt_app_toolbar_container" class="app-container container-fluid d-flex flex-stack ">
+                                        {% block toolbar %}{% endblock %}
                                     </div>
                                 </div>
-                            {% else %}
-                                <div class="menu-item">
-                                    <a class="menu-link {{ 'active' if is_menu_active(item.endpoint) }}" 
-                                       href="{{ get_menu_url(item) }}">
-                                        <span class="menu-icon">
-                                            <i class="{{ get_menu_icon(item) }}"></i>
-                                        </span>
-                                        <span class="menu-title">{{ item.title }}</span>
-                                    </a>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
+                                {% endif %}
+                                <!-- {% include 'layout/partials/_toolbar.html' %} -->
+                                <!--begin::CONTENUTO DINAMICO PAGINA-->
+                                {% block content %}{% endblock %}
+                                <!--end::FINE CONTENUTO DINAMICO PAGINA-->
+                            </div>
+                            {% include 'layout/partials/_footer.html' %}
+                        </div>
                     </div>
                 </div>
             </div>
+            {% include 'partials/_drawers.html' %}
+        <!--end::FINE CONTENITORE PAGINE-->
+
+        {% include 'partials/_scrolltop.html' %}
+
+        <!--begin::Modals-->
+        {% include 'partials/modals/_upgrade-plan.html' %}
+        {% include 'partials/modals/_view-users.html' %}
+        {% include 'partials/modals/users-search/_main.html' %}
+        {% include 'partials/modals/_invite-friends.html' %}
+        <!--layout-partial:partials/modals/_upgrade-plan.html-->
+        <!--layout-partial:partials/modals/_view-users.html-->
+        <!--layout-partial:partials/modals/users-search/_main.html-->
+        <!--layout-partial:partials/modals/_invite-friends.html-->
+            <!--end::Modals-->
+        <script>
+            var hostUrl = "assets/"; 
+        </script>
+        <script src="assets/plugins/global/plugins.bundle.js"></script>
+        <script src="assets/js/scripts.bundle.js"></script>
+        {%block scripts %}{% endblock %}        
+        <script>
+            /** 
+             *  Configurazione di Toastr per le notifiche 
+             * */
+            toastr.options = {
+                "closeButton": false,
+                "debug": false,
+                "newestOnTop": false,
+                "progressBar": true,
+                "positionClass": "toastr-top-right",
+                "preventDuplicates": false,
+                "onclick": null,
+                "showDuration": "300",
+                "hideDuration": "1000",
+                "timeOut": "5000",
+                "extendedTimeOut": "1000",
+                "showEasing": "swing",
+                "hideEasing": "linear",
+                "showMethod": "fadeIn",
+                "hideMethod": "fadeOut"
+            };
             
-            <!-- Content -->
-            <div class="app-wrapper flex-column flex-row-fluid">
-                <div class="app-main flex-column flex-row-fluid">
-                    <div class="d-flex flex-column flex-column-fluid">
-                        {% block content %}{% endblock %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script src="{{ url_for('static', filename='js/scripts.bundle.js') }}"></script>
-    {% block scripts %}{% endblock %}
-</body>
+            function formatEuro(value) {
+                return value.toFixed(4).replace('.', ',');
+            }
+
+            function applyMarkup(price, markupPercent) {
+                if (isNaN(price) || isNaN(markupPercent)) {
+                    throw new Error("Prezzo o markup non valido");
+                }
+                return price * (1 + markupPercent / 100);
+            }
+        </script>
+    </body>
 </html>

@@ -40,7 +40,7 @@ from flask import Flask, send_from_directory, jsonify
 def create_app():
     """Factory function per creare l'app Flask"""
     app = Flask(__name__, 
-                template_folder=os.getenv("TEMPLATE_FOLDER", "templates_new"),
+                template_folder=os.getenv("TEMPLATE_FOLDER", "templates"),
                 static_folder=os.getenv("STATIC_FOLDER", "static"), 
                 static_url_path=os.getenv("STATIC_URL_PATH", "/static"))
     

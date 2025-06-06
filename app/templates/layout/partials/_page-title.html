@@ -1,0 +1,34 @@
+<div data-kt-swapper="true" data-kt-swapper-mode="{default: 'prepend', lg: 'prepend'}" data-kt-swapper-parent="{default: '#kt_app_content_container', lg: '#kt_app_header_wrapper'}" class="page-title d-flex flex-column justify-content-center flex-wrap me-3 mb-5 mb-lg-0">
+    <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+        {% set page_title = namespace(value='') %}
+        {% for item in menu_items %}
+            {% if request.endpoint == item.endpoint and not page_title.value %}
+                {% set page_title.value = item.title %}
+            {% endif %}
+        {% endfor %}
+        
+        {% if page_title.value %}
+            {{ page_title.value }}
+        {% elif breadcrumb %}
+            {{ breadcrumb[-1].title }}
+        {% endif %}
+    </h1>
+    
+    {% if breadcrumb %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb breadcrumb-dot text-muted fs-6 fw-semibold">
+            {% for item in breadcrumb %}
+            <li class="breadcrumb-item {% if item.is_active %}text-muted{% endif %}">
+                {% if item.url and not item.is_active %}
+                <a href="{{ item.url }}" class="">
+                    {{ item.title }}
+                </a>
+                {% else %}
+                {{ item.title }}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+    </nav>
+    {% endif %}
+</div>

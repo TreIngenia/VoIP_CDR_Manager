@@ -1,83 +1,109 @@
 <!DOCTYPE html>
+<!--
+Author: Keenthemes
+Product Name: MetronicProduct Version: 8.3.0
+Purchase: https://themeforest.net/item/metronic-responsive-admin-dashboard-template/4021469?irgwc=1&clickid=Qb1XFm3dIxyIUCez3ZXf1X0mUks0kb3cC2sEUQ0&iradid=275988&irpid=1330466&iradtype=ONLINE_TRACKING_LINK&irmptype=mediapartner&mp_value1=&utm_campaign=af_impact_radius_1330466&utm_medium=affiliate&utm_source=impact_radius
+Website: http://www.keenthemes.com
+Contact: support@keenthemes.com
+Follow: www.twitter.com/keenthemes
+Dribbble: www.dribbble.com/keenthemes
+Like: www.facebook.com/keenthemes
+License: For each use you must have a valid license purchased only from above link in order to legally use the theme for your project.
+-->
 <html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Errore - FTP Scheduler</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .error-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .error-card {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            max-width: 600px;
-            width: 90%;
-        }
-        .error-icon {
-            font-size: 4rem;
-            color: #dc3545;
-            margin-bottom: 1rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="error-container">
-        <div class="error-card text-center">
-            <i class="fas fa-exclamation-triangle error-icon"></i>
-            <h1 class="h2 mb-3">Oops! Si è verificato un errore</h1>
-            
-            {% if error_message %}
-            <div class="alert alert-danger" role="alert">
-                <h5>Dettagli errore:</h5>
-                <p class="mb-0">{{ error_message }}</p>
-            </div>
-            {% else %}
-            <p class="text-muted mb-4">Si è verificato un errore imprevisto. Ti preghiamo di riprovare.</p>
-            {% endif %}
-            
-            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                <a href="javascript:history.back()" class="btn btn-outline-primary">
-                    <i class="fas fa-arrow-left"></i> Indietro
-                </a>
-                <a href="/" class="btn btn-primary">
-                    <i class="fas fa-home"></i> Dashboard Principale
-                </a>
-            </div>
-            
-            <hr class="my-4">
-            
-            <div class="row text-center">
-                <div class="col-md-4">
-                    <a href="/config" class="btn btn-link">
-                        <i class="fas fa-cog"></i><br>
-                        Configurazione
-                    </a>
-                </div>
-                <div class="col-md-4">
-                    <a href="/logs" class="btn btn-link">
-                        <i class="fas fa-file-alt"></i><br>
-                        Log Sistema
-                    </a>
-                </div>
-                <div class="col-md-4">
-                    <a href="/status" class="btn btn-link">
-                        <i class="fas fa-heartbeat"></i><br>
-                        Stato Sistema
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-</body>
+	<!--begin::Head-->
+	<head>
+<base href="{{ url_for('index') }}" />
+		<title>Metronic - The World's #1 Selling Tailwind CSS & Bootstrap Admin Template by KeenThemes</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="
+     
+        "/>
+        <meta name="keywords" content="
+         
+        "/>		
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta property="og:locale" content="it_IT" />
+        <meta property="og:type" content="application" />
+        <meta property="og:title" content="Unisco Manager" />
+        <meta property="og:url" content="https://www.unisco.pto"/>
+        <meta property="og:site_name" content="Unisco Manager" />
+        <link rel="canonical" href="http://unisco.pro"/>
+        <link rel="shortcut icon" href="assets/media/logos/favicon.ico"/>
+		<!--begin::Fonts(mandatory for all pages)-->
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+		<!--end::Fonts-->
+		<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
+		<link href="assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
+		<link href="assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
+		<!--end::Global Stylesheets Bundle-->
+		<script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
+	</head>
+	<!--end::Head-->
+	<!--begin::Body-->
+	<body id="kt_body" class="app-blank bgi-size-cover bgi-position-center bgi-no-repeat">
+		<!-- <script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script> -->
+		<div class="d-flex flex-column flex-root" id="kt_app_root">
+			<style>body { background-image: url('assets/media/auth/bg1.jpg'); } [data-bs-theme="dark"] body { background-image: url('assets/media/auth/bg1-dark.jpg'); }</style>
+			<div class="d-flex flex-column flex-center flex-column-fluid">
+				<div class="d-flex flex-column flex-center text-center p-10">
+					<div class="card card-flush w-lg-650px py-5">
+						<div class="card-body py-15 py-lg-20">
+							<h1 class="fw-bolder fs-2hx text-gray-900">Oops!</h1>
+                            <h1 class="fw-bolder fs-1hx text-gray-900 ">Si è verificato un errore!</h1>
+							<div class="fw-semibold fs-6 text-gray-500 my-10">
+                                {% if error_message %}
+                                <div class="alert alert-danger" role="alert">
+                                    <h5>Dettagli errore:</h5>
+                                    <p class="mb-0">{{ error_message }}</p>
+                                </div>
+                                {% else %}
+                                    <p class="text-muted mb-4">Si è verificato un errore imprevisto. Ti preghiamo di riprovare.</p>
+                                {% endif %}    
+                            </div>
+							<div class="mb-3">
+								<!-- <img src="assets/media/auth/404-error.png" class="mw-100 mh-300px theme-light-show" alt="" />
+								<img src="assets/media/auth/404-error-dark.png" class="mw-100 mh-300px theme-dark-show" alt="" /> -->
+							</div>
+							
+                                <div class="btn-group" role="group" >
+                                    <a href="javascript:history.back()" class="btn btn-info btn-sm">
+                                        <i class="fas fa-arrow-left"></i> Indietro
+                                    </a>
+                                    <a href="/" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-home"></i> Dashboard Principale
+                                    </a>
+                                </div>
+							
+						</div>
+                        <div class="card-footer">
+                            <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <a href="/config" class="btn btn-link">
+                                            <i class="fas fa-cog"></i><br>
+                                            Configurazione
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <a href="/logs" class="btn btn-link">
+                                            <i class="fas fa-file-alt"></i><br>
+                                            Log Sistema
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <a href="/status" class="btn btn-link">
+                                            <i class="fas fa-heartbeat"></i><br>
+                                            Stato Sistema
+                                        </a>
+                                    </div>
+                                </div>
+                        </div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>var hostUrl = "assets/";</script>
+		<script src="assets/plugins/global/plugins.bundle.js"></script>
+		<script src="assets/js/scripts.bundle.js"></script>
+	</body>
 </html>
