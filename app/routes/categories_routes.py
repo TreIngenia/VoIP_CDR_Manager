@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Categories Routes - Route Flask per gestione categorie CDR con markup personalizzabili
-Aggiunge endpoint per CRUD delle macro categorie con supporto markup nell'interfaccia web
+Aggiornato per utilizzare il sistema unificato cdr_categories_enhanced.py
 """
 
 import json
@@ -29,11 +29,13 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
     def cdr_categories_page_new():
         """Pagina principale gestione categorie con info configurazione e markup"""
         try:
+            from routes.menu_routes import render_with_menu_context
+            
             categories = categories_manager.get_all_categories_with_pricing()
             stats = categories_manager.get_statistics()
             conflicts = categories_manager.validate_patterns_conflicts()
             
-            # ✅ INFO CONFIGURAZIONE DA .env INCLUSO MARKUP
+            # Info configurazione da .env incluso markup
             config_info = {
                 'config_directory': secure_config.get_config()['config_directory'],
                 'config_file_name': secure_config.get_config()['categories_config_file'],
@@ -42,7 +44,7 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                 'config_size_bytes': categories_manager.config_file.stat().st_size if categories_manager.config_file.exists() else 0,
                 'config_readable': os.access(categories_manager.config_file, os.R_OK) if categories_manager.config_file.exists() else False,
                 'config_writable': os.access(categories_manager.config_file, os.W_OK) if categories_manager.config_file.exists() else False,
-                # ✅ NUOVE INFO MARKUP
+                # Nuove info markup
                 'global_markup_percent': categories_manager.global_markup_percent,
                 'voip_config': {
                     'base_fixed': secure_config.get_config().get('voip_price_fixed', 0.02),
@@ -52,11 +54,12 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                 }
             }
             
-            return render_template('categoriesNEW.html', 
-                                 categories=categories,
-                                 stats=stats,
-                                 conflicts=conflicts,
-                                 config_info=config_info)
+            return render_with_menu_context('categoriesNEW.html', {
+                'categories': categories,
+                'stats': stats,
+                'conflicts': conflicts,
+                'config_info': config_info
+            })
         except Exception as e:
             logger.error(f"Errore caricamento pagina categorie: {e}")
             return render_template('error.html', 
@@ -66,11 +69,13 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
     def cdr_categories_page():
         """Pagina principale gestione categorie con info configurazione e markup"""
         try:
+            from routes.menu_routes import render_with_menu_context
+            
             categories = categories_manager.get_all_categories_with_pricing()
             stats = categories_manager.get_statistics()
             conflicts = categories_manager.validate_patterns_conflicts()
             
-            # ✅ INFO CONFIGURAZIONE DA .env INCLUSO MARKUP
+            # Info configurazione da .env incluso markup
             config_info = {
                 'config_directory': secure_config.get_config()['config_directory'],
                 'config_file_name': secure_config.get_config()['categories_config_file'],
@@ -79,7 +84,7 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                 'config_size_bytes': categories_manager.config_file.stat().st_size if categories_manager.config_file.exists() else 0,
                 'config_readable': os.access(categories_manager.config_file, os.R_OK) if categories_manager.config_file.exists() else False,
                 'config_writable': os.access(categories_manager.config_file, os.W_OK) if categories_manager.config_file.exists() else False,
-                # ✅ NUOVE INFO MARKUP
+                # Nuove info markup
                 'global_markup_percent': categories_manager.global_markup_percent,
                 'voip_config': {
                     'base_fixed': secure_config.get_config().get('voip_price_fixed', 0.02),
@@ -89,11 +94,12 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                 }
             }
             
-            return render_template('categories.html', 
-                                 categories=categories,
-                                 stats=stats,
-                                 conflicts=conflicts,
-                                 config_info=config_info)
+            return render_with_menu_context('categories.html', {
+                'categories': categories,
+                'stats': stats,
+                'conflicts': conflicts,
+                'config_info': config_info
+            })
         except Exception as e:
             logger.error(f"Errore caricamento pagina categorie: {e}")
             return render_template('error.html', 
@@ -120,10 +126,15 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
     def get_category(category_name):
         """API per ottenere una categoria specifica con pricing"""
         try:
-            category_data = categories_manager.get_category_with_pricing(category_name)
+            category = categories_manager.get_category(category_name)
             
-            if not category_data:
+            if not category:
                 return jsonify({'success': False, 'message': 'Categoria non trovata'}), 404
+            
+            # Costruisce dati categoria con pricing info
+            from dataclasses import asdict
+            category_data = asdict(category)
+            category_data['pricing_info'] = category.get_pricing_info(categories_manager.global_markup_percent)
             
             return jsonify({
                 'success': True,
@@ -156,7 +167,7 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             currency = data.get('currency', 'EUR')
             description = data.get('description', '').strip()
             
-            # ✅ GESTIONE MARKUP PERSONALIZZATO
+            # Gestione markup personalizzato
             custom_markup_percent = None
             if 'custom_markup_percent' in data and data['custom_markup_percent'] not in [None, '', 'null']:
                 try:
@@ -175,7 +186,7 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             if not patterns:
                 return jsonify({'success': False, 'message': 'Almeno un pattern è obbligatorio'}), 400
             
-            # ✅ CREA CATEGORIA CON MARKUP
+            # Crea categoria con markup
             success = categories_manager.add_category(
                 name=name,
                 display_name=display_name,
@@ -188,13 +199,17 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             
             if success:
                 logger.info(f"Categoria {name} creata con successo")
-                # ✅ RESTITUISCI INFO PRICING COMPLETE
-                new_category = categories_manager.get_category_with_pricing(name)
+                # Restituisci info pricing complete
+                new_category = categories_manager.get_category(name)
+                from dataclasses import asdict
+                category_data = asdict(new_category)
+                category_data['pricing_info'] = new_category.get_pricing_info(categories_manager.global_markup_percent)
+                
                 return jsonify({
                     'success': True,
                     'message': f'Categoria {name} creata con successo',
                     'category_name': name,
-                    'category_data': new_category
+                    'category_data': category_data
                 })
             else:
                 return jsonify({'success': False, 'message': 'Errore nella creazione della categoria'}), 500
@@ -244,7 +259,7 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             if 'is_active' in data:
                 updates['is_active'] = bool(data['is_active'])
             
-            # ✅ GESTIONE AGGIORNAMENTO MARKUP PERSONALIZZATO
+            # Gestione aggiornamento markup personalizzato
             if 'custom_markup_percent' in data:
                 markup_value = data['custom_markup_percent']
                 
@@ -267,12 +282,16 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             
             if success:
                 logger.info(f"Categoria {category_name} aggiornata con successo")
-                # ✅ RESTITUISCI DATI AGGIORNATI CON PRICING
-                updated_category = categories_manager.get_category_with_pricing(category_name)
+                # Restituisci dati aggiornati con pricing
+                updated_category = categories_manager.get_category(category_name)
+                from dataclasses import asdict
+                category_data = asdict(updated_category)
+                category_data['pricing_info'] = updated_category.get_pricing_info(categories_manager.global_markup_percent)
+                
                 return jsonify({
                     'success': True,
                     'message': f'Categoria {category_name} aggiornata con successo',
-                    'category_data': updated_category
+                    'category_data': category_data
                 })
             else:
                 return jsonify({'success': False, 'message': 'Errore nell\'aggiornamento della categoria'}), 500
@@ -281,6 +300,32 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             return jsonify({'success': False, 'message': str(e)}), 400
         except Exception as e:
             logger.error(f"Errore API update category {category_name}: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    @app.route('/api/categories/<category_name>', methods=['DELETE'])
+    def delete_category(category_name):
+        """API per eliminare una categoria"""
+        try:
+            # Verifica esistenza categoria
+            if not categories_manager.get_category(category_name):
+                return jsonify({'success': False, 'message': 'Categoria non trovata'}), 404
+            
+            # Elimina categoria
+            success = categories_manager.delete_category(category_name)
+            
+            if success:
+                logger.info(f"Categoria {category_name} eliminata con successo")
+                return jsonify({
+                    'success': True,
+                    'message': f'Categoria {category_name} eliminata con successo'
+                })
+            else:
+                return jsonify({'success': False, 'message': 'Errore nell\'eliminazione della categoria'}), 500
+                
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
+        except Exception as e:
+            logger.error(f"Errore API delete category {category_name}: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
     
     @app.route('/api/categories/global-markup', methods=['POST'])
@@ -303,11 +348,11 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             except (ValueError, TypeError):
                 return jsonify({'success': False, 'message': 'Valore markup globale non valido'}), 400
             
-            # ✅ AGGIORNA MARKUP GLOBALE
+            # Aggiorna markup globale
             success = categories_manager.update_global_markup(new_markup)
             
             if success:
-                # ✅ OPZIONALE: AGGIORNA ANCHE LA CONFIGURAZIONE .ENV
+                # Opzionale: aggiorna anche la configurazione .env
                 update_env_config = data.get('update_env_config', False)
                 if update_env_config:
                     try:
@@ -318,7 +363,7 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                     except Exception as e:
                         logger.warning(f"Errore aggiornamento .env: {e}")
                 
-                # ✅ RESTITUISCI STATISTICHE AGGIORNATE
+                # Restituisci statistiche aggiornate
                 updated_stats = categories_manager.get_statistics()
                 affected_categories = [
                     name for name, cat in categories_manager.get_all_categories().items() 
@@ -395,12 +440,11 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             
             call_types = data['call_types']
             duration_seconds = int(data.get('duration_seconds', 300))  # Default 5 minuti
-            # use_markup = data.get('use_markup', True)  # ✅ OPZIONE PER TESTARE CON/SENZA MARKUP
             
             results = []
             
             for call_type in call_types:
-                # ✅ TESTA CON MARKUP
+                # Testa con markup
                 classification = categories_manager.calculate_call_cost(call_type, duration_seconds)
                 
                 results.append({
@@ -421,7 +465,6 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             return jsonify({
                 'success': True,
                 'test_duration_seconds': duration_seconds,
-                # 'markup_enabled': use_markup,
                 'global_markup_percent': categories_manager.global_markup_percent,
                 'results': results
             })
@@ -471,12 +514,12 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                     success = categories_manager.update_category(category_name, custom_markup_percent=markup_percent)
                     
                     if success:
-                        updated_category = categories_manager.get_category_with_pricing(category_name)
+                        updated_category = categories_manager.get_category(category_name)
                         results.append({
                             'category_name': category_name,
                             'success': True,
                             'new_markup_percent': markup_percent,
-                            'final_price': updated_category['price_with_markup'] if updated_category else None
+                            'final_price': updated_category.price_with_markup if updated_category else None
                         })
                     else:
                         results.append({
@@ -502,34 +545,6 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             
         except Exception as e:
             logger.error(f"Errore API bulk update markup: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
-    
-    # ✅ MANTIENI TUTTE LE ROUTE ESISTENTI (con piccole modifiche per supportare markup)
-    
-    @app.route('/api/categories/<category_name>', methods=['DELETE'])
-    def delete_category(category_name):
-        """API per eliminare una categoria"""
-        try:
-            # Verifica esistenza categoria
-            if not categories_manager.get_category(category_name):
-                return jsonify({'success': False, 'message': 'Categoria non trovata'}), 404
-            
-            # Elimina categoria
-            success = categories_manager.delete_category(category_name)
-            
-            if success:
-                logger.info(f"Categoria {category_name} eliminata con successo")
-                return jsonify({
-                    'success': True,
-                    'message': f'Categoria {category_name} eliminata con successo'
-                })
-            else:
-                return jsonify({'success': False, 'message': 'Errore nell\'eliminazione della categoria'}), 500
-                
-        except ValueError as e:
-            return jsonify({'success': False, 'message': str(e)}), 400
-        except Exception as e:
-            logger.error(f"Errore API delete category {category_name}: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
     
     @app.route('/api/categories/conflicts', methods=['GET'])
@@ -573,7 +588,7 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                 return jsonify({'success': False, 'message': 'Formato non supportato'}), 400
             
             if format_type == 'json':
-                # ✅ ESPORTA CON INFORMAZIONI PRICING COMPLETE
+                # Esporta con informazioni pricing complete
                 categories_data = categories_manager.get_all_categories_with_pricing()
                 response = jsonify({
                     'success': True,
@@ -583,7 +598,7 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
                     'data': categories_data
                 })
             else:  # CSV
-                # ✅ CSV CON COLONNE MARKUP
+                # CSV con colonne markup
                 output = io.StringIO()
                 writer = csv.writer(output)
                 
@@ -625,6 +640,39 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             logger.error(f"Errore API export: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
     
+    @app.route('/api/categories/import', methods=['POST'])
+    def import_categories():
+        """API per importare categorie JSON"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'success': False, 'message': 'Dati non validi'}), 400
+            
+            categories_data = data.get('categories_data')
+            merge_mode = data.get('merge', True)
+            
+            if not categories_data:
+                return jsonify({'success': False, 'message': 'Dati categorie mancanti'}), 400
+            
+            # Usa il metodo di import del categories_manager
+            success = categories_manager.import_categories(
+                json.dumps(categories_data), 
+                format='json', 
+                merge=merge_mode
+            )
+            
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': f'Categorie importate con successo (merge: {merge_mode})'
+                })
+            else:
+                return jsonify({'success': False, 'message': 'Errore durante importazione'}), 500
+                
+        except Exception as e:
+            logger.error(f"Errore API import: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
     @app.route('/api/categories/reset-defaults', methods=['POST'])
     def reset_to_defaults():
         """API per ripristinare categorie di default"""
@@ -645,25 +693,168 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             logger.error(f"Errore API reset defaults: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
     
-    # ✅ MANTIENI TUTTE LE ALTRE ROUTE ESISTENTI...
-    # (health, validate, import, etc. rimangono uguali)
+    @app.route('/api/categories/health', methods=['GET'])
+    def check_categories_health():
+        """API per controllo salute sistema categorie"""
+        try:
+            health_status = {
+                'status': 'healthy',
+                'timestamp': datetime.now().isoformat(),
+                'checks': {},
+                'warnings': [],
+                'errors': []
+            }
+            
+            # Check file configurazione
+            try:
+                if categories_manager.config_file.exists():
+                    health_status['checks']['config_file_exists'] = True
+                    
+                    # Check permessi
+                    if os.access(categories_manager.config_file, os.R_OK):
+                        health_status['checks']['config_file_readable'] = True
+                    else:
+                        health_status['checks']['config_file_readable'] = False
+                        health_status['errors'].append('File configurazione non leggibile')
+                    
+                    if os.access(categories_manager.config_file, os.W_OK):
+                        health_status['checks']['config_file_writable'] = True
+                    else:
+                        health_status['checks']['config_file_writable'] = False
+                        health_status['warnings'].append('File configurazione non scrivibile')
+                else:
+                    health_status['checks']['config_file_exists'] = False
+                    health_status['warnings'].append('File configurazione non esiste')
+            except Exception as e:
+                health_status['checks']['config_file_check'] = False
+                health_status['errors'].append(f'Errore controllo file: {str(e)}')
+            
+            # Check categorie caricate
+            try:
+                categories_count = len(categories_manager.get_all_categories())
+                active_count = len(categories_manager.get_active_categories())
+                
+                health_status['checks']['categories_loaded'] = categories_count > 0
+                health_status['checks']['active_categories'] = active_count > 0
+                
+                if categories_count == 0:
+                    health_status['errors'].append('Nessuna categoria caricata')
+                elif active_count == 0:
+                    health_status['warnings'].append('Nessuna categoria attiva')
+                    
+            except Exception as e:
+                health_status['checks']['categories_check'] = False
+                health_status['errors'].append(f'Errore controllo categorie: {str(e)}')
+            
+            # Check conflitti pattern
+            try:
+                conflicts = categories_manager.validate_patterns_conflicts()
+                health_status['checks']['no_pattern_conflicts'] = len(conflicts) == 0
+                
+                if conflicts:
+                    health_status['warnings'].append(f'{len(conflicts)} conflitti pattern rilevati')
+                    
+            except Exception as e:
+                health_status['checks']['conflicts_check'] = False
+                health_status['errors'].append(f'Errore controllo conflitti: {str(e)}')
+            
+            # Determina stato generale
+            if health_status['errors']:
+                health_status['status'] = 'unhealthy'
+            elif health_status['warnings']:
+                health_status['status'] = 'degraded'
+            
+            return jsonify(health_status)
+            
+        except Exception as e:
+            logger.error(f"Errore API health check: {e}")
+            return jsonify({
+                'status': 'error',
+                'timestamp': datetime.now().isoformat(),
+                'error': str(e)
+            }), 500
+    
+    @app.route('/api/categories/validate', methods=['POST'])
+    def validate_category():
+        """API per validare una categoria"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'success': False, 'message': 'Dati non validi'}), 400
+            
+            validation_result = {
+                'valid': True,
+                'errors': [],
+                'warnings': []
+            }
+            
+            # Validazioni base
+            if not data.get('name'):
+                validation_result['errors'].append('Nome categoria mancante')
+            
+            if not data.get('display_name'):
+                validation_result['errors'].append('Nome visualizzato mancante')
+            
+            try:
+                price = float(data.get('price_per_minute', 0))
+                if price < 0:
+                    validation_result['errors'].append('Prezzo non può essere negativo')
+                elif price > 100:
+                    validation_result['warnings'].append('Prezzo molto alto')
+            except (ValueError, TypeError):
+                validation_result['errors'].append('Prezzo non valido')
+            
+            patterns = data.get('patterns', [])
+            if not patterns:
+                validation_result['errors'].append('Almeno un pattern è obbligatorio')
+            elif len(patterns) > 20:
+                validation_result['warnings'].append('Molti pattern potrebbero rallentare il matching')
+            
+            # Validazione markup
+            custom_markup = data.get('custom_markup_percent')
+            if custom_markup is not None:
+                try:
+                    markup = float(custom_markup)
+                    if markup < -100:
+                        validation_result['errors'].append('Markup non può essere inferiore a -100%')
+                    elif markup > 1000:
+                        validation_result['errors'].append('Markup troppo alto')
+                    elif markup > 500:
+                        validation_result['warnings'].append('Markup molto alto')
+                except (ValueError, TypeError):
+                    validation_result['errors'].append('Valore markup non valido')
+            
+            validation_result['valid'] = len(validation_result['errors']) == 0
+            
+            return jsonify({
+                'success': True,
+                'validation': validation_result
+            })
+            
+        except Exception as e:
+            logger.error(f"Errore API validate: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
     
     logger.info("🔗 Route categorie CDR con supporto markup registrate con successo")
     
-    # Restituisce le informazioni sulle route aggiunte (aggiornato)
+    # Restituisce le informazioni sulle route aggiunte
     return {
         'routes_added': [
-            '/categories',
+            '/cdr_categories',
+            '/cdr_categories_new',
             '/api/categories',
             '/api/categories/<category_name>',
-            '/api/categories/global-markup',  # ✅ NUOVO
-            '/api/categories/pricing-preview',  # ✅ NUOVO
-            '/api/categories/bulk-update-markup',  # ✅ NUOVO
+            '/api/categories/global-markup',
+            '/api/categories/pricing-preview',
+            '/api/categories/bulk-update-markup',
             '/api/categories/test-classification',
             '/api/categories/conflicts',
             '/api/categories/statistics',
             '/api/categories/export',
-            '/api/categories/reset-defaults'
+            '/api/categories/import',
+            '/api/categories/reset-defaults',
+            '/api/categories/health',
+            '/api/categories/validate'
         ],
-        'routes_count': 11  # Aggiornato
+        'routes_count': 15
     }

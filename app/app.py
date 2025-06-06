@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-FTP Scheduler App - Versione Completa con Sistema Categorie CDR Integrato
-Modifiche per utilizzare il nuovo sistema categorie invece dei precedenti approcci
+FTP Scheduler App - Versione Completa con Sistema Categorie CDR Unificato
+Aggiornato per utilizzare cdr_categories_enhanced.py invece dei file separati
 """
 
 import os
@@ -20,18 +20,17 @@ except ImportError:
 
 # Import moduli personalizzati
 from config import SecureConfig
-# Import moduli migliorati (aggiunti da migrazione)
+# Import moduli migliorati
 from logger_config import get_logger, log_success, log_error, log_warning, log_info
 from config_validator import ConfigValidator
 from performance_monitor import get_performance_monitor
-# from exception_handler import ExceptionHandler, log_success, log_error, log_warning, log_info
 from config import save_config_to_env, load_config_from_env_local
 from ftp_processor import FTPProcessor
 from scheduler import SchedulerManager
 from routes.default_routes import create_routes
 
-# ✅ NUOVO: Import del sistema categorie integrato invece dei vecchi sistemi
-from cdr_integration_enhanced import integrate_enhanced_cdr_system
+# ✅ NUOVO: Import del sistema categorie unificato
+from cdr_categories_enhanced import integrate_enhanced_cdr_system
 from routes.categories_routes import add_categories_routes
 
 # Import Flask
@@ -53,8 +52,7 @@ def create_app():
         PERMANENT_SESSION_LIFETIME=timedelta(hours=24)
     )
     
-    
-    # Route performance monitoring (aggiunto da migrazione)
+    # Route performance monitoring
     @app.route('/api/metrics/performance')
     def get_performance_metrics():
         monitor = get_performance_monitor()
@@ -82,25 +80,25 @@ def find_free_port(start_port=5000):
 def print_startup_info(app_host, app_port):
     """Stampa informazioni di avvio con info sistema categorie"""
     print("\n" + "="*60)
-    print("AVVIO FTP SCHEDULER APP - VERSIONE CON CATEGORIE CDR 2.0")
+    print("AVVIO FTP SCHEDULER APP - VERSIONE UNIFICATA CDR 2.0")
     print("="*60)
     print(f"Dashboard: http://{app_host}:{app_port}")
     print(f"Configurazione: http://{app_host}:{app_port}/config")
-    print(f"Gestione Categorie CDR: http://{app_host}:{app_port}/categories")  # ✅ NUOVO
-    print(f"Dashboard CDR: http://{app_host}:{app_port}/cdr_dashboard")  # ✅ NUOVO
+    print(f"Gestione Categorie CDR: http://{app_host}:{app_port}/cdr_categories")
+    print(f"Dashboard CDR: http://{app_host}:{app_port}/cdr_dashboard")
     print(f"Log: http://{app_host}:{app_port}/logs")
     print(f"Stato: http://{app_host}:{app_port}/status")
     print("="*60)
     
-    # ✅ Informazioni configurazione aggiornate
+    # Informazioni configurazione aggiornate
     secure_config = SecureConfig()
     config = secure_config.get_config()
     
     print(f"Directory output: {config['output_directory']}")
     print(f"Server FTP: {config['ftp_host'] if config['ftp_host'] else '(non configurato)'}")
     print(f"Schedulazione: {config['schedule_type']}")
-    print(f"Sistema Categorie CDR: Abilitato v2.0")  # ✅ NUOVO
-    print(f"File categorie: output/cdr_analytics/cdr_categories.json")  # ✅ NUOVO
+    print(f"Sistema Categorie CDR: Unificato v2.0")
+    print(f"File categorie: {config['config_directory']}/{config['categories_config_file']}")
     print("="*60 + "\n")
 
 def graceful_shutdown(scheduler_manager):
@@ -112,9 +110,9 @@ def graceful_shutdown(scheduler_manager):
         log_error(f"Errore durante shutdown: {e}")
 
 def main():
-    """Funzione principale con integrazione sistema categorie"""
+    """Funzione principale con sistema categorie unificato"""
     try:
-        log_info("Inizializzazione FTP Scheduler con Sistema Categorie CDR 2.0")
+        log_info("Inizializzazione FTP Scheduler con Sistema Categorie CDR Unificato 2.0")
         
         # Inizializza configurazione sicura
         secure_config = SecureConfig()
@@ -131,17 +129,15 @@ def main():
         # Crea app Flask
         app = create_app()
         
-        # ✅ INIZIALIZZA COMPONENTI CON NUOVO SISTEMA CATEGORIE
+        # ✅ INIZIALIZZA COMPONENTI CON SISTEMA UNIFICATO
         processor = FTPProcessor(secure_config.get_config())
         
-        # ✅ INTEGRA IL NUOVO SISTEMA CATEGORIE CDR (sostituisce i vecchi sistemi)
-        # log_info("Integrazione Sistema Categorie CDR 2.0...")
-        # processor = integrate_enhanced_cdr_system(app, processor)
-        log_info("Integrazione Sistema CDR con configurazione da .env...")
+        # ✅ INTEGRA IL SISTEMA CATEGORIE UNIFICATO (sostituisce i vecchi sistemi)
+        log_info("Integrazione Sistema CDR Unificato con configurazione da .env...")
         processor = integrate_enhanced_cdr_system(app, processor, secure_config)
 
-        # ✅ AGGIUNGI ROUTE PER GESTIONE CATEGORIE
-        log_info("Registrazione route gestione categorie...")
+        # ✅ AGGIUNGI ROUTE PER GESTIONE CATEGORIE (aggiornate)
+        log_info("Registrazione route gestione categorie unificato...")
         categories_info = add_categories_routes(app, processor.cdr_analytics, secure_config)
         log_success(f"Route categorie registrate: {categories_info['routes_count']} endpoint")
         
@@ -152,10 +148,13 @@ def main():
         # Crea tutte le route standard
         app = create_routes(app, secure_config, processor, scheduler_manager)
         
-        # Scarico l'elenco dei contrtti CDR
-        from cdr_contract_extractor import integrate_contract_extraction
-        contracts_info = integrate_contract_extraction(app, secure_config, processor)
-        log_success(f"Sistema contratti integrato: {contracts_info['routes_count']} endpoint")
+        # ✅ MANTIENI INTEGRAZIONE CONTRATTI (se necessario)
+        try:
+            from cdr_contract_extractor import integrate_contract_extraction
+            contracts_info = integrate_contract_extraction(app, secure_config, processor)
+            log_success(f"Sistema contratti integrato: {contracts_info['routes_count']} endpoint")
+        except ImportError:
+            log_warning("Sistema contratti non disponibile (modulo non trovato)")
 
         # Avvia scheduler
         try:
@@ -184,8 +183,16 @@ def main():
             if app_port != requested_port:
                 log_info(f"Usando porta alternativa: {app_port}")
         
-        # ✅ VERIFICA SISTEMA CATEGORIE ALL'AVVIO
-        verify_categories_system(processor)
+        # ✅ VERIFICA SISTEMA CATEGORIE UNIFICATO ALL'AVVIO
+        verify_unified_categories_system(processor)
+        
+        # ✅ REGISTRA BREADCRUMB GLOBALS (se disponibile)
+        try:
+            from routes.menu_routes import register_breadcrumb_globals
+            register_breadcrumb_globals(app)
+            log_success("Funzioni breadcrumb registrate")
+        except ImportError:
+            log_warning("Sistema breadcrumb non disponibile")
         
         # Stampa info di avvio
         print_startup_info(app_host, app_port)
@@ -195,11 +202,6 @@ def main():
         atexit.register(lambda: graceful_shutdown(scheduler_manager))
         
         # Avvia applicazione
-        # if sys.platform.startswith('win'):
-        #     app.run(debug=app_debug, host=app_host, port=app_port, threaded=True, use_reloader=False)
-        # else:
-        #     app.run(debug=app_debug, host=app_host, port=app_port, threaded=True)
-
         app.run(
             debug=app_debug,
             host=app_host,
@@ -207,11 +209,6 @@ def main():
             threaded=True,
             use_reloader=app_debug  # reloader solo se debug è attivo
         )
-
-        # ✅ REGISTRA BREADCRUMB GLOBALS
-        from routes.menu_routes import register_breadcrumb_globals
-        register_breadcrumb_globals(app)
-        log_success("Funzioni breadcrumb registrate")
         
     except KeyboardInterrupt:
         log_info("Applicazione fermata dall'utente")
@@ -223,8 +220,8 @@ def main():
             graceful_shutdown(scheduler_manager)
         sys.exit(1)
 
-def verify_categories_system(processor):
-    """Verifica che il sistema categorie sia configurato correttamente"""
+def verify_unified_categories_system(processor):
+    """Verifica che il sistema categorie unificato sia configurato correttamente"""
     try:
         if hasattr(processor, 'cdr_analytics') and hasattr(processor.cdr_analytics, 'categories_manager'):
             categories_manager = processor.cdr_analytics.categories_manager
@@ -233,13 +230,16 @@ def verify_categories_system(processor):
             categories = categories_manager.get_all_categories()
             active_categories = categories_manager.get_active_categories()
             
-            log_success(f"Sistema Categorie CDR verificato:")
+            log_success(f"Sistema Categorie CDR Unificato verificato:")
             log_info(f"  - Categorie totali: {len(categories)}")
             log_info(f"  - Categorie attive: {len(active_categories)}")
+            log_info(f"  - Markup globale: {categories_manager.global_markup_percent}%")
             
-            # Mostra categorie attive
+            # Mostra categorie attive con pricing
             for name, category in active_categories.items():
-                log_info(f"  - {category.display_name}: €{category.price_per_minute}/min ({len(category.patterns)} pattern)")
+                pricing_info = category.get_pricing_info(categories_manager.global_markup_percent)
+                markup_source = "personalizzato" if category.custom_markup_percent is not None else "globale"
+                log_info(f"  - {category.display_name}: €{category.price_per_minute}/min base → €{pricing_info['price_with_markup']}/min finale (markup {markup_source}: {pricing_info['markup_percent']}%)")
             
             # Verifica conflitti
             conflicts = categories_manager.validate_patterns_conflicts()
@@ -249,12 +249,18 @@ def verify_categories_system(processor):
                     log_warning(f"    {conflict['category1']} vs {conflict['category2']}: {', '.join(conflict['common_patterns'])}")
             else:
                 log_success("  - Nessun conflitto pattern rilevato")
+            
+            # Verifica statistiche markup
+            stats = categories_manager.get_statistics()
+            markup_stats = stats.get('markup_statistics', {})
+            log_info(f"  - Categorie con markup globale: {markup_stats.get('categories_using_global_markup', 0)}")
+            log_info(f"  - Categorie con markup personalizzato: {markup_stats.get('categories_using_custom_markup', 0)}")
                 
         else:
-            log_error("Sistema categorie CDR non inizializzato correttamente")
+            log_error("Sistema categorie CDR unificato non inizializzato correttamente")
             
     except Exception as e:
-        log_error(f"Errore verifica sistema categorie: {e}")
+        log_error(f"Errore verifica sistema categorie unificato: {e}")
 
 
 if __name__ == '__main__':
