@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Categories Routes - Route Flask per gestione categorie CDR con markup personalizzabili
 Aggiornato per utilizzare il sistema unificato cdr_categories_enhanced.py
@@ -14,7 +13,7 @@ import io
 
 logger = logging.getLogger(__name__)
 
-def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
+def add_cdr_categories_routes(app, cdr_analytics_enhanced, secure_config):
     """
     Aggiunge le route per la gestione delle categorie CDR con markup
     
@@ -65,8 +64,8 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             return render_template('error.html', 
                                  error_message=f"Errore caricamento categorie: {e}")
 
-    @app.route('/cdr_categories')
-    def cdr_categories_page():
+    @app.route('/cdr_categories_edit')
+    def cdr_categories_edit():
         """Pagina principale gestione categorie con info configurazione e markup"""
         try:
             from routes.menu_routes import render_with_menu_context
@@ -834,14 +833,51 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
         except Exception as e:
             logger.error(f"Errore API validate: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
-    
+
+
+    @app.route('/cdr_categories_dashboard')
+    def cdr_categories_dashboard():
+        """Dashboard analytics CDR con statistiche categorie"""
+        try:
+            from routes.menu_routes import render_with_menu_context
+            
+            # Statistiche categorie
+            categories = categories_manager.get_all_categories_with_pricing()
+            stats = categories_manager.get_statistics()
+            
+            # Report generati
+            reports = cdr_analytics_enhanced.list_generated_reports()
+            
+            # Statistiche sistema
+            health_info = {
+                'config_file_exists': categories_manager.config_file.exists(),
+                'categories_count': len(categories),
+                'active_categories_count': len(categories_manager.get_active_categories()),
+                'global_markup_percent': categories_manager.global_markup_percent,
+                'reports_count': len(reports),
+                'latest_report': reports[0] if reports else None
+            }
+            
+            return render_with_menu_context('cdr_dashboard.html', {
+                'categories': categories,
+                'stats': stats,
+                'reports': reports,
+                'health_info': health_info
+            })
+            
+        except Exception as e:
+            logger.error(f"Errore caricamento dashboard CDR: {e}")
+            return render_template('error.html', 
+                                error_message=f"Errore caricamento dashboard: {e}")
+        
     logger.info("🔗 Route categorie CDR con supporto markup registrate con successo")
     
     # Restituisce le informazioni sulle route aggiunte
     return {
         'routes_added': [
-            '/cdr_categories',
+            '/cdr_categories_edit',
             '/cdr_categories_new',
+            '/cdr_categories_dashboard',
             '/api/categories',
             '/api/categories/<category_name>',
             '/api/categories/global-markup',
@@ -856,5 +892,5 @@ def add_categories_routes(app, cdr_analytics_enhanced, secure_config):
             '/api/categories/health',
             '/api/categories/validate'
         ],
-        'routes_count': 15
+        'routes_count': 16
     }

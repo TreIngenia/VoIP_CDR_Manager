@@ -10,35 +10,50 @@ MENU_ITEMS = [
     },
     {
         'type': 'section',  # Nessun titolo
-        'title': 'Report'
+        'title': 'Categorie'
     },
     {
-        'title': 'Gestione categorie',
-        'icon': 'ki-outline ki-minus-folder fs-2',
-        'children': [
-            {
                 'endpoint': 'cdr_categories_dashboard',
                 'title': 'Dashboard categorie',
                 'icon': 'ki-outline ki-element-11',
             },
             {
-                'endpoint': 'cdr_categories_page',
-                'title': 'Modifica categorie',
+                'endpoint': 'cdr_categories_edit',
+                'title': 'Gestione categorie',
                 'icon': 'ki-outline ki-notepad-edit ',
             },
              {
                 'endpoint': 'cdr_categories_page_new',
                 'title': 'Modifica categorie NEW',
                 'icon': 'ki-outline ki-notepad-edit ',
-            }
-        ]
-    },
+            },
+    # {
+    #     'title': 'Gestione categorie',
+    #     'icon': 'ki-outline ki-minus-folder fs-2',
+    #     'children': [
+    #         {
+    #             'endpoint': 'cdr_categories_dashboard',
+    #             'title': 'Dashboard categorie',
+    #             'icon': 'ki-outline ki-element-11',
+    #         },
+    #         {
+    #             'endpoint': 'cdr_categories_edit',
+    #             'title': 'Gestione categorie',
+    #             'icon': 'ki-outline ki-notepad-edit ',
+    #         },
+    #          {
+    #             'endpoint': 'cdr_categories_page_new',
+    #             'title': 'Modifica categorie NEW',
+    #             'icon': 'ki-outline ki-notepad-edit ',
+    #         }
+    #     ]
+    # },
     {
         'type': 'section',
-        'title': 'Anagrafiche'
+        'title': 'Contratti'
     },
     {
-        'endpoint': 'gestione_utenti',
+        'endpoint': 'gestione_contratti',
         'title': 'Gestione contratti',
         'icon': 'ki-outline ki-briefcase fs-2 ',
     },

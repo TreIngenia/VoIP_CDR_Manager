@@ -2,10 +2,10 @@
   "metadata": {
     "version": "1.0",
     "created_date": "2025-05-29T17:20:31.795981",
-    "last_updated": "2025-06-05T14:30:46.186455",
+    "last_updated": "2025-06-09T12:34:19.974961",
     "total_contracts": 21,
     "extraction_source": "FTP_CDR_Files",
-    "manual_updates": 297,
+    "manual_updates": 419,
     "extraction_runs": 2,
     "last_extraction_added_contracts": 0,
     "description": "Configurazione codici contratto estratti da file CDR"
@@ -13,8 +13,9 @@
   "contracts": {
     "14": {
       "contract_code": "14",
-      "contract_name": "",
-      "odoo_client_id": "",
+      "contract_name": "pietro",
+      "odoo_client_id": "1948",
+      "contract_type": "",
       "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.792208",
       "last_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
@@ -28,12 +29,13 @@
         "016322183"
       ],
       "total_unique_numbers": 1,
-      "last_updated": "2025-06-04T17:53:25.555273"
+      "last_updated": "2025-06-09T12:34:19.974954"
     },
     "83": {
       "contract_code": "83",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.792256",
       "last_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
@@ -48,12 +50,13 @@
         "0536843738"
       ],
       "total_unique_numbers": 2,
-      "last_updated": "2025-05-30T06:58:11.958875"
+      "last_updated": "2025-06-09T10:28:49.831580"
     },
     "1": {
       "contract_code": "1",
-      "contract_name": "",
-      "odoo_client_id": "",
+      "contract_name": "Claudio TEST",
+      "odoo_client_id": "1951",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.792261",
       "last_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
@@ -67,12 +70,13 @@
         "016322183"
       ],
       "total_unique_numbers": 1,
-      "last_updated": "2025-06-04T17:53:23.390002"
+      "last_updated": "2025-06-09T12:25:04.297062"
     },
     "58": {
       "contract_code": "58",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.792263",
       "last_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
@@ -86,12 +90,13 @@
         "059565865"
       ],
       "total_unique_numbers": 1,
-      "last_updated": "2025-05-30T06:58:11.088124"
+      "last_updated": "2025-06-09T10:28:49.130171"
     },
     "63": {
       "contract_code": "63",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794688",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -119,12 +124,13 @@
         "99998977"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-05-30T06:58:11.232291"
+      "last_updated": "2025-06-09T10:28:49.246024"
     },
     "21": {
       "contract_code": "21",
       "contract_name": "",
       "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794697",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -152,12 +158,13 @@
         "97124409"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-06-04T17:32:30.605484"
+      "last_updated": "2025-06-09T10:28:48.162419"
     },
     "80": {
       "contract_code": "80",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794700",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -185,12 +192,13 @@
         "87123532"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-05-30T06:58:11.821393"
+      "last_updated": "2025-06-09T10:28:49.714686"
     },
     "67": {
       "contract_code": "67",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794703",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -233,12 +241,13 @@
         "99939819"
       ],
       "total_unique_numbers": 30,
-      "last_updated": "2025-05-30T06:58:11.521724"
+      "last_updated": "2025-06-09T10:28:49.481421"
     },
     "51": {
       "contract_code": "51",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794705",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -266,12 +275,13 @@
         "98143507"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-05-30T06:58:10.806645"
+      "last_updated": "2025-06-09T10:28:48.878841"
     },
     "68": {
       "contract_code": "68",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794707",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -314,12 +324,13 @@
         "97968755"
       ],
       "total_unique_numbers": 30,
-      "last_updated": "2025-05-30T06:58:11.687857"
+      "last_updated": "2025-06-09T10:28:49.596494"
     },
     "19": {
       "contract_code": "19",
       "contract_name": "",
       "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794710",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -347,12 +358,13 @@
         "86387840"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-06-04T17:45:23.876695"
+      "last_updated": "2025-06-09T10:28:47.922534"
     },
     "20": {
       "contract_code": "20",
       "contract_name": "",
       "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794712",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -380,12 +392,13 @@
         "98404298"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-06-04T17:32:30.139039"
+      "last_updated": "2025-06-09T10:28:48.047072"
     },
     "45": {
       "contract_code": "45",
       "contract_name": "",
       "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794715",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -413,12 +426,13 @@
         "90662497"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-06-04T17:32:33.160764"
+      "last_updated": "2025-06-09T10:28:48.513351"
     },
     "32": {
       "contract_code": "32",
       "contract_name": "",
       "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794717",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -446,12 +460,13 @@
         "87062573"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-06-04T17:32:31.594275"
+      "last_updated": "2025-06-09T10:28:48.397413"
     },
     "86": {
       "contract_code": "86",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794719",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -494,12 +509,13 @@
         "98399200"
       ],
       "total_unique_numbers": 30,
-      "last_updated": "2025-05-30T06:58:12.118264"
+      "last_updated": "2025-06-09T10:28:49.963365"
     },
     "50": {
       "contract_code": "50",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794722",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -527,12 +543,13 @@
         "99758887"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-05-30T06:58:10.670905"
+      "last_updated": "2025-06-09T10:28:48.758532"
     },
     "53": {
       "contract_code": "53",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794724",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -560,12 +577,13 @@
         "97850063"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-05-30T06:58:10.942737"
+      "last_updated": "2025-06-09T10:28:48.997738"
     },
     "96": {
       "contract_code": "96",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794747",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -593,12 +611,13 @@
         "98713322"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-05-30T06:58:12.256452"
+      "last_updated": "2025-06-09T10:28:50.077685"
     },
     "46": {
       "contract_code": "46",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794751",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -626,12 +645,13 @@
         "96784417"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-05-30T06:58:10.533337"
+      "last_updated": "2025-06-09T10:28:48.638650"
     },
     "30": {
       "contract_code": "30",
       "contract_name": "",
       "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794753",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -659,12 +679,13 @@
         "94686805"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-06-04T17:32:31.067133"
+      "last_updated": "2025-06-09T10:28:48.280901"
     },
     "65": {
       "contract_code": "65",
       "contract_name": "",
-      "odoo_client_id": null,
+      "odoo_client_id": "",
+      "contract_type": "A CONSUMO",
       "first_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-05-29T17:20:31.794780",
       "last_seen_file": "RIV_12345_MESE_05_2024-06-05-14.16.27.CDR",
@@ -692,7 +713,7 @@
         "91781723"
       ],
       "total_unique_numbers": 15,
-      "last_updated": "2025-05-30T06:58:11.375009"
+      "last_updated": "2025-06-09T10:28:49.364999"
     }
   },
   "last_extraction": {

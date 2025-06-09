@@ -2,8 +2,8 @@
 {% block title %}Modifica Categoria{% endblock %}
 {% block toolbar %}
 <div class=" align-items-center gap-2">
-    <div class="text-gray-700">Totale contratti: <span class="text-white" id="total-contracts">0</span></div>
-    <div class="text-gray-700">Ultimo aggiornamento: <span class="text-white" id="last-updated">-</span></div>
+    <!-- <div class="text-gray-700">Totale contratti: <span class="text-white" id="total-contracts">0</span></div>
+    <div class="text-gray-700">Ultimo aggiornamento: <span class="text-white" id="last-updated">-</span></div> -->
 </div>
 <!-- <div class="col-4">
     <input type="text" id="mySearch" class="form-control form-control-sm" placeholder="Cerca...">
@@ -13,7 +13,7 @@
         <button class="btn btn-sm btn-primary w-180px" onclick="document.querySelector('[href=&quot;#add-category&quot;]').click()">
             <i class="fas fa-plus"></i> Nuova Categoria
         </button>
-        <button class="btn btn-sm btn-warning w-120px" onclick="refreshData()">
+        <button class="btn btn-sm btn-warning w-120px" onclick="refreshData(true)">
             <i class="fas fa-sync"></i> Aggiorna
         </button>
                          
@@ -47,38 +47,106 @@
         <!-- Box Superiori-->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card stats-card ">
+                <!-- <div class="card stats-card ">
                     <div class="card-body text-center">
                         <i class="fas fa-tags fa-2x mb-2"></i>
                         <h4 id="totalCategoriesCount">0</h4>
                         <p class="mb-0">Categorie Totali</p>
                     </div>
+                </div> -->
+                <div class="card ">
+                    <div class="card-body d-flex justify-content-between align-items-start flex-column">         
+                        <div class="m-0">
+                            <i class="fas fa-tags fs-2hx text-info"><span class="path1"></span><span class="path2"></span></i>                                
+                        </div>                           
+                        <div class="d-flex flex-column mt-7">
+                            <span id="totalCategoriesCount" class="fw-semibold fs-3x text-gray-800 lh-1 ls-n2">0</span> 
+                            <div class="m-0">
+                                <span class="fw-semibold fs-6 text-gray-500">Categorie Totali</span>  
+                            </div>       
+                        </div>  
+                        <!-- <span class="badge badge-light-success fs-base mt-7">
+                            <i class="ki-duotone ki-arrow-up fs-5 text-success ms-n1"><span class="path1"></span><span class="path2"></span></i>                           
+                            2.1%
+                        </span>   -->
+                    </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card stats-card ">
+                <!-- <div class="card stats-card ">
                     <div class="card-body text-center">
                         <i class="fas fa-check-circle fa-2x mb-2"></i>
                         <h4 id="activeCategoriesCount">0</h4>
                         <p class="mb-0">Categorie Attive</p>
                     </div>
+                </div> -->
+                <div class="card ">
+                    <div class="card-body d-flex justify-content-between align-items-start flex-column">         
+                        <div class="m-0">
+                            <i class="fas fa-check-circle fs-2hx text-primary"><span class="path1"></span><span class="path2"></span></i>                                
+                        </div>                           
+                        <div class="d-flex flex-column mt-7">
+                            <span id="activeCategoriesCount" class="fw-semibold fs-3x text-gray-800 lh-1 ls-n2">0</span> 
+                            <div class="m-0">
+                                <span class="fw-semibold fs-6 text-gray-500">Categorie Attive</span>  
+                            </div>       
+                        </div>  
+                        <!-- <span class="badge badge-light-success fs-base mt-7">
+                            <i class="ki-duotone ki-arrow-up fs-5 text-success ms-n1"><span class="path1"></span><span class="path2"></span></i>                           
+                            2.1%
+                        </span>   -->
+                    </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card stats-card ">
+                <!-- <div class="card stats-card ">
                     <div class="card-body text-center">
                         <i class="fas fa-search fa-2x mb-2"></i>
                         <h4 id="totalPatternsCount">0</h4>
                         <p class="mb-0">Pattern Totali</p>
                     </div>
+                </div> -->
+                <div class="card ">
+                    <div class="card-body d-flex justify-content-between align-items-start flex-column">         
+                        <div class="m-0">
+                            <i class="fas fa-search fs-2hx text-warning"><span class="path1"></span><span class="path2"></span></i>                                
+                        </div>                           
+                        <div class="d-flex flex-column mt-7">
+                            <span id="totalPatternsCount" class="fw-semibold fs-3x text-gray-800 lh-1 ls-n2">0</span> 
+                            <div class="m-0">
+                                <span class="fw-semibold fs-6 text-gray-500">Pattern Totali</span>  
+                            </div>       
+                        </div>  
+                        <!-- <span class="badge badge-light-success fs-base mt-7">
+                            <i class="ki-duotone ki-arrow-up fs-5 text-success ms-n1"><span class="path1"></span><span class="path2"></span></i>                           
+                            2.1%
+                        </span>   -->
+                    </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card stats-card ">
+                <!-- <div class="card stats-card ">
                     <div class="card-body text-center">
                         <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                         <h4 id="conflictsCount">0</h4>
                         <p class="mb-0">Conflitti Pattern</p>
+                    </div>
+                </div> -->
+                <div class="card ">
+                    <div class="card-body d-flex justify-content-between align-items-start flex-column">         
+                        <div class="m-0">
+                            <i class="fas fa-exclamation-triangle fs-2hx text-danger"><span class="path1"></span><span class="path2"></span></i>                                
+                        </div>                           
+                        <div class="d-flex flex-column mt-7">
+                            <span id="conflictsCount" class="fw-semibold fs-3x text-gray-800 lh-1 ls-n2">0</span> 
+                            <div class="m-0">
+                                <span class="fw-semibold fs-6 text-gray-500">Conflitti Pattern</span>  
+                            </div>       
+                        </div>  
+                        <!-- <span class="badge badge-light-success fs-base mt-7">
+                            <i class="ki-duotone ki-arrow-up fs-5 text-success ms-n1"><span class="path1"></span><span class="path2"></span></i>                           
+                            2.1%
+                        </span>   -->
                     </div>
                 </div>
             </div>
@@ -91,29 +159,34 @@
                     <!-- <div class="card-header card-header-stretch "> -->
                         <!-- <div class="card-toolbar"> -->
                             <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 border-0">
-                                <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0 btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 me-5 active" data-bs-toggle="tab" href="#categories-list">
+                                <li class="nav-item me-5">
+                                    <a class="btn btn-outline border-bottom-0 btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 active" data-bs-toggle="tab" href="#categories-list">
                                         <i class="fas fa-list me-3"></i> Lista Categorie
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0 btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 me-5" data-bs-toggle="tab" href="#add-category">
+                                <li class="nav-item me-5">
+                                    <a class="btn btn-outline border-bottom-0 btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0" data-bs-toggle="tab" href="#add-category">
                                         <i class="fas fa-plus me-3"></i> Nuova Categoria
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 me-5" data-bs-toggle="tab" href="#test-classification">
+                                <li class="nav-item me-5">
+                                    <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0" data-bs-toggle="tab" href="#test-classification">
                                         <i class="fas fa-vial me-3"></i> Test Classificazione
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0 me-5" data-bs-toggle="tab" href="#statistics">
+                                <li class="nav-item me-5">
+                                    <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0" data-bs-toggle="tab" href="#statistics">
                                         <i class="fas fa-chart-bar me-3"></i> Statistiche
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                <li class="nav-item me-5">
                                     <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0" data-bs-toggle="tab" href="#import-export">
                                         <i class="fas fa-exchange-alt me-3"></i> Import/Export
+                                    </a>
+                                </li>
+                                <li class="nav-item ">
+                                    <a class="btn btn-outline border-bottom-0  btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0" data-bs-toggle="tab" href="#markup_manager">
+                                        <i class="fas fa-exchange-alt me-3"></i> Gestione Ricarico (Markup)
                                     </a>
                                 </li>
                             </ul>
@@ -357,21 +430,28 @@
                                 <h3><i class="fas fa-exchange-alt"></i> Import/Export Categorie</h3>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="card">
+                                        <div class="card shadow-sm  h-100">
                                             <div class="card-header">
-                                                <h5><i class="fas fa-file-export"></i> Esporta Categorie</h5>
+                                                <h3 class="card-title"><i class="fas fa-file-export fs-1 me-4"></i> Esporta Categorie</h3>
+                                                <!-- <div class="card-toolbar">
+                                                    <button type="button" class="btn btn-sm btn-light">
+                                                        Action
+                                                    </button>
+                                                </div> -->
                                             </div>
                                             <div class="card-body">
-                                                <p>Esporta le categorie correnti per backup o condivisione.</p>
+                                                 <p>Esporta le categorie correnti per backup o condivisione.</p>
+                                            </div>
+                                            <div class="card-footer">
                                                 <div class="btn-group w-100 mb-3">
-                                                    <button class="btn btn-outline-primary" onclick="exportCategories('json')">
+                                                    <button class="btn btn-primary" onclick="exportCategories('json')">
                                                         <i class="fas fa-file-code"></i> JSON
                                                     </button>
-                                                    <button class="btn btn-outline-success" onclick="exportCategories('csv')">
+                                                    <button class="btn btn-info" onclick="exportCategories('csv')">
                                                         <i class="fas fa-file-csv"></i> CSV
                                                     </button>
                                                 </div>
-                                                <button class="btn btn-outline-info w-100"
+                                                <button class="btn btn-warning w-100"
                                                     onclick="window.open('/api/categories/export-csv', '_blank')">
                                                     <i class="fas fa-download"></i> Scarica CSV Dettagliato
                                                 </button>
@@ -379,9 +459,14 @@
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="card">
+                                        <div class="card shadow-sm  h-100">
                                             <div class="card-header">
-                                                <h5><i class="fas fa-file-import"></i> Importa Categorie</h5>
+                                                <h3 class="card-title"><i class="fas fa-file-import fs-1 me-4"></i>Importa CategorieTP</h3>
+                                                <!-- <div class="card-toolbar">
+                                                    <button type="button" class="btn btn-sm btn-light">
+                                                        Action
+                                                    </button>
+                                                </div> -->
                                             </div>
                                             <div class="card-body">
                                                 <div class="mb-3">
@@ -408,27 +493,169 @@
                                                     <i class="fas fa-upload"></i> Importa CSV
                                                 </button>
                                             </div>
+                                            <!-- <div class="card-footer">
+                                                Footer
+                                            </div> -->
                                         </div>
                                     </div>
                                 </div>
                 
                                 <!-- Health Check Section -->
-                                <div class="row mt-4">
+                                <div class="row mt-5">
                                     <div class="col-12">
-                                        <div class="card">
+                                        <div class="card shadow-sm  h-100">
                                             <div class="card-header">
-                                                <h5><i class="fas fa-heartbeat"></i> Controllo Sistema</h5>
+                                                <h3 class="card-title"><i class="fas fa-heart fs-1 me-4"></i>Controllo Sistema</h3>
+                                                <div class="card-toolbar">
+                                                    <div class="btn-group">
+                                                        <button class="btn btn-sm btn-info" onclick="checkSystemHealth()">
+                                                            <i class="fas fa-stethoscope"></i> Verifica Salute Sistema
+                                                        </button>
+                                                        <button class="btn btn-sm btn-warning" onclick="validateAllCategories()">
+                                                            <i class="fas fa-check-double"></i> Valida Tutte le Categorie
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="card-body">
-                                                <button class="btn btn-outline-info me-2" onclick="checkSystemHealth()">
-                                                    <i class="fas fa-stethoscope"></i> Verifica Salute Sistema
-                                                </button>
-                                                <button class="btn btn-outline-secondary" onclick="validateAllCategories()">
-                                                    <i class="fas fa-check-double"></i> Valida Tutte le Categorie
-                                                </button>
+                                                
                                                 <div id="healthCheckResults" class="mt-3" style="display: none;"></div>
                                             </div>
+                                            <!-- <div class="card-footer">
+                                                Footer
+                                            </div> -->
                                         </div>
+                                       
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="markup_manager">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <div class="card shadow-sm h-100">
+                                            <div class="card-header">
+                                                <h3 class="card-title"><i class="fas fa-server fs-1 me-4"></i>Configura il markup</h3>
+                                                <!-- <div class="card-toolbar">
+                                                    <button type="button" class="btn btn-sm btn-light">
+                                                        Action
+                                                    </button>
+                                                </div> -->
+                                            </div>
+                                            <div class="card-body">
+                                                <form id="addCategoryForm">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="text" class="form-control" id="categoryName"  required >
+                                                                <label for="categoryName">Nome Categoria (Maiuscolo)</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="text" class="form-control" id="categoryDisplayName"  required>
+                                                                <label for="categoryDisplayName">Nome Visualizzato</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                        
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="number" class="form-control" id="categoryPrice" step="0.0001"
+                                                                    min="0" required>
+                                                                <label for="categoryPrice">Prezzo base al minuto</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="number" class="form-control" id="categoryMarkup" step="1"
+                                                                    value="{{config_info.voip_config.global_markup}}" min="0" >
+                                                                <label for="categoryMarkup">Ricarico in percentuale</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <div class="form-floating mb-3">
+                                                                <input type="number" class="form-control" id="categoryFinalPrice" step="0.0001"
+                                                                    min="0" required>
+                                                                <label for="categoryFinalPrice">Prezzo finale al minuto</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="form-floating mb-3">
+                                                                <select class="form-control" id="categoryCurrency">
+                                                                    <option value="EUR">EUR</option>
+                                                                    <option value="USD">USD</option>
+                                                                </select>
+                                                                <label for="categoryCurrency">Valuta</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                        
+                                                    <div class="mb-3">
+                                                        <label for="categoryPatterns" class="form-label">Pattern di Riconoscimento</label>
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control" id="newPattern"
+                                                                placeholder="Aggiungi pattern...">
+                                                            <button type="button" class="btn btn-primary" onclick="addPattern()">
+                                                                <i class="fas fa-plus fs-3"></i>
+                                                            </button>
+                                                        </div>
+                                                        <div id="patternsContainer" class="mt-2"></div>
+                                                        <div class="form-text">I pattern sono usati per riconoscere il tipo di chiamata (es:
+                                                            CELLULARE, MOBILE, FISSO)</div>
+                                                    </div>
+                        
+                                                    <div class="form-floating mb-3">
+                                                        <textarea class="form-control" id="categoryDescription"
+                                                            style="height: 100px"></textarea>
+                                                        <label for="categoryDescription">Descrizione (opzionale)</label>
+                                                    </div>
+                        
+                                                    <div class="d-grid">
+                                                        <button type="submit" class="btn btn-primary btn-lg">
+                                                            <i class="fas fa-save"></i> Crea Categoria
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <!-- <div class="card-footer">
+                                                Footer
+                                            </div> -->
+                                        </div>                                    
+                                        
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card shadow-sm  h-100">
+                                            <div class="card-header">
+                                                <h3 class="card-title"><i class="fas fa-info-circle fs-1 me-4"></i>Suggerimenti</h3>
+                                                <!-- <div class="card-toolbar">
+                                                    <button type="button" class="btn btn-sm btn-light">
+                                                        Action
+                                                    </button>
+                                                </div> -->
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="d-flex flex-column">
+                                                    <li class="d-flex align-items-center py-2">
+                                                        <span class="bullet bullet-dot bg-success me-5"></span> Usa nomi categoria significativi
+                                                    </li>
+                                                    <li class="d-flex align-items-center py-2">
+                                                        <span class="bullet bullet-dot bg-success me-5"></span> Aggiungi più pattern per migliore il riconoscimento
+                                                    </li>
+                                                    <li class="d-flex align-items-center py-2">
+                                                        <span class="bullet bullet-dot bg-success me-5"></span> Verifica conflitti prima del
+                                                        salvataggio
+                                                    </li>
+                                                    <li class="d-flex align-items-center py-2">
+                                                        <span class="bullet bullet-dot bg-success me-5"></span> Prezzi in EUR per minuto
+                                                    </li>
+                                                </div>
+                                            </div>
+                                            <!-- <div class="card-footer">
+                                                Footer
+                                            </div> -->
+                                        </div>      
                                     </div>
                                 </div>
                             </div>
@@ -657,7 +884,23 @@
                 const statusBadge = category.is_active ? 
                     '<span class="bullet bullet-dot bg-primary h-15px w-15px me-3"></span>' : 
                     '<span class="bullet bullet-dot bg-danger h-15px w-15px  me-3"></span>';
-                
+                let buttonhtml = `
+                    <div class="btn-group btn-group-sm" 
+                        ${['FISSI', 'MOBILI'].includes(category.name) ? `data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminazione diabilitata per quasta categoria"` : ``}>
+                        <button type="button" class="btn btn-sm btn-icon btn-primary" onclick="editCategory('${category.name}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        ${!['FISSI', 'MOBILI'].includes(category.name) ? `
+                            <button type="button" class="btn btn-sm btn-icon btn-danger" onclick="deleteCategory('${category.name}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : `<button  type="button" class="btn btn-sm btn-icon btn-danger disabled" >
+                                <i class="fas fa-trash"></i>
+                            </button>`}
+                    </div>
+                `;
+
+
                 const patternsHtml = category.patterns.map(pattern => 
                     `<span class="badge badge-secondary m-1 text-uppercase">${pattern}</span>`
                 ).join(' ');
@@ -673,14 +916,15 @@
                             <div class="card-header">
                                 <h3 class="card-title">${statusBadge} ${category.display_name}</h3>
                                 <div class="card-toolbar">
-                                    <div class="btn-group btn-group-sm">
+                                    ${buttonhtml}
+                                    <!--<div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-sm btn-icon btn-primary" onclick="editCategory('${category.name}')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button type="button" class="btn btn-sm btn-icon btn-danger" onclick="deleteCategory('${category.name}')">
                                             <i class="fas fa-trash"></i>
                                         </button>
-                                    </div>
+                                    </div>-->
                                 </div>
                             </div>
                             <div class="card-body">
@@ -711,26 +955,39 @@
                                 <div class="separator separator-dashed my-3"></div>
                                 <div class="d-flex flex-stack">
                                     <div href="#" class="text-primary fw-semibold fs-6 me-2">Creato il: </div>
-                                    <div>${new Date(category.created_at).toLocaleDateString('it-IT')}</div>
+                                    <div>${new Date(category.created_at).toLocaleDateString('it-IT', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit'
+                                            }).replace(',', ' -')}</div>
                                 </div>
                                 <div class="separator separator-dashed my-3"></div>
                                 <div class="d-flex flex-stack">
                                     <div href="#" class="text-primary fw-semibold fs-6 me-2">Aggiornato il: </div>
-                                    <div>${new Date(category.updated_at).toLocaleDateString('it-IT')}</div>
+                                    <div>${new Date(category.updated_at).toLocaleString('it-IT', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit'
+                                            }).replace(',', ' -')}</div>
                                 </div>
                                 <div class="separator separator-dashed my-3"></div>
                             </div>
                             <!--<div class="card-footer">
                                 Footer
                             </div>-->
-                        </div>
-
-                        
+                        </div>                 
                     </div>
                 `;
             });
             
             container.innerHTML = html;
+            reinitTooltips(container);
         }
 
         // Add pattern to current category form
@@ -760,7 +1017,7 @@
             }
             
             const html = currentPatterns.map((pattern, index) => `
-                <span class="badge badge-secondary m-1">
+                <span class="badge badge-secondary m-1 text-uppercase">
                     ${pattern}
                     <button type="button" class="btn-close btn-close-white ms-1 fs-5" onclick="removePattern(${index})"></button>
                 </span>
@@ -878,7 +1135,7 @@
             }
           
             const html = editCurrentPatterns.map((pattern, index) => `
-                <span class="badge badge-secondary m-1">
+                <span class="badge badge-secondary m-1 text-uppercase">
                     ${pattern}
                     <button type="button" class="btn-close btn-close-white ms-1 fs-5" onclick="removeEditPattern(${index})"></button>
                 </span>
@@ -925,9 +1182,9 @@
             .then(data => {
                 hideLoading();
                 if (data.success) {
+                    refreshData()
                     showAlert('success', 'Successo', data.message);
                     bootstrap.Modal.getInstance(document.getElementById('editCategoryModal')).hide();
-                    loadCategories();
                 } else {
                     showAlert('danger', 'Errore', data.message);
                 }
@@ -1084,33 +1341,75 @@
             const html = `
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="card">
+                        <div class="card shadow-sm  h-100">
                             <div class="card-header">
-                                <h5><i class="fas fa-info-circle"></i> Informazioni Generali</h5>
+                                <h3 class="card-title"><i class="fas fa-info-circle fs-1 me-4"></i> Informazioni Generali</h3>
+                                <!-- <div class="card-toolbar">
+                                    <button type="button" class="btn btn-sm btn-light">
+                                        Action
+                                    </button>
+                                </div>-->
                             </div>
                             <div class="card-body">
-                                <table class="table table-borderless">
-                                    <tr><td>Categorie Totali:</td><td><strong>${stats.total_categories}</strong></td></tr>
-                                    <tr><td>Categorie Attive:</td><td><strong>${stats.active_categories}</strong></td></tr>
-                                    <tr><td>Categorie Inattive:</td><td><strong>${stats.inactive_categories}</strong></td></tr>
-                                    <tr><td>Pattern Totali:</td><td><strong>${stats.total_patterns}</strong></td></tr>
-                                    <tr><td>Valute Utilizzate:</td><td><strong>${stats.currencies.join(', ')}</strong></td></tr>
-                                </table>
+                                <div class="d-flex flex-stack">
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Totali:</div>
+                                    <div class="fs-3">${stats.total_categories}</div>
+                                </div>
+                                <div class="separator separator-dashed my-3"></div>
+                                <div class="d-flex flex-stack">
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Attive:</div>
+                                    <div class="fs-3">${stats.active_categories}</div>
+                                </div>
+                                <div class="separator separator-dashed my-3"></div>
+                                <div class="d-flex flex-stack">
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Inattive:</div>
+                                    <div class="fs-3">${stats.inactive_categories}</div>
+                                </div>
+                                <div class="separator separator-dashed my-3"></div>
+                                <div class="d-flex flex-stack">
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Pattern Totali:</div>
+                                    <div class="fs-3">${stats.total_patterns}</div>
+                                </div>
+                                <div class="separator separator-dashed my-3"></div>
+                                <div class="d-flex flex-stack">
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Valute Utilizzate:</div>
+                                    <div class="fs-3">${stats.currencies.join(', ')}</div>
+                                </div>
                             </div>
+                            <!--<div class="card-footer">
+                                Footer
+                            </div>-->
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card">
+                        <div class="card shadow-sm  h-100">
                             <div class="card-header">
-                                <h5><i class="fas fa-euro-sign"></i> Range Prezzi</h5>
+                                <h3 class="card-title"><i class="fas fa-euro fs-1 me-4"></i> Range Prezzi</h3>
+                                <!-- <div class="card-toolbar">
+                                    <button type="button" class="btn btn-sm btn-light">
+                                        Action
+                                    </button>
+                                </div>-->
                             </div>
                             <div class="card-body">
-                                <table class="table table-borderless">
-                                    <tr><td>Prezzo Minimo:</td><td><strong>${stats.price_range.min.toFixed(4)} EUR</strong></td></tr>
-                                    <tr><td>Prezzo Massimo:</td><td><strong>${stats.price_range.max.toFixed(4)} EUR</strong></td></tr>
-                                    <tr><td>Prezzo Medio:</td><td><strong>${stats.price_range.avg.toFixed(4)} EUR</strong></td></tr>
-                                </table>
+                                <div class="d-flex flex-stack">
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Minimo:</div>
+                                    <div><span class="fs-3">${formatEuro(stats.price_range.min)}</span> ${stats.currencies.join(', ')}/min</div>
+                                </div>
+                                <div class="separator separator-dashed my-3"></div>
+                                <div class="d-flex flex-stack">
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Massimo:</div>
+                                    <div><span class="fs-3">${formatEuro(stats.price_range.max)}</span> ${stats.currencies.join(', ')}/min</div>
+                                </div>
+                                <div class="separator separator-dashed my-3"></div>
+                                <div class="d-flex flex-stack">
+                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Medio:</div>
+                                    <div ><span class="fs-3">${formatEuro(stats.price_range.avg)}</span> ${stats.currencies.join(', ')}/min</div>
+                                </div>
                             </div>
+                            <!--<div class="card-footer">
+                                Footer
+                            </div>-->
                         </div>
                     </div>
                 </div>
@@ -1131,8 +1430,8 @@
             fetch('/api/categories/conflicts')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success && data.has_conflicts) {
-                        displayConflicts(data.conflicts);
+                    if (data.success) {
+                        displayConflicts(data);
                         document.getElementById('conflictsCount').textContent = data.conflicts.length;
                     }
                 })
@@ -1140,26 +1439,31 @@
         }
 
         // Display conflicts
-        function displayConflicts(conflicts) {
+        function displayConflicts(data) {
+            
             const alertDiv = document.getElementById('conflictsAlert');
             const listDiv = document.getElementById('conflictsList');
-            
-            let html = '';
-            conflicts.forEach(conflict => {
-                const severityClass = conflict.severity === 'high' ? 'text-danger' : 'text-warning';
-                html += `
-                    <div class="mb-2">
-                        <span class="${severityClass}">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <strong>${conflict.category1}</strong> vs <strong>${conflict.category2}</strong>
-                        </span><br>
-                        <small>Pattern in conflitto: ${conflict.common_patterns.join(', ')}</small>
-                    </div>
-                `;
-            });
-            
-            listDiv.innerHTML = html;
-            alertDiv.style.display = 'block';
+            if(data.has_conflicts){
+                
+                let html = '';
+                data.conflicts.forEach(conflict => {
+                    const severityClass = conflict.severity === 'high' ? 'text-danger' : 'text-warning';
+                    html += `
+                        <div class="mb-2">
+                            <span class="${severityClass}">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>${conflict.category1}</strong> vs <strong>${conflict.category2}</strong>
+                            </span><br>
+                            <small>Pattern in conflitto: ${conflict.common_patterns.join(', ')}</small>
+                        </div>
+                    `;
+                });
+                
+                listDiv.innerHTML = html;
+                alertDiv.style.display = 'block';
+            }else{
+                alertDiv.style.display = 'none';
+            }
         }
 
         // Export categories
@@ -1438,11 +1742,13 @@
         }
 
         // Refresh data
-        function refreshData() {
+        function refreshData(button) {
             loadCategories();
             loadStatistics();
             checkConflicts();
-            showAlert('info', 'Aggiornamento', 'Dati aggiornati con successo');
+            if(button){
+                showAlert('info', 'Aggiornamento', 'Dati aggiornati con successo');
+            }
         }
 
         // Update stats cards

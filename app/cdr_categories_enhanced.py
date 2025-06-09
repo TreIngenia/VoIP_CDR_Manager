@@ -481,6 +481,154 @@ class CDRCategoriesManager:
                     })
         
         return conflicts
+    
+    def update_global_markup(self, new_global_markup_percent: float) -> bool:
+        """Aggiorna il markup globale e ricalcola tutti i prezzi delle categorie che lo utilizzano"""
+        try:
+            old_markup = self.global_markup_percent
+            self.global_markup_percent = float(new_global_markup_percent)
+            
+            # Ricalcola prezzi per tutte le categorie che usano markup globale
+            categories_updated = 0
+            for category in self.categories.values():
+                if category.custom_markup_percent is None:  # Usa markup globale
+                    old_price = category.price_with_markup
+                    category._calculate_price_with_markup(self.global_markup_percent)
+                    if old_price != category.price_with_markup:
+                        categories_updated += 1
+            
+            if self.save_categories():
+                logger.info(f"Markup globale aggiornato da {old_markup}% a {self.global_markup_percent}%")
+                logger.info(f"Prezzi ricalcolati per {categories_updated} categorie")
+                return True
+            else:
+                # Rollback
+                self.global_markup_percent = old_markup
+                return False
+                
+        except Exception as e:
+            logger.error(f"Errore aggiornamento markup globale: {e}")
+            return False
+
+    def get_category_with_pricing(self, name: str) -> Optional[Dict[str, Any]]:
+        """Ottiene una categoria con informazioni complete sui prezzi"""
+        category = self.get_category(name)
+        if not category:
+            return None
+        
+        # Restituisce tutte le info pricing
+        category_data = asdict(category)
+        category_data['pricing_info'] = category.get_pricing_info(self.global_markup_percent)
+        category_data['global_markup_percent'] = self.global_markup_percent
+        
+        return category_data
+
+    def delete_category(self, name: str) -> bool:
+        """Elimina una categoria"""
+        try:
+            name = name.upper().strip()
+            
+            if name not in self.categories:
+                raise ValueError(f"Categoria {name} non trovata")
+            
+            # Non permettere eliminazione delle categorie di default essenziali
+            essential_categories = ['FISSI', 'MOBILI']
+            if name in essential_categories:
+                raise ValueError(f"Non è possibile eliminare la categoria essenziale {name}")
+            
+            del self.categories[name]
+            
+            if self.save_categories():
+                logger.info(f"Categoria {name} eliminata con successo")
+                return True
+            else:
+                return False
+                
+        except Exception as e:
+            logger.error(f"Errore eliminazione categoria {name}: {e}")
+            return False
+
+    def export_categories(self, format: str = 'json') -> str:
+        """Esporta le categorie in vari formati"""
+        data = {name: asdict(cat) for name, cat in self.categories.items()}
+        
+        if format.lower() == 'json':
+            return json.dumps(data, indent=2, ensure_ascii=False)
+        elif format.lower() == 'csv':
+            import csv
+            import io
+            
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Header
+            writer.writerow(['Name', 'Display Name', 'Price per Minute', 'Custom Markup %', 'Price With Markup', 'Currency', 
+                        'Patterns', 'Description', 'Active', 'Created', 'Updated'])
+            
+            # Data
+            for category in self.categories.values():
+                writer.writerow([
+                    category.name,
+                    category.display_name,
+                    category.price_per_minute,
+                    category.custom_markup_percent if category.custom_markup_percent is not None else 'Global',
+                    category.price_with_markup,
+                    category.currency,
+                    '; '.join(category.patterns),
+                    category.description,
+                    category.is_active,
+                    category.created_at,
+                    category.updated_at
+                ])
+            
+            return output.getvalue()
+        else:
+            raise ValueError(f"Formato {format} non supportato")
+
+    def import_categories(self, data: str, format: str = 'json', merge: bool = True) -> bool:
+        """Importa categorie da dati esterni"""
+        try:
+            if format.lower() == 'json':
+                imported_data = json.loads(data)
+                
+                if not merge:
+                    self.categories.clear()
+                
+                for cat_name, cat_data in imported_data.items():
+                    if isinstance(cat_data, dict):
+                        # Gestione retrocompatibilità
+                        if 'custom_markup_percent' not in cat_data:
+                            cat_data['custom_markup_percent'] = None
+                        if 'price_with_markup' not in cat_data:
+                            cat_data['price_with_markup'] = None
+                        
+                        category = CDRCategory(**cat_data)
+                        # Ricalcola markup
+                        category._calculate_price_with_markup(self.global_markup_percent)
+                        self.categories[cat_name.upper()] = category
+                
+                return self.save_categories()
+            else:
+                raise ValueError(f"Formato {format} non supportato per l'import")
+                
+        except Exception as e:
+            logger.error(f"Errore import categorie: {e}")
+            return False
+
+    def reset_to_defaults(self) -> bool:
+        """Ripristina le categorie di default"""
+        try:
+            self.categories = self.DEFAULT_CATEGORIES.copy()
+            # Applica markup globale alle categorie default
+            for category in self.categories.values():
+                category._calculate_price_with_markup(self.global_markup_percent)
+            if self.save_categories():
+                logger.info("Categorie ripristinate ai valori di default")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Errore ripristino categorie default: {e}")
+            return False
 
 
 class CDRAnalyticsEnhanced:

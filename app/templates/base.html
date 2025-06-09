@@ -91,6 +91,7 @@ License: For each use you must have a valid license purchased only from above li
         </script>
         <script src="assets/plugins/global/plugins.bundle.js"></script>
         <script src="assets/js/scripts.bundle.js"></script>
+        <script src="assets/treingenia/js/scripts.js"></script>
         {%block scripts %}{% endblock %}        
         <script>
             /** 
@@ -123,6 +124,10 @@ License: For each use you must have a valid license purchased only from above li
                     throw new Error("Prezzo o markup non valido");
                 }
                 return price * (1 + markupPercent / 100);
+            }
+            function reinitTooltips(scope = document) {
+                const tooltipTriggerList = [].slice.call(scope.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
             }
         </script>
     </body>

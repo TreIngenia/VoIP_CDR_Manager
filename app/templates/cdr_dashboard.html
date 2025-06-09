@@ -1,10 +1,35 @@
 {% extends "base.html" %}
-
 {% block title %}CDR Analytics Dashboard{% endblock %}
-
-{% block content %}
-<div class="container-fluid">
-    <div class="row">
+{% block toolbar %}
+<div class=" align-items-center gap-2">
+    <div class="text-gray-700">Totale contratti: <span class="text-white" id="total-contracts">0</span></div>
+    <div class="text-gray-700">Ultimo aggiornamento: <span class="text-white" id="last-updated">-</span></div>
+</div>
+<!-- <div class="col-4">
+    <input type="text" id="mySearch" class="form-control form-control-sm" placeholder="Cerca...">
+</div> -->
+<div class="d-flex align-items-center gap-2">
+    <div class="btn-group">
+        <button class="btn btn-primary" onclick="processAllCDR()">
+                        <i class="fas fa-play-circle"></i> Elabora Tutti i CDR
+                    </button>
+                    <button class="btn btn-success" onclick="refreshDashboard()">
+                        <i class="fas fa-sync"></i> Aggiorna
+                    </button>
+                         
+                                <!-- <button class="btn btn-outline-secondary" onclick="loadCategories()">
+                                    <i class="fas fa-sync"></i> Ricarica
+                                </button> -->
+        <button class="btn btn-sm btn-info w-180px" onclick="resetToDefaults()">
+            <i class="fas fa-undo"></i>Ripristina Default
+        </button>
+        <!-- <button id="edit_button" type="button" class="btn btn-sm btn-primary" ><i class="fa-solid fa-pen-to-square me-2 fs-3"></i>Modifica</button>
+        <button id="save_all" type="button" class="btn btn-sm btn-warning disabled" onclick="saveAllContracts()"><i class="fa-solid fa-floppy-disk me-2 fs-3"></i>Salva Tutti i Contratti</button>
+        <button id="reload" type="button" class="btn btn-sm btn-info" onclick="loadContracts('load')"><i class="fa-solid fa-arrows-rotate me-2 fs-3"></i>Ricarica Dati</button> -->
+    </div>
+</div>
+{% endblock %}    
+ <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-chart-line"></i> CDR Analytics Dashboard</h2>
@@ -19,148 +44,319 @@
             </div>
         </div>
     </div>
+{% block content %}   
+<div id="kt_app_content" class="app-content  flex-column-fluid " >
+    <div id="kt_app_content_container" class="app-container  container-fluid ">
+    
+        <!-- Sidebar -->
+        <!-- <nav class="col-md-3 col-lg-2 d-md-block sidebar"> -->
+            
+        <!-- </nav> -->
 
-    <!-- Statistiche Generali -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4>{{ stats.total_reports }}</h4>
-                            <p class="mb-0">Report Totali</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-file-alt fa-2x"></i>
-                        </div>
+        <!-- Main Content -->
+        <!-- <main class="col-md-9 ms-sm-auto col-lg-10 main-content"> -->
+            <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Box Superiori-->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card ">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tags fa-2x mb-2"></i>
+                        <h4 id="totalCategoriesCount">0</h4>
+                        <p class="mb-0">Categorie Totali</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card ">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h4 id="activeCategoriesCount">0</h4>
+                        <p class="mb-0">Categorie Attive</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card ">
+                    <div class="card-body text-center">
+                        <i class="fas fa-search fa-2x mb-2"></i>
+                        <h4 id="totalPatternsCount">0</h4>
+                        <p class="mb-0">Pattern Totali</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card ">
+                    <div class="card-body text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <h4 id="conflictsCount">0</h4>
+                        <p class="mb-0">Conflitti Pattern</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4>{{ stats.individual_reports }}</h4>
-                            <p class="mb-0">Report Contratti</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-user-tie fa-2x"></i>
-                        </div>
+
+        <div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.total_reports }}</h4>
+                        <p class="mb-0">Report Totali</p>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4>{{ stats.summary_reports }}</h4>
-                            <p class="mb-0">Report Summary</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-chart-pie fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4>{{ stats.total_size_mb }} MB</h4>
-                            <p class="mb-0">Dimensione Totale</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-hdd fa-2x"></i>
-                        </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Report Recenti -->
-    {% if reports %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-clock"></i> Report Recenti</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>File</th>
-                                    <th>Tipo</th>
-                                    <th>Dimensione</th>
-                                    <th>Creato</th>
-                                    <th>Azioni</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for report in reports %}
-                                <tr class="{{ 'table-warning' if report.is_summary else '' }}">
-                                    <td>
-                                        <i class="fas fa-{{ 'chart-pie' if report.is_summary else 'file-alt' }}"></i>
-                                        {{ report.filename }}
-                                    </td>
-                                    <td>
-                                        {% if report.is_summary %}
-                                        <span class="badge bg-warning">Summary</span>
-                                        {% else %}
-                                        <span class="badge bg-primary">Contratto</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ "%.2f"|format(report.size_bytes / (1024*1024)) }} MB</td>
-                                    <td>{{ report.created[:19]|replace('T', ' ') }}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-info" onclick="viewReportDetails('{{ report.filename }}')">
-                                            <i class="fas fa-eye"></i> Dettagli
-                                        </button>
-                                        <a href="/cdr_analytics/reports/{{ report.filename }}" class="btn btn-sm btn-outline-success">
-                                            <i class="fas fa-download"></i> Download
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.individual_reports }}</h4>
+                        <p class="mb-0">Report Contratti</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-tie fa-2x"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
-
-    <!-- Alert per Operazioni -->
-    <div id="cdr-alerts"></div>
-</div>
-
-<!-- Modal per Dettagli Report -->
-<div class="modal fade" id="reportDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Dettagli Report</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.summary_reports }}</h4>
+                        <p class="mb-0">Report Summary</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-pie fa-2x"></i>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-                <div id="report-details-content">
-                    <p class="text-center">Caricamento...</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.total_size_mb }} MB</h4>
+                        <p class="mb-0">Dimensione Totale</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-hdd fa-2x"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+        
 
+        <!-- TABS-->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm  h-100">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-chart-line fs-1 me-4"></i> Report Recenti</h3>
+                        <!-- <div class="card-toolbar">
+                            <button type="button" class="btn btn-sm btn-light">
+                                Action
+                            </button>
+                        </div> -->
+                    </div>
+                    <div class="card-body">
+                            {% if reports %}
+                            <div class="table-responsive">
+                                <table id="kt_datatable" class="table table-rounded table-striped border gy-5 gs-7 align-middle dataTable">
+                                    <thead>
+                                        <tr>
+                                            <th>File</th>
+                                            <th>Tipo</th>
+                                            <th>Dimensione</th>
+                                            <th>Creato</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for report in reports %}
+                                        <tr class="{{ 'table-warning' if report.is_summary else '' }}">
+                                            <td>
+                                                <i class="fas fa-{{ 'chart-pie' if report.is_summary else 'file-alt' }}"></i>
+                                                {{ report.filename }}
+                                            </td>
+                                            <td>
+                                                {% if report.is_summary %}
+                                                <span class="badge bg-warning">Summary</span>
+                                                {% else %}
+                                                <span class="badge bg-primary">Contratto</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ "%.2f"|format(report.size_bytes / (1024*1024)) }} MB</td>
+                                            <td>{{ report.created[:19]|replace('T', ' ') }}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-info" onclick="viewReportDetails('{{ report.filename }}')">
+                                                    <i class="fas fa-eye"></i> Dettagli
+                                                </button>
+                                                <a href="/cdr_analytics/reports/{{ report.filename }}" class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-download"></i> Download
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+
+                            <!-- Alert per Operazioni -->
+                            <div id="cdr-alerts"></div>
+                      
+
+                        <!-- Modal per Dettagli Report -->
+                        <div class="modal fade" id="reportDetailsModal" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Dettagli Report</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div id="report-details-content">
+                                            <p class="text-center">Caricamento...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- <div class="card-footer">
+                        Footer
+                    </div> -->
+                </div>
+            </div>
+        </div>
+
+    <!-- Edit Category Modal -->
+    <div class="modal fade" id="editCategoryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i> Modifica Categoria</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCategoryForm">
+                        <input type="hidden" id="editCategoryName">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="editCategoryDisplayName" required>
+                                     <label for="editCategoryDisplayName">Nome Visualizzato</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <input type="number" class="form-control" id="editCategoryPrice" step="0.0001" min="0" required>
+                                     <label for="editCategoryPrice">Prezzo base al minuto in euro</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <input type="number" class="form-control" id="markup_FISSI" step="1" min="0" required>
+                                     <label for="markup_FISSI">Ricarico in percentuale</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating mb-3">
+                                    <input type="number" class="form-control" id="editFinalPrice" step="0.0001" min="0" disabled>
+                                     <label for="editFinalPrice">Prezzo finale al minuto in euro</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryPatterns" class="form-label">Pattern di Riconoscimento</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="editNewPattern" placeholder="Aggiungi pattern...">
+                                <button type="button" class="btn btn-primary" onclick="addEditPattern()">
+                                    <i class="fas fa-plus fs-3"></i>
+                                </button>
+                            </div>
+                            <div id="editPatternsContainer" class="mt-2"></div>
+                            <div class="form-text">I pattern sono usati per riconoscere il tipo di chiamata (es:
+                                CELLULARE, MOBILE, FISSO)</div>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <textarea class="form-control" id="editCategoryDescription" style="height: 80px"></textarea>
+                            <label for="editCategoryDescription">Descrizione</label>    
+                        </div>
+
+                        <input class="form-check-input me-2" type="checkbox" id="editCategoryActive">
+                        <label class="form-check-label" for="editCategoryActive">
+                            Categoria Attiva
+                        </label>
+                    </form>
+                                                
+                    
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group">
+                        <button type="button" class="btn  btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="button" class="btn  btn-primary" onclick="updateCategory()">
+                            <i class="fas fa-save"></i> Salva Modifiche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+            
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+ <script src="assets/plugins/custom/datatables/datatables.bundle.js"></script>
 <script>
+window.addEventListener("DOMContentLoaded", function () {
+    enable_datatables('#kt_datatable')
+    // $("#kt_datatable_zero_configuration").DataTable();
+});
+
+function enable_datatables(id){
+    var table = $(id).DataTable({
+        destroy: true,
+        autoWidth: false,
+        ColumnDefs: [
+            { width: '1%', targets: 0 },
+            { width: '26%', targets: 1 },
+            { width: '24%', targets: 2 },
+            { width: '24%', targets: 3 },
+            { width: '24%', targets: 4 },
+            { width: '1%', targets: 5 }
+        ],
+            pageLength: 10,
+            lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Tutti"] ]
+        // "scrollX": true
+    });
+
+    // $('#mySearch').on('keyup', function () {
+    //     table.search(this.value).draw();
+    // });
+}
 // Funzioni JavaScript per CDR Dashboard
 function processAllCDR() {
     showAlert('info', 'Elaborazione in corso...', 'Sto elaborando tutti i file CDR...');
@@ -217,7 +413,7 @@ function displayReportDetails(details) {
             
             <div class="row">
                 <div class="col-md-6">
-                    <h6>📊 Informazioni Generali</h6>
+                    <h6>Informazioni Generali</h6>
                     <ul class="list-unstyled">
                         <li><strong>File:</strong> ${details.filename}</li>
                         <li><strong>Tipo:</strong> <span class="badge bg-warning">Report Globale</span></li>
@@ -226,7 +422,7 @@ function displayReportDetails(details) {
                     </ul>
                 </div>
                 <div class="col-md-6">
-                    <h6>💰 Riassunto Costi VoIP</h6>
+                    <h6>Riassunto Costi VoIP</h6>
                     <ul class="list-unstyled">
                         <li><strong>Costo Originale:</strong> <span class="text-muted">€${details.total_cost || 0}</span></li>
                         <li><strong>Costo Cliente VoIP:</strong> <span class="text-success">€${details.costo_cliente_totale_euro || details.total_cost || 0}</span></li>
@@ -480,5 +676,10 @@ setInterval(function() {
         })
         .catch(error => console.error('Errore aggiornamento:', error));
 }, 30000);
-</script>
+</script>    
+
+
+
+
+
 {% endblock %}

@@ -20,21 +20,28 @@ except ImportError:
 
 # Import moduli personalizzati
 from config import SecureConfig
+
 # Import moduli migliorati
+from flask import Flask, send_from_directory, jsonify
 from logger_config import get_logger, log_success, log_error, log_warning, log_info
 from config_validator import ConfigValidator
 from performance_monitor import get_performance_monitor
 from config import save_config_to_env, load_config_from_env_local
 from ftp_processor import FTPProcessor
 from scheduler import SchedulerManager
+
+#ROUTE Default
 from routes.default_routes import create_routes
 
-# ✅ NUOVO: Import del sistema categorie unificato
+#ROUTE Categorie
 from cdr_categories_enhanced import integrate_enhanced_cdr_system
-from routes.categories_routes import add_categories_routes
+from routes.cdr_categories_routes import add_cdr_categories_routes
 
-# Import Flask
-from flask import Flask, send_from_directory, jsonify
+#ROUTE contratti
+from routes.contratti_routes import contratti_routes, api_contract_routes
+
+#ROUTE ODOO
+from routes.odoo_routes import add_odoo_routes
 
 def create_app():
     """Factory function per creare l'app Flask"""
@@ -136,9 +143,23 @@ def main():
         log_info("Integrazione Sistema CDR Unificato con configurazione da .env...")
         processor = integrate_enhanced_cdr_system(app, processor, secure_config)
 
+        # GESTIONE CONTRATTI
+        log_info("Registrazione route gestione contratti...")
+        gestione_contratti = contratti_routes(app, secure_config)
+        log_success(f"Route categorie registrate: {gestione_contratti['routes_count']} endpoint")
+
+        # log_info("Registrazione route gestione contratti...")
+        # contratti = add_cdr_contracts_datatable_routes(app, secure_config)
+        # log_success(f"Route categorie registrate: {contratti['routes_count']} endpoint")
+    
+        # GESTIONE ODOO
+        log_info("Registrazione route gestione ODOO...")
+        gestione_odoo = add_odoo_routes(app, secure_config)
+        log_success(f"Route ODOO registrate: {gestione_odoo['routes_count']} endpoint")
+
         # ✅ AGGIUNGI ROUTE PER GESTIONE CATEGORIE (aggiornate)
         log_info("Registrazione route gestione categorie unificato...")
-        categories_info = add_categories_routes(app, processor.cdr_analytics, secure_config)
+        categories_info = add_cdr_categories_routes(app, processor.cdr_analytics, secure_config)
         log_success(f"Route categorie registrate: {categories_info['routes_count']} endpoint")
         
         # Inizializza scheduler
@@ -150,11 +171,17 @@ def main():
         
         # ✅ MANTIENI INTEGRAZIONE CONTRATTI (se necessario)
         try:
-            from cdr_contract_extractor import integrate_contract_extraction
-            contracts_info = integrate_contract_extraction(app, secure_config, processor)
+            contracts_info = api_contract_routes(app, secure_config, processor)
             log_success(f"Sistema contratti integrato: {contracts_info['routes_count']} endpoint")
         except ImportError:
             log_warning("Sistema contratti non disponibile (modulo non trovato)")
+
+        # try:
+        #     from cdr_contract_extractor import integrate_contract_extraction
+        #     contracts_info = integrate_contract_extraction(app, secure_config, processor)
+        #     log_success(f"Sistema contratti integrato: {contracts_info['routes_count']} endpoint")
+        # except ImportError:
+        #     log_warning("Sistema contratti non disponibile (modulo non trovato)")    
 
         # Avvia scheduler
         try:

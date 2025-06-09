@@ -24,3 +24,4 @@ assets
 *.pyNEW
 *.pyOLD
 templates_OLD
+*_BLOCK

@@ -31,7 +31,7 @@ __all__ = [
     'clean_filename',
     'format_datetime',
     'ProgressTracker',
-    'retry_on_failure'
+    'retry_on_failure',
 ]
 
 def get_version():

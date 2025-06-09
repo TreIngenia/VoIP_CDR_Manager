@@ -18,7 +18,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
     # Registra funzioni globali menu
     register_menu_globals(app)
 
-    @app.route('/', endpoint='index')
+    @app.route('/')
     def index():
         """Pagina principale"""
         dashboard_data = {
@@ -31,7 +31,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         # return render_template('index.html', config=secure_config.get_config())
         return render_with_menu_context('index.html', dashboard_data)
 
-    @app.route('/config', endpoint='config_page', methods=['GET', 'POST'])
+    @app.route('/config', methods=['GET', 'POST'])
     def config_page():
         """Pagina configurazione con validazione migliorata"""
         if request.method == 'POST':
@@ -539,37 +539,37 @@ def create_routes(app, secure_config, processor, scheduler_manager):
     
     # Aggiungi questi route nella funzione setup_cdr_analytics()
 
-    @app.route('/cdr_dashboard')
-    def cdr_dashboard():
-        """Dashboard principale CDR Analytics"""
-        try:
-            # Ottieni statistiche
-            reports = processor.cdr_analytics.list_generated_reports()
-            # Separa report individuali e summary
-            individual_reports = [r for r in reports if not r['is_summary']]
-            summary_reports = [r for r in reports if r['is_summary']]
+    # @app.route('/cdr_dashboard')
+    # def cdr_dashboard():
+    #     """Dashboard principale CDR Analytics"""
+    #     try:
+    #         # Ottieni statistiche
+    #         reports = processor.cdr_analytics.list_generated_reports()
+    #         # Separa report individuali e summary
+    #         individual_reports = [r for r in reports if not r['is_summary']]
+    #         summary_reports = [r for r in reports if r['is_summary']]
             
-            # Calcola statistiche
-            total_size = sum(r['size_bytes'] for r in reports)
+    #         # Calcola statistiche
+    #         total_size = sum(r['size_bytes'] for r in reports)
             
-            stats = {
-                'total_reports': len(reports),
-                'individual_reports': len(individual_reports),
-                'summary_reports': len(summary_reports),
-                'total_size_mb': round(total_size / (1024*1024), 2),
-                'analytics_directory': str(processor.cdr_analytics.analytics_directory)
-            }
+    #         stats = {
+    #             'total_reports': len(reports),
+    #             'individual_reports': len(individual_reports),
+    #             'summary_reports': len(summary_reports),
+    #             'total_size_mb': round(total_size / (1024*1024), 2),
+    #             'analytics_directory': str(processor.cdr_analytics.analytics_directory)
+    #         }
             
-            return render_template('cdr_dashboard.html', 
-                                reports=reports,  # Ultimi 10
-                                stats=stats,
-                                individual_reports=individual_reports,
-                                summary_reports=summary_reports)
+    #         return render_template('cdr_dashboard.html', 
+    #                             reports=reports,  # Ultimi 10
+    #                             stats=stats,
+    #                             individual_reports=individual_reports,
+    #                             summary_reports=summary_reports)
                                 
-        except Exception as e:
-            logger.error(f"Errore dashboard CDR: {e}")
-            return render_template('error.html', 
-                                error_message=f"Errore caricamento dashboard CDR: {e}")
+    #     except Exception as e:
+    #         logger.error(f"Errore dashboard CDR: {e}")
+    #         return render_template('error.html', 
+    #                             error_message=f"Errore caricamento dashboard CDR: {e}")
 
     @app.route('/cdr_analytics/process_all')
     def process_all_cdr():
@@ -828,43 +828,32 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)}), 500
     
-    @app.route('/cdr_categories_dashboard')
-    def cdr_categories_dashboard():
-        """Dashboard principale per gestione categorie CDR"""
-        try:
-            from flask import render_template
-            
-            if not hasattr(processor, 'cdr_analytics') or not hasattr(processor.cdr_analytics, 'categories_manager'):
-                return render_template('error.html', 
-                                     error_message="Sistema categorie CDR non disponibile")
-            
-            categories_manager = processor.cdr_analytics.categories_manager
-            
-            # ✅ DATI PER DASHBOARD CATEGORIE
-            dashboard_data = {
-                'categories': categories_manager.get_all_categories(),
-                'active_categories': categories_manager.get_active_categories(),
-                'statistics': categories_manager.get_statistics(),
-                'conflicts': categories_manager.validate_patterns_conflicts(),
-                'recent_reports': processor.cdr_analytics.list_generated_reports(),
-                'system_info': {
-                    'version': '2.0',
-                    'config_file': str(categories_manager.config_file),
-                    'supports_costo_by_category': True
-                }
-            }
-            
-            return render_template('cdr_categories_dashboard.html', **dashboard_data)
-            
-        except Exception as e:
-            return render_template('error.html', error_message=f"Errore dashboard categorie: {e}")
-        
-    @app.route('/gestione_contratti')
-    def gestione_utenti():
-        return render_with_menu_context('gestione_contratti.html', {'config':secure_config.get_config()})    
+    # @app.route('/gestione_contratti')
+    # def gestione_utenti():
+    #     return render_with_menu_context('gestione_contratti.html', {'config':secure_config.get_config()})    
     
     @app.route('/default_page')
     def default_page():
         return render_with_menu_context('index_base.html', {'config':secure_config.get_config()})    
-               
+
+
+    # ============ ERROR HANDLERS ============
+
+    @app.errorhandler(404)
+    def not_found_error(error):
+        """Handler per errori 404"""
+        return render_with_menu_context(
+            'templates/error.html', 
+            {'error_code': 404, 'error_message': 'La pagina richiesta non è stata trovata'}
+        ), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        """Handler per errori 500"""
+        return render_with_menu_context(
+            'templates/error.html',
+            {'error_code': 500, 'error_message': 'Si è verificato un errore interno del server'}
+        ), 500
+
+    # ============ CONTEXT PROCESSORS ============               
     return app

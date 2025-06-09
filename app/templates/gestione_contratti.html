@@ -27,8 +27,9 @@
                                 <tr class="fw-semibold fs-6 text-gray-800 border-bottom border-gray-200">
                                     <th>Contr. N.</th>
                                     <th>N. Telefono</th>
-                                    <th>Nome Cliente</th>
-                                    <th>Codice Odoo</th>
+                                    <th>Cliente</th>
+                                    <!-- <th>Codice Odoo</th> -->
+                                    <th>Contratto</th>
                                     <th>Note</th>
                                     <th></th>
                                 </tr>
@@ -48,356 +49,704 @@
  <script src="assets/plugins/custom/datatables/datatables.bundle.js"></script>
  <script>
 
-        let contractsData = {};
-        let isEditMode = false;
+    let contractsData = {};
+    let isEditMode = false;
+    let contractTypeOptions = null;
+    let odooclient = null;
+    var target = document.querySelector("#kt_app_content"); 
+        var blockUI = new KTBlockUI(target);
+        if (blockUI.isBlocked()) {
+            blockUI.release();
+        } else {
+            blockUI.block();
+        }
+    // Carica contratti all'avvio
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        loadContracts('load');
+        document.getElementById('edit_button').addEventListener('click', function () {
+                toggle_button('edit_button', 'fa-pen-to-square', 'fa-circle-xmark', 'Modifica', 'Fine modifica', 'loadContracts("load")', 'loadContracts("edit")');
+        });
+        // document.getElementById('reload').addEventListener('click', function () {
+        //      toggle_button('edit_button', 'fa-pen-to-square', 'fa-circle-xmark', 'Modifica', 'Fine modifica', 'loadContracts("load")', 'loadContracts("edit")');
+        // });
+    });
+    
+    
+    async function loadContracts(action) {
+        const form = document.getElementById('contracts-form');
+        form.style.display = 'none';
+        enable_datatables('#kt_datatable');
+        try {
+            const response = await fetch('/api/cdr/contracts_config');
+            const data = await response.json();
+            
+            if (data.success) {
+                contractsData = data.data;
+                if(isEditMode === true) {
+                    $('#kt_datatable').DataTable().clear().destroy();
+                    loadContractTypeOptions(() => {
+                        editContracts(contractsData.contracts);
+                    });
+                    loadClientOptions(() => {
+                        editContracts(contractsData.contracts);
+                    });
+                    // editContracts(contractsData.contracts);
+                    enable_datatables('#kt_datatable');
+                } else {
+                    $('#kt_datatable').DataTable().clear().destroy();
+                    displayContracts(contractsData.contracts);
+                    enable_datatables('#kt_datatable');
+                }
+                // displayContracts(contractsData.contracts);
+                
+                document.getElementById('total-contracts').textContent = data.contracts_count;
+                document.getElementById('last-updated').textContent = new Date(data.last_updated).toLocaleString('it-IT');
+                
+                form.style.display = 'block';
+                blockUI.release();
+            } else {
+                throw new Error(data.message || 'Errore nel caricamento');
+            }
+        } catch (err) {
+            toastr.error(`I contratti non sono stati caricati, riprova.`, "Errore caricamento contratti");
+        }
+    
+    }
 
-        // Carica contratti all'avvio
-        document.addEventListener('DOMContentLoaded', function() {
-            loadContracts('load');
-            document.getElementById('edit_button').addEventListener('click', function () {
-                 toggle_button('edit_button', 'fa-pen-to-square', 'fa-circle-xmark', 'Modifica', 'Fine modifica', 'loadContracts("load")', 'loadContracts("edit")');
-            });
-            // document.getElementById('reload').addEventListener('click', function () {
-            //      toggle_button('edit_button', 'fa-pen-to-square', 'fa-circle-xmark', 'Modifica', 'Fine modifica', 'loadContracts("load")', 'loadContracts("edit")');
-            // });
+    function toggle_button(id, icon1, icon2, text1, text2, action1, action2) {
+        const this_button = document.getElementById('edit_button');
+        const icon = this_button.querySelector('i');
+        const isEdit = icon.classList.contains(icon1);
+
+        if (isEdit) {
+            isEditMode = true;
+            // Cambia in modalità "load"
+            icon.classList.replace(icon1, icon2);
+            this_button.innerHTML = `<i class="fas ${icon2}"></i> ${text2}`;
+            // this_button.setAttribute('onclick', action2);
+            loadContracts("edit");
+            
+        } else {
+            // Cambia in modalità "edit"
+            isEditMode = false;
+            icon.classList.replace(icon2, icon1);
+            this_button.innerHTML = `<i class="fas ${icon1}"></i> ${text1}`;
+            // this_button.setAttribute('onclick', action2);
+            loadContracts("load"); 
+        }
+    }
+    
+    /**Funzione che abilita DataTables per la tabella specificata */
+    function enable_datatables(id){
+            var table = $(id).DataTable({
+            destroy: true,
+            autoWidth: false,
+            ColumnDefs: [
+                { width: '3%', targets: 0 },
+                { width: '23%', targets: 1 },
+                { width: '24%', targets: 2 },
+                { width: '24%', targets: 3 },
+                { width: '24%', targets: 4 },
+                { width: '2%', targets: 5 }
+            ],
+                pageLength: 10,
+                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Tutti"] ]
+            // "scrollX": true
+        });
+
+        $('#mySearch').on('keyup', function () {
+            table.search(this.value).draw();
+        });
+    }
+
+    function enable_datatablesNO(id){
+        this.table = new DataTable(id, {
+            responsive: true,
+            // "dom": "<'row '<'#toolbar.col-md-10 col-sm-12 mb-2'T><'#toolbar3.col-md-2 col-sm-12 text-right'B><'col-md-12 col-sm-12'<'#filters.form-row'>>r>t<'row mt-2'<'col-md-4 col-sm-12'i><'col-md-4 col-sm-12 text-center' l><'col-md-4 col-sm-12'p>>",
+            //Personalizzazione colonne
+            
+            "columnDefs": [
+                // { width: "1%",  orderable: false, searchable: false, visible: true, className: "px-3", responsivePriority: 1, targets: 0 },
+                { width: "7%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0 },
+                { width: "15%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 2, targets: 1 },
+                { width: "23%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 10000, targets: 2 },
+                { width: "15%",  orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 10000, targets: 3 },
+                { width: "38%",  orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 10000, targets: 4 },
+                { width: "2%",  orderable: false, searchable: false, visible: true, className: "align-middle px-2", responsivePriority: 1, targets: 5 },
+            ],
+            pageLength: 10,
+            lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Tutti"] ],
+            //Ordine Colonne
+            "columns": [
+                // {   
+                //     "data": "id", 
+                //     "render": function ( data, type, row, index ) {
+                //         return `<div class="form-check form-check-sm form-check-custom form-check-solid">
+                //                     <input class="form-check-input checkbox_single" type="checkbox" value="${data}" />
+                //                 </div>`
+                                
+                //     }
+                // },
+                // {   
+                //     "data": "name", 
+                //     "render": function ( data, type, row ) {
+                //         var x = row['active'];
+                //         var date_db = moment(row['data_check']).format("YYYY-MM-DD HH:mm:ss");
+                //         var now = moment($.now()).format("YYYY-MM-DD HH:mm:ss");
+                //         var y = row['main_event_log']
+                //         if(date_db == 'Invalid date'){
+                //             var online='<div class="badge mr-1 help" data-bs-toggle="tooltip" data-placement="top" title="OFFLINE"><i class="fa fa-circle text-danger"></i></div>';
+                //         }else{
+                //             if(date_db > now){
+                //                 var online='<div class="badge mr-1 help" data-bs-toggle="tooltip" data-placement="top" title="ONLINE"><i class="fa fa-circle text-success"></i></div>';
+                //             }else{
+                //                 var online='<div class="badge mr-1 help " data-bs-toggle="tooltip" data-placement="top" title="OFFLINE"><i class="fa fa-circle text-danger"></i></div>';
+                //             }
+                //         }
+                //         if(x === 'on'){
+                //             var active='';
+                //         }
+                //         // else if (row['data_check'] === 'off')
+                //         else 
+                //         {
+                //             var active='<div class="badge help todo-tasklist-badge badge badge-danger badge-roundless align-self-end ms-2" data-bs-toggle="tooltip" data-placement="top" title="DISABILITATO"><i class="fa-solid fa-user-xmark text-white"></i></div>'
+                //         }
+                //         if(y === 'on'){
+                //             var type_event_log='';
+                //         }
+                //         // else if (row['data_check'] === 'off')
+                //         else 
+                //         {
+                //             var type_event_log='<div class="badge help todo-tasklist-badge badge badge-info badge-roundless align-self-end" data-bs-toggle="tooltip" data-placement="top" title="ESTERNO"><i class="fa-solid fa-user-tag text-white"></i></div>'
+                //         }
+                //         //return '<a href="gestione_utente.php?id='+row[4]+'"><button id="Modifica" data-bs-toggle="tooltip" data-placement="top" data-original-title="Modifica" title="Modifica" class="btn btn-success btn-circle mr-1"><i class="fa fa-cog"></i></button></a> '+data+ active;
+                //         return '<div class="link_in_tabella font-weight-bold d-flex align-items-center mr-auto " href="user_manager.php?manage_event_log=yes&uid='+row['uid']+'"> ' + online + '<div class="me-auto">'+data+'</div>' + type_event_log + active+'</div>';
+
+                //     },
+                // },
+                {   
+                    "render": function ( data, type, row ) {
+                        // var date_db = moment(data).format('DD/MM/YYYY - HH:mm:ss');
+                        return data;
+                    },
+                },
+                {   
+                    "render": function ( data, type, row ) {
+                        // return remove_char(data, '');
+                        return '<b>'+data+'</b>';
+                    },
+                },
+                {   
+                    "render": function ( data, type, row ) {
+                        // var date_db = moment(data).format("DD/MM/YYYY - HH:mm");
+                        return data
+                    },
+                },
+
+                {   
+                    "render": function ( data, type, row ) {
+                        // var date_db = moment(data).format("DD/MM/YYYY - HH:mm");
+                        return data;
+                    },
+                },
+                {   
+                    "render": function ( data, type, row ) {
+                        // var uid_rif = row['uid'];
+                        // //    return "<button class='text-white btn btn-block btn-secondary btn-xs' data-toggle='modal' data-link='dettagli.php?destinazione=utente&id_rif="+row[4]+"' data-id='" + row[4] +"' data-target='#ajax' >DETTAGLI</button>";
+                        // //    return "<a data-toggle='modal' data-link='dettagli.php?destinazione=utente&id_rif="+row[4]+"' data-id='" + row[4] +"' data-target='#ajax' ><i role='button' class='cursor-pointer fas  fa-search-plus' data-toggle='tooltip' title='Dettagli' ></i></a>";
+                        // return   `<div class="btn-group btn-group-sm">
+                        //                 <!--<button data-toggle='edit' data-id="${uid_rif}" id="edit" type="button" data-bs-toggle="tooltip" title="${text('MODIFICA')}" class="w-25px h-25px btn-icon btn btn-sm btn-warning float-right text-uppercase">
+                        //                     <i class="fas fa-pencil-alt text-light-warning"></i>
+                        //                 </button>-->
+                        //                 <button data-bs-toggle="block_modal" data-bs-target="#kt_modal_scrollable" data-link='' data-id="${data}" id="detail" type="button" data-bs-toggle="tooltip" title="${text('DETTAGLI')}"class="w-25px h-25px btn-icon btn btn-sm btn-primary float-right text-uppercase">
+                        //                         <i class="fas  fa-search-plus"></i>
+                        //                 </button>
+                        //             </div>`  ;
+                    }  
+                },
+            ],
+            //Ordina i record in modo crescente in base alla colonna 1
+            "order": [
+                [0, 'desc']
+            ],   
+            select: {
+                style: 'multi',
+                selector: 'td:first-child input[type="checkbox"]',
+                className: 'row-selected'
+            },
+            // processing: true,
+            serverSide: true,
+            searchDelay:10000,
+            // Personalizzazioni richieste al db
+            
+            "ajax":{
+            type: "GET",
+            url: "/api/cdr/contracts_datatable",    
+            data: function ( data ) {
+                console.log(data)
+                        // d.class = 'event_log'
+                        // d.function = 'read';
+                        // d.source = 'data_tables';
+                        // d.active = 'on'; //obj_cards.find('#disabilitati').attr('stato');
+                        // d.start_date = $('#data_eventi_data_range_picker').data('daterangepicker').startDate.format('YYYY-MM-DD');
+                        // d.end_date = $('#data_eventi_data_range_picker').data('daterangepicker').endDate.format('YYYY-MM-DD');
+                        // d.main_event_log = obj_cards.find('#partners').attr('stato');
+                        // d.certificato = $('#card_acceptance_form_list').find('#toolbar').find('#certificato').val();
+                        // d.main_acceptance_form = $('#card_acceptance_form_list').find('#toolbar').find('#main_acceptance_form').val();
+                        // d.request_state = return_filter_request($('#card_acceptance_form_list').find('#filters').find('#stato_richiesta').select2('data'));
+                        // d.diagnosis = return_filter_request($('#card_acceptance_form_list').find('#filters').find('#diagnosi').select2('data'));
+                        // d.age_min = return_filter_request($('#card_acceptance_form_list').find('#filters').find('#age_min').select2('data'));
+                        // d.age_max = return_filter_request($('#card_acceptance_form_list').find('#filters').find('#age_max').select2('data'));
+                        // d.rif_form_cliente_id= $_GET('form_cliente_id');
+                    } 
+            },
+            
+            // "initComplete": function(settings, json){
+
+            //     // generate_toolbar_row();
+            //     // insert_button_group();
+            //     // select_richiesta();
+            //     // diagnosi();
+            //     // age();
+    
+            //     // $start_val = [0,1]
+            //     // // $stato_richiesta.val($start_val).trigger("change");
+            //     // $('#card_acceptance_form_list').find('#filters').find('#select_box_diagnosi, #select_box_richiesta, #age_min, #age_max').on('select2:select', function (e) {            
+            //     //     this.table.ajax.reload();    
+            //     // });
+            //     // $('#card_acceptance_form_list').find('#filters').find('#select_box_diagnosi, #select_box_richiesta, #age_min, #age_max').on('select2:unselect', function (e) {
+            //     //     this.table.ajax.reload();
+            //     // });
+            //     // list_acceptance_form.ajax.reload();
+            //     this.api = this.api();
+            //     /**
+            //      * Eseguo la ricerca da una select esterna dentro una colonna nascosta
+            //      */
+            //     // api.columns(7).every( function () {
+            //     //     /**
+            //     //      * imposto il valore di base della select
+            //     //      */
+            //     //     this
+            //     //         .search($start_val,true, true, false)
+            //     //         .draw();
+            //     //     var that = this;
+            //     //     $('#card_acceptance_form_list').find('#toolbar').find('#select_box_richiesta').on('select2:select', function (e) {            
+            //     //         var data = e.params.data;
+            //     //         if(that.search()){
+            //     //             search_data = that.search()+"|"+data.id;
+            //     //         }else{
+            //     //             search_data = data.id;
+            //     //         }
+            //     //         if ( that.search() !== this.value ) {
+            //     //             that
+            //     //                 .search(search_data,true, true, false)
+            //     //                 .draw();
+            //     //         }
+            //     //     });
+            //     //     $('#card_acceptance_form_list').find('#toolbar').find('#select_box_richiesta').on('select2:unselect', function (e) {
+            //     //         var data = e.params.data;
+                        
+            //     //         search_data = that.search().split("|");
+            //     //         search_data = search_data.map(Number);
+            //     //             removeItem = data.id;
+            //     //         array = jQuery.grep(search_data, function(value) {
+            //     //             return value != removeItem;
+            //     //             });
+            //     //         var value = array;
+            //     //         var blkstr = [];
+            //     //         $.each(value, function(idx2,val2) {                    
+            //     //         var str =  val2;
+            //     //         blkstr.push(str);
+            //     //         });
+            //     //         var a = blkstr.join("|");
+            //     //         console.log(a);
+            
+            //     //         if ( a !== this.value ) {
+            //     //             that
+            //     //             .search(a, true, false )
+            //     //                 .draw();
+            //     //         }
+            //     //     });
+            //     // });
+    
+            //     /**
+            //      * Avilito la ricerca per la colonna uno creando una select
+            //      */
+            //     // api.columns(1)
+            //     //     .every(function () {
+            //     //         var column = this;
+            //     //         var select = $('<select id="eta" class="form-control form-control-sm"><option value=""></option></select>')
+            //     //             .appendTo($(column.footer()).empty())
+            //     //             .on('change', function () {
+            //     //                 var val = $.fn.dataTable.util.escapeRegex($(this).val());
+    
+            //     //                 column.search(val ? '^' + val + '$' : '', true, false).draw();
+            //     //             });
+            //     //         column
+            //     //             .data()
+            //     //             .unique()
+            //     //             .sort()
+            //     //             .each(function (d, j) {
+            //     //                 console.log();
+            //     //                 select.append('<option value="' + d + '">' + d + '</option>');
+            //     //             });
+            //     //     });
+    
+            //     /**
+            //      * Abilito la ricerca per queste colonne
+            //      */
+            //     // api.columns()
+            //     //     .every(function(){
+            //     //         var that = this;
+            //     //         $( 'input', this.footer() ).on( 'keyup change', function () {
+            //     //             if ( that.search() !== this.value ) {
+            //     //                 that
+            //     //                     .search( this.value, true, false )
+            //     //                     .draw();
+            //     //             }
+            //     //         });
+            //     //     })
+            //     var api_html = '';
+            //     this.api.columns()
+            //         .every(function () {
+            //             // console.log($(this.header()).text())
+            //             var column = this;
+            //             var title = $(this.header()).text().trim();
+            //             var idtitle = title.replace(/ /g,"_");
+            //             if(title == ''){
+                            
+            //             }else{
+            //                 var select = $('<div class="col-12 col-xxl my-1 my-xxl-0"><input id="'+idtitle+'" class="form-control form-control-sm '+idtitle+'" type="text" placeholder="Cerca '+title+'" /></div>')
+            //                 .appendTo('#filter_tabella')
+            //                 $(select.find('input')).on('keyup change', function () {
+            //                     var that = this;
+            //                         var val = $.fn.dataTable.util.escapeRegex($(that).val());
+            //                         // column.search(val ? '^' + val + '$' : '', true, false).draw();
+            //                         column.search(that.value, true, false).draw();
+            //                     });
+            //                 column
+            //                     .data()
+            //                     .unique()
+            //                     .sort()
+            //                     // .each(function (d, j) {
+            //                     //     console.log();
+            //                     //     select.append('<option value="' + d + '">' + d + '</option>');
+            //                     // });
+            //             }
+            //         });
+            // }
+        })
+
+    }
+
+    
+
+    function displayContracts(contracts) {
+        const save_all_button = document.getElementById('save_all');
+        save_all_button.classList.add('disabled');
+        const container = document.getElementById('contracts-container');
+        container.innerHTML = '';
+        
+        // Ordina contratti per codice (numericamente)
+        const sortedContracts = Object.entries(contracts).sort((a, b) => {
+            return parseInt(a[0]) - parseInt(b[0]);
         });
         
-        
-        async function loadContracts(action) {
-            const form = document.getElementById('contracts-form');
-            form.style.display = 'none';
+        sortedContracts.forEach(([contractCode, contract]) => {
+            const contractDiv = document.createElement('tr');
             
-            try {
-                const response = await fetch('/api/cdr/contracts_config');
-                const data = await response.json();
+            contractDiv.innerHTML = `
+                            <td>${contractCode}</td>
+                            <td>
+                                ${getFirstNumber(contract.phone_numbers) || ''}
                 
-                if (data.success) {
-                    contractsData = data.data;
-                    if(isEditMode === true) {
-                        $('#kt_datatable').DataTable().clear().destroy();
-                        editContracts(contractsData.contracts);
-                        enable_datatables('#kt_datatable');
-                    } else {
-                        $('#kt_datatable').DataTable().clear().destroy();
-                        displayContracts(contractsData.contracts);
-                        enable_datatables('#kt_datatable');
-                    }
-                    // displayContracts(contractsData.contracts);
-                    
-                    document.getElementById('total-contracts').textContent = data.contracts_count;
-                    document.getElementById('last-updated').textContent = new Date(data.last_updated).toLocaleString('it-IT');
-                    
-                    form.style.display = 'block';
-                    
-                } else {
-                    throw new Error(data.message || 'Errore nel caricamento');
-                }
-            } catch (err) {
-                toastr.error(`I contratti non sono stati caricati, riprova.`, "Errore caricamento contratti");
-            }
-        
+                            </td>
+                            <td>
+                                ${contract.contract_name || 'Cliente non inserito'}${contract.odoo_client_id ? ` (ODOO Code: ${contract.odoo_client_id})` : ''}
+    
+                            </td>
+                        
+                            <td>
+                                ${contract.contract_type || ''}
+                            </td>
+                            <td>
+                                ${contract.notes || ''}
+                            </td>
+                            <td class="text-center px-0">
+                                <!--<button type="button" onclick="saveContract('${contractCode}')" class="btn btn-icon btn-sm btn-primary">
+                                    <i class="fa-solid fa-floppy-disk fs-2"></i>
+                                </button>-->
+                            </td>
+            `;
+            container.appendChild(contractDiv);
+        });
+    }
+
+
+    function getFirstNumber(input) {
+        if (!input) return null;
+
+        const parts = input.includes(',') ? input.split(',') : [input];
+        const first = String(parts[0]).trim();
+        return parseInt(first, 10) || null;
+    }
+
+    function editContracts(contracts) {
+        if (blockUI.isBlocked()) {
+            blockUI.release();
+        } else {
+            blockUI.block();
         }
+        const save_all_button = document.getElementById('save_all');
+        save_all_button.classList.remove('disabled');
 
-        function toggle_button(id, icon1, icon2, text1, text2, action1, action2) {
-            const this_button = document.getElementById('edit_button');
-            const icon = this_button.querySelector('i');
-            const isEdit = icon.classList.contains(icon1);
+        const container = document.getElementById('contracts-container');
+        container.innerHTML = '';
+                                
+        // Ordina contratti per codice (numericamente)
+        const sortedContracts = Object.entries(contracts).sort((a, b) => {
+            return parseInt(a[0]) - parseInt(b[0]);
+        });
+        
+        sortedContracts.forEach(([contractCode, contract]) => {
+            const contractDiv = document.createElement('tr');
+            
+            contractDiv.innerHTML = `
+                    <td>${contractCode}</td>
+                    <td><span class="fs-2"> ${getFirstNumber(contract.phone_numbers) || ''}</span>
+         
+                    </td>
 
-            if (isEdit) {
-                isEditMode = true;
-                // Cambia in modalità "load"
-                icon.classList.replace(icon1, icon2);
-                this_button.innerHTML = `<i class="fas ${icon2}"></i> ${text2}`;
-                // this_button.setAttribute('onclick', action2);
-                loadContracts("edit");
+                    <td>
+                    <select id="odoo_${contractCode}" class="form-select form-select-sm" data-control="select2" data-dropdown-css-class="" data-placeholder="Seleziona una tipologia" data-hide-search="true">
                 
+                    </select> 
+                
+                    </td>
+                    <td>
+                    <select id="contracttype_${contractCode}" class="form-select form-select-sm" data-control="select2" data-dropdown-css-class="" data-placeholder="Seleziona una tipologia" data-hide-search="true">
+                
+                    </select>    
+
+                    </td>
+                    <td>
+                        <textarea id="notes_${contractCode}" 
+                                name="notes_${contractCode}"
+                                placeholder="Note aggiuntive"
+                                rows="1"
+                                style="resize: vertical;" class="form-control form-control-sm">${contract.notes || ''}</textarea>
+                    </td>
+                    <td>
+                        <button type="button" onclick="saveContract('${contractCode}')" class="btn btn-icon btn-sm btn-primary">
+                            <i class="fa-solid fa-floppy-disk fs-2"></i>
+                            <span class="indicator-progress">
+                                Attendi... 
+                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                        </span>
+                        </button>
+
+                  
+                    </td>
+               
+            `;
+
+            container.appendChild(contractDiv);
+
+            $(`#contracttype_${contractCode}`).select2({
+                data: contractTypeOptions
+            });
+            $(`#contracttype_${contractCode}`).val(contract.contract_type).trigger('change');
+            
+            $(`#odoo_${contractCode}`).select2({
+                data: odooclient
+            });
+            $(`#odoo_${contractCode}`).val(contract.odoo_client_id).trigger('change');
+        });
+    }
+    
+    function loadContractTypeOptions(callback) {
+        // if (contractTypeOptions) {
+        //     callback(); // Se già presenti, chiama subito
+        //     return;
+        // }
+
+        $.ajax({
+            url: '/api/cdr/contract_type',
+            dataType: 'json',
+            success: function (data) {
+                contractTypeOptions = data;
+                callback();
+            },
+            error: function () {
+                console.error("Errore nel caricamento della tipologia contratti");
+                contractTypeOptions = [];
+                callback();
+            }
+        });
+    }
+
+    function loadClientOptions(callback) {
+        // if (contractTypeOptions) {
+        //     callback(); // Se già presenti, chiama subito
+        //     return;
+        // }
+
+        $.ajax({
+            url: '/api/odoo/partners/select',
+            dataType: 'json',
+            success: function (data) {
+                odooclient = data.results;
+                callback();
+            },
+            error: function () {
+                console.error("Errore nel caricamento dell'elenco utenti Odoo");
+                odooclient = [];
+                callback();
+            }
+        });
+    }
+
+    async function saveContract(contractCode) {
+        // const statusElement = document.getElementById(`status_${contractCode}`);
+        // statusElement.textContent = 'Salvando...';
+        // statusElement.style.color = 'blue';
+        
+        // const contractName = document.getElementById(`name_${contractCode}`).value.trim();
+        const select = document.getElementById(`odoo_${contractCode}`);
+        const contractName = select.options[select.selectedIndex].text;
+        const odooClientId = document.getElementById(`odoo_${contractCode}`).value.trim();
+        const notes = document.getElementById(`notes_${contractCode}`).value.trim();
+        const contractType = document.getElementById(`contracttype_${contractCode}`).value.trim();
+        
+        const updateData = {
+            contract_code: contractCode,
+            contract_name: contractName,
+            contract_type: contractType,
+            odoo_client_id: odooClientId,
+            notes: notes
+        };
+        
+        // Aggiungi odoo_client_id solo se ha un valore
+        // if (odooClientId) {
+        //     updateData.odoo_client_id = parseInt(odooClientId);
+        // }
+        
+        try {
+            const response = await fetch('/api/cdr/update_contract', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                toastr.success(`Il contratto <span class="fs-3">${contractCode}</span> è stato salvato con successo.`, "Salvato con successo");
             } else {
-                // Cambia in modalità "edit"
-                isEditMode = false;
-                icon.classList.replace(icon2, icon1);
-                this_button.innerHTML = `<i class="fas ${icon1}"></i> ${text1}`;
-                // this_button.setAttribute('onclick', action2);
-                loadContracts("load"); 
+                toastr.error(`Il contratto <span class="fs-3">${contractCode}</span> non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
+                throw new Error(result.message || 'Errore nel salvataggio');
             }
+        } catch (error) {
+            toastr.error(`Il contratto <span class="fs-3">${contractCode}</span> non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
         }
+    }
+    
+    async function saveAllContracts() {
+        // const saveStatus = document.getElementById('save-status');
+        // saveStatus.textContent = 'Salvataggio in corso...';
+        // saveStatus.style.color = 'blue';
+        let successCount = 0;
+        let errorCount = 0;
+        let isAnyModified = false; // <-- Nuova variabile globale al ciclo
+        const contracts = Object.keys(contractsData.contracts);
+        let modifiedContracts = [];
         
-        /**Funzione che abilita DataTables per la tabella specificata */
-        function enable_datatables(id){
-             var table = $(id).DataTable({
-                destroy: true,
-                autoWidth: false,
-                ColumnDefs: [
-                    { width: '1%', targets: 0 },
-                    { width: '26%', targets: 1 },
-                    { width: '24%', targets: 2 },
-                    { width: '24%', targets: 3 },
-                    { width: '24%', targets: 4 },
-                    { width: '1%', targets: 5 }
-                ],
-                    pageLength: 10,
-                    lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Tutti"] ]
-                // "scrollX": true
-            });
-
-            $('#mySearch').on('keyup', function () {
-                table.search(this.value).draw();
-            });
-        }
-
-
-        function displayContracts(contracts) {
-            const save_all_button = document.getElementById('save_all');
-            save_all_button.classList.add('disabled');
-            const container = document.getElementById('contracts-container');
-            container.innerHTML = '';
-            
-            // Ordina contratti per codice (numericamente)
-            const sortedContracts = Object.entries(contracts).sort((a, b) => {
-                return parseInt(a[0]) - parseInt(b[0]);
-            });
-            
-            sortedContracts.forEach(([contractCode, contract]) => {
-                const contractDiv = document.createElement('tr');
-                
-                contractDiv.innerHTML = `
-                			<tr>
-                                <td>${contractCode}</td>
-                                <td>
-                                    ${getFirstNumber(contract.phone_numbers) || ''}
-                 
-                                </td>
-                                <td>
-                                    ${contract.contract_name || ''}
-        
-                                </td>
-                                <td>
-                                    ${contract.odoo_client_id || ''}
-                
-                                </td>
-                                <td>
-                                   ${contract.notes || ''}
-                                </td>
-                                <td class="text-center px-0">
-                                    <!--<button type="button" onclick="saveContract('${contractCode}')" class="btn btn-icon btn-sm btn-primary">
-                                        <i class="fa-solid fa-floppy-disk fs-2"></i>
-                                    </button>-->
-                                </td>
-                            </tr>
-                `;
-                container.appendChild(contractDiv);
-            });
-        }
-
-
-        function getFirstNumber(input) {
-            if (!input) return null;
-
-            const parts = input.includes(',') ? input.split(',') : [input];
-            const first = String(parts[0]).trim();
-            return parseInt(first, 10) || null;
-        }
-
-        function editContracts(contracts) {
-            const save_all_button = document.getElementById('save_all');
-            save_all_button.classList.remove('disabled');
-
-            const container = document.getElementById('contracts-container');
-            container.innerHTML = '';
-                                  
-            // Ordina contratti per codice (numericamente)
-            const sortedContracts = Object.entries(contracts).sort((a, b) => {
-                return parseInt(a[0]) - parseInt(b[0]);
-            });
-            
-            sortedContracts.forEach(([contractCode, contract]) => {
-                const contractDiv = document.createElement('tr');
-                
-                contractDiv.innerHTML = `
-                			<tr>
-                                <td>${contractCode}</td>
-                                <td><span class="fs-2"> ${getFirstNumber(contract.phone_numbers) || ''}</span>
-                                    <!--<input type="text" 
-                                       value="${contract.phone_numbers || ''}" 
-                                       placeholder="Inserisci nome cliente"
-                                       class="disabled form-control form-control-sm" disabled>-->
-                                </td>
-                                <td>
-                                    <input type="text" 
-                                       id="name_${contractCode}" 
-                                       name="name_${contractCode}"
-                                       value="${contract.contract_name || ''}" 
-                                       placeholder="Inserisci nome cliente" class="form-control form-control-sm">
-                                </td>
-                                <td>
-                                <input type="text" 
-                                       id="odoo_${contractCode}" 
-                                       name="odoo_${contractCode}"
-                                       value="${contract.odoo_client_id || ''}" 
-                                       placeholder="Inserisci ID cliente Odoo" class="form-control form-control-sm">
-                                </td>
-                                <td>
-                                    <textarea id="notes_${contractCode}" 
-                                          name="notes_${contractCode}"
-                                          placeholder="Note aggiuntive"
-                                          rows="1"
-                                          style="resize: vertical;" class="form-control form-control-sm">${contract.notes || ''}</textarea>
-                                </td>
-                                <td>
-                                    <button type="button" onclick="saveContract('${contractCode}')" class="btn btn-icon btn-sm btn-primary">
-                                        <i class="fa-solid fa-floppy-disk fs-2"></i>
-                                        <span class="indicator-progress">
-                                            Attendi... 
-                                        <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                    </span>
-                                    </button>
-
-                                    <!--<span id="status_${contractCode}" style="margin-left: 10px; font-size: 0.9em;"></span>-->
-                                </td>
-                            </tr>
-                `;
-                container.appendChild(contractDiv);
-            });
-        }
-        
-        async function saveContract(contractCode) {
-            // const statusElement = document.getElementById(`status_${contractCode}`);
-            // statusElement.textContent = 'Salvando...';
-            // statusElement.style.color = 'blue';
-            
-            const contractName = document.getElementById(`name_${contractCode}`).value.trim();
-            const odooClientId = document.getElementById(`odoo_${contractCode}`).value.trim();
-            const notes = document.getElementById(`notes_${contractCode}`).value.trim();
-            
-            const updateData = {
-                contract_code: contractCode,
-                contract_name: contractName,
-                odoo_client_id: odooClientId,
-                notes: notes
-            };
-            
-            // Aggiungi odoo_client_id solo se ha un valore
-            // if (odooClientId) {
-            //     updateData.odoo_client_id = parseInt(odooClientId);
-            // }
-            
+        for (const contractCode of contracts) {
             try {
-                const response = await fetch('/api/cdr/update_contract', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updateData)
-                });
+                const original = contractsData.contracts[contractCode] || {};
+                const select = document.getElementById(`odoo_${contractCode}`);
+                const contractName = select.options[select.selectedIndex].text;
+                const odooClientId = document.getElementById(`odoo_${contractCode}`).value.trim();
+                const notes = document.getElementById(`notes_${contractCode}`).value.trim();
+                const contractType = document.getElementById(`contracttype_${contractCode}`).value.trim();
                 
-                const result = await response.json();
-                
-                if (result.success) {
-                    toastr.success(`Il contratto <span class="fs-3">${contractCode}</span> è stato salvato con successo.`, "Salvato con successo");
-                } else {
-                    toastr.error(`Il contratto <span class="fs-3">${contractCode}</span> non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
-                    throw new Error(result.message || 'Errore nel salvataggio');
+                isModified =
+                    contractName !== (original.contract_name || '') ||
+                    odooClientId !== (original.odoo_client_id || '') ||
+                    contractType !== (original.contract_type || '') ||
+                    notes !== (original.notes || '');
+
+                if (isModified) {
+                    isAnyModified = true; // <-- segna che almeno una riga è stata modificata
+                    modifiedContracts.push(contractCode); // registra solo quelli effettivamente modificati
+                    
+                    // Salva solo se almeno un campo è compilato
+                    // if (contractName || odooClientId || notes) {
+                        const updateData = {
+                            contract_code: contractCode,
+                            contract_name: contractName,
+                            odoo_client_id: odooClientId,
+                            contract_type: contractType,
+                            notes: notes
+                        };
+                        
+                        // if (odooClientId) {
+                        //     updateData.odoo_client_id = parseInt(odooClientId);
+                        // }
+                    
+                        const response = await fetch('/api/cdr/update_contract', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(updateData)
+                        });
+                        console.log("Response:", updateData);
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            successCount++;
+                            isModified = true;
+                            // toastr.success(`Sono stati aggiornati <span class="fs-3">${successCount}</span> contratti con successo.`, "Dati aggiornati");
+                        } else {
+                            errorCount++;
+                            // toastr.error(`Il contratto non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
+                            throw new Error(result.message || 'Errore nel salvataggio');
+                        }
+                    // }
+                }else{
+                    // toastr.warning(`Nessun contratto è stato modificato..`, "Nessuna modifica");
                 }
             } catch (error) {
-                toastr.error(`Il contratto <span class="fs-3">${contractCode}</span> non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
+                errorCount++;
+                // toastr.error(`Il contratto non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
             }
-        }
-        
-        async function saveAllContracts() {
-            // const saveStatus = document.getElementById('save-status');
-            // saveStatus.textContent = 'Salvataggio in corso...';
-            // saveStatus.style.color = 'blue';
-            var target = document.querySelector("#kt_datatable_wrapper"); 
-            var blockUI = new KTBlockUI(target);
-            if (blockUI.isBlocked()) {
-                blockUI.release();
-            } else {
-                blockUI.block();
-            }
-            let successCount = 0;
-            let errorCount = 0;
-            let isAnyModified = false; // <-- Nuova variabile globale al ciclo
-            const contracts = Object.keys(contractsData.contracts);
-            let modifiedContracts = [];
             
-            for (const contractCode of contracts) {
-                try {
-                    const original = contractsData.contracts[contractCode] || {};
-                    const contractName = document.getElementById(`name_${contractCode}`).value.trim();
-                    const odooClientId = document.getElementById(`odoo_${contractCode}`).value.trim();
-                    const notes = document.getElementById(`notes_${contractCode}`).value.trim();
-                    
-                    isModified =
-                        contractName !== (original.contract_name || '') ||
-                        odooClientId !== (original.odoo_client_id || '') ||
-                        notes !== (original.notes || '');
-
-                    if (isModified) {
-                        isAnyModified = true; // <-- segna che almeno una riga è stata modificata
-                        modifiedContracts.push(contractCode); // registra solo quelli effettivamente modificati
-                        
-                        // Salva solo se almeno un campo è compilato
-                        // if (contractName || odooClientId || notes) {
-                            const updateData = {
-                                contract_code: contractCode,
-                                contract_name: contractName,
-                                odoo_client_id: odooClientId,
-                                notes: notes
-                            };
-                            
-                            // if (odooClientId) {
-                            //     updateData.odoo_client_id = parseInt(odooClientId);
-                            // }
-                        
-                            const response = await fetch('/api/cdr/update_contract', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(updateData)
-                            });
-                            console.log("Response:", updateData);
-                            const result = await response.json();
-                            
-                            if (result.success) {
-                                successCount++;
-                                isModified = true;
-                                // toastr.success(`Sono stati aggiornati <span class="fs-3">${successCount}</span> contratti con successo.`, "Dati aggiornati");
-                            } else {
-                                errorCount++;
-                                // toastr.error(`Il contratto non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
-                                throw new Error(result.message || 'Errore nel salvataggio');
-                            }
-                        // }
-                    }else{
-                        // toastr.warning(`Nessun contratto è stato modificato..`, "Nessuna modifica");
-                    }
-                } catch (error) {
-                    errorCount++;
-                    // toastr.error(`Il contratto non è stato salvato ricontrolla i dati.`, "Errore nel salvataggio");
-                }
-                
-                // Piccola pausa per non sovraccaricare il server
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            if(isAnyModified){
-                toastr.success(`<span class="fs-3">${successCount}</span> contratti sono stati modificati con successo.`, "Dati aggiornati");
-            }else{
-                toastr.warning(`Nessun contratto è stato modificato.`, "Nessuna modifica");
-            }
-            // saveStatus.textContent = `Completato: ${successCount} salvati, ${errorCount} errori`;
-            // saveStatus.style.color = successCount > 0 ? 'green' : 'red';
-            
-            if (blockUI.isBlocked()) {
-                blockUI.release();
-                blockUI.destroy();
-            } else {
-                blockUI.block();
-            }
-
+            // Piccola pausa per non sovraccaricare il server
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
+        if(isAnyModified){
+            toastr.success(`<span class="fs-3">${successCount}</span> contratti sono stati modificati con successo.`, "Dati aggiornati");
+        }else{
+            toastr.warning(`Nessun contratto è stato modificato.`, "Nessuna modifica");
+        }
+        // saveStatus.textContent = `Completato: ${successCount} salvati, ${errorCount} errori`;
+        // saveStatus.style.color = successCount > 0 ? 'green' : 'red';
+        
+        if (blockUI.isBlocked()) {
+            blockUI.release();
+            blockUI.destroy();
+        } else {
+            blockUI.block();
+        }
+
+    }
         
         
-    </script>
+</script>
 
 {% endblock scripts %}
     
