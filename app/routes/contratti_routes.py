@@ -12,7 +12,7 @@ from flask import request, jsonify, render_template, Response
 import csv
 import io
 
-from contratti import CDRContractsService
+# from contratti import CDRContractsService
 
 logger = logging.getLogger(__name__)
 
