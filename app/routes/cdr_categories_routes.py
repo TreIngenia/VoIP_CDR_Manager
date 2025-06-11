@@ -121,29 +121,6 @@ def add_cdr_categories_routes(app, cdr_analytics_enhanced, secure_config):
             logger.error(f"Errore API get categories: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
     
-    @app.route('/api/categories/<category_name>', methods=['GET'])
-    def get_category(category_name):
-        """API per ottenere una categoria specifica con pricing"""
-        try:
-            category = categories_manager.get_category(category_name)
-            
-            if not category:
-                return jsonify({'success': False, 'message': 'Categoria non trovata'}), 404
-            
-            # Costruisce dati categoria con pricing info
-            from dataclasses import asdict
-            category_data = asdict(category)
-            category_data['pricing_info'] = category.get_pricing_info(categories_manager.global_markup_percent)
-            
-            return jsonify({
-                'success': True,
-                'category': category_data
-            })
-            
-        except Exception as e:
-            logger.error(f"Errore API get category {category_name}: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
-    
     @app.route('/api/categories', methods=['POST'])
     def create_category():
         """API per creare una nuova categoria con markup personalizzabile"""
@@ -217,6 +194,29 @@ def add_cdr_categories_routes(app, cdr_analytics_enhanced, secure_config):
             return jsonify({'success': False, 'message': str(e)}), 400
         except Exception as e:
             logger.error(f"Errore API create category: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+        
+    @app.route('/api/categories/<category_name>', methods=['GET'])
+    def get_category(category_name):
+        """API per ottenere una categoria specifica con pricing"""
+        try:
+            category = categories_manager.get_category(category_name)
+            
+            if not category:
+                return jsonify({'success': False, 'message': 'Categoria non trovata'}), 404
+            
+            # Costruisce dati categoria con pricing info
+            from dataclasses import asdict
+            category_data = asdict(category)
+            category_data['pricing_info'] = category.get_pricing_info(categories_manager.global_markup_percent)
+            
+            return jsonify({
+                'success': True,
+                'category': category_data
+            })
+            
+        except Exception as e:
+            logger.error(f"Errore API get category {category_name}: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
     
     @app.route('/api/categories/<category_name>', methods=['PUT'])
