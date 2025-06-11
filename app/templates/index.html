@@ -309,6 +309,63 @@
                 </div>
             </div>
         </div>
+        <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
+            <div class="col-12">
+                <div class="card shadow-sm  " >
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-server fs-1 me-4"></i>Invoice Container</h3>
+                        <div class="card-toolbar">
+                            <div class="btn-toolbar mb-2 mb-md-0">
+                                <!-- <div class="btn-group me-2 btn-sm">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="manualRun()">
+                                        <i class="fas fa-play"></i> Esecuzione Manuale
+                                    </button>
+                                    <button type="button" class="btn btn-info btn-sm" onclick="testFTP()">
+                                        <i class="fas fa-network-wired"></i> Test FTP
+                                    </button>
+                                    <button class="btn btn-success dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-clock"></i> Schedulazione Rapida
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <button class="dropdown-item" href="#" onclick="quickSchedule('every_10_seconds')">
+                                                <i class="fas fa-bolt me-2"></i> Ogni 10 secondi (TEST)
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="quickSchedule('every_minute')">
+                                                <i class="fas fa-stopwatch me-2"></i> Ogni minuto
+                                            </a>
+                                        </li>
+                                        <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_30_minutes')">
+                                                <i class="fas fa-clock me-2"></i> Ogni 30 minuti
+                                            </a>
+                                        </li>
+                                        <li><a class="dropdown-item" href="#" onclick="quickSchedule('every_hour')">
+                                                <i class="fas fa-hourglass-half me-2"></i> Ogni ora
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li><a class="dropdown-item" href="#" onclick="showScheduleInfo()">
+                                                <i class="fas fa-info-circle me-2"></i> Info Schedulazione
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div> -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                         <div id="invoice-container">
+                        </div>
+                    <!-- <div class="card-footer">
+                        Footer
+                    </div> -->
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <!-- File Preview Modal -->
@@ -511,5 +568,7 @@ setInterval(() => {
         })
         .catch(error => console.error('Error fetching status:', error));
 }, 30000);
+
+
 </script>
 {% endblock %}

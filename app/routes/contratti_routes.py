@@ -12,7 +12,7 @@ from flask import request, jsonify, render_template, Response
 import csv
 import io
 
-# from contratti import CDRContractsService
+from contratti import CDRContractsService
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +257,6 @@ def api_contract_routes(app, secure_config, processor):
         with open(json_path, encoding='utf-8') as f:
             data = json.load(f)
         return jsonify(data)
-#-------------------------------------------
 
     logger.info("🔗 Route estrazione codici contratto CDR registrate")
     
@@ -267,6 +266,224 @@ def api_contract_routes(app, secure_config, processor):
             '/api/cdr/contracts_config', 
             '/api/cdr/update_contract',
             '/api/cdr/contract_type',
+        ],
+        'routes_count': 4
+    }
+
+def add_datatable_routes_to_contratti(app, secure_config):
+    """
+    Aggiunge le route DataTables al file contratti_routes.py esistente
+    
+    Args:
+        app: Istanza Flask
+        secure_config: Configurazione sicura
+    """
+    
+    # Import del servizio (da aggiungere all'inizio del file contratti_routes.py)
+    from contratti import create_contracts_service
+    
+    # Crea istanza del servizio usando l'app Flask corrente
+    contracts_service = create_contracts_service(app)
+    
+    @app.route('/api/contracts/datatable/ajax', methods=['GET'])
+    def contracts_datatable_ajax():
+        """
+        Endpoint per DataTables in modalità AJAX
+        Restituisce tutti i dati in formato oggetto JSON
+        """
+        try:
+            logger.info("📋 Richiesta dati contratti per DataTables AJAX")
+            
+            # Recupera dati dal servizio
+            data = contracts_service.get_contracts_for_ajax()
+            
+            if 'data' not in data:
+                logger.error("Formato dati non valido dal servizio")
+                return jsonify({
+                    'data': [],
+                    'error': 'Formato dati non valido'
+                }), 500
+            
+            logger.info(f"✅ Restituiti {len(data['data'])} contratti in formato AJAX")
+            with open('output/contracts_output.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return jsonify(data)
+            
+        except Exception as e:
+            logger.error(f"❌ Errore endpoint AJAX: {e}")
+            return jsonify({
+                'data': [],
+                'error': str(e)
+            }), 500
+    
+    @app.route('/api/contracts/datatable/serverside', methods=['GET', 'POST'])
+    def contracts_datatable_serverside():
+        """
+        Endpoint per DataTables in modalità Server-side
+        Gestisce paginazione, ordinamento e ricerca lato server
+        """
+        try:
+            logger.info("🖥️ Richiesta dati contratti per DataTables Server-side")
+            
+            # Estrai parametri DataTables (funziona sia per GET che POST)
+            if request.method == 'POST':
+                params = request.form
+            else:
+                params = request.args
+            
+            # Parametri base DataTables
+            draw = int(params.get('draw', 1))
+            start = int(params.get('start', 0))
+            length = int(params.get('length', 10))
+            
+            # Parametri ricerca
+            search_value = params.get('search[value]', '').strip()
+            
+            # Parametri ordinamento
+            order_column = int(params.get('order[0][column]', 0))
+            order_dir = params.get('order[0][dir]', 'asc')
+            
+            logger.info(f"Parametri: draw={draw}, start={start}, length={length}, search='{search_value}', order={order_column} {order_dir}")
+            
+            # Recupera dati dal servizio
+            data = contracts_service.get_contracts_for_serverside(
+                draw=draw,
+                start=start,
+                length=length,
+                search_value=search_value,
+                order_column=order_column,
+                order_dir=order_dir
+            )
+            
+            # Validazione risposta
+            required_keys = ['draw', 'recordsTotal', 'recordsFiltered', 'data']
+            if not all(key in data for key in required_keys):
+                logger.error("Formato dati server-side non valido dal servizio")
+                return jsonify({
+                    'draw': draw,
+                    'recordsTotal': 0,
+                    'recordsFiltered': 0,
+                    'data': [],
+                    'error': 'Formato dati non valido'
+                }), 500
+            
+            logger.info(f"✅ Server-side: draw={data['draw']}, total={data['recordsTotal']}, filtered={data['recordsFiltered']}, data={len(data['data'])}")
+            return jsonify(data)
+            
+        except ValueError as e:
+            logger.error(f"❌ Errore parametri server-side: {e}")
+            return jsonify({
+                'draw': 1,
+                'recordsTotal': 0,
+                'recordsFiltered': 0,
+                'data': [],
+                'error': 'Parametri non validi'
+            }), 400
+            
+        except Exception as e:
+            logger.error(f"❌ Errore endpoint server-side: {e}")
+            return jsonify({
+                'draw': 1,
+                'recordsTotal': 0,
+                'recordsFiltered': 0,
+                'data': [],
+                'error': str(e)
+            }), 500
+    
+    @app.route('/api/contracts/datatable/summary', methods=['GET'])
+    def contracts_datatable_summary():
+        """
+        Endpoint per statistiche riassuntive dei contratti
+        """
+        try:
+            logger.info("📊 Richiesta riassunto contratti")
+            
+            summary = contracts_service.get_contracts_summary()
+            
+            logger.info("✅ Riassunto contratti generato")
+            return jsonify({
+                'success': True,
+                'summary': summary,
+                'timestamp': summary.get('timestamp', '')
+            })
+            
+        except Exception as e:
+            logger.error(f"❌ Errore endpoint summary: {e}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    
+    @app.route('/api/contracts/datatable/test', methods=['GET'])
+    def contracts_datatable_test():
+        """
+        Endpoint di test per verificare il funzionamento del servizio
+        """
+        try:
+            logger.info("🧪 Test endpoint DataTables contratti")
+            
+            # Test connessione servizio
+            summary = contracts_service.get_contracts_summary()
+            
+            # Test formato AJAX (primi 3 record)
+            ajax_data = contracts_service.get_contracts_for_ajax()
+            ajax_sample = ajax_data.get('data', [])[:3]
+            
+            # Test formato server-side (primi 3 record)
+            serverside_data = contracts_service.get_contracts_for_serverside(
+                draw=1, start=0, length=3
+            )
+            
+            test_results = {
+                'service_status': 'OK' if summary and 'error' not in summary else 'ERROR',
+                'summary': summary,
+                'ajax_format': {
+                    'total_records': len(ajax_data.get('data', [])),
+                    'sample_data': ajax_sample,
+                    'format': 'object_array'
+                },
+                'serverside_format': {
+                    'total_records': serverside_data.get('recordsTotal', 0),
+                    'filtered_records': serverside_data.get('recordsFiltered', 0),
+                    'sample_data': serverside_data.get('data', [])[:3],
+                    'format': 'value_array'
+                },
+                'endpoints': {
+                    'ajax': '/api/contracts/datatable/ajax',
+                    'serverside': '/api/contracts/datatable/serverside',
+                    'summary': '/api/contracts/datatable/summary',
+                    'test': '/api/contracts/datatable/test'
+                }
+            }
+            
+            logger.info("✅ Test completato con successo")
+            return jsonify({
+                'success': True,
+                'test_results': test_results,
+                'message': 'Test completato con successo'
+            })
+            
+        except Exception as e:
+            logger.error(f"❌ Errore test endpoint: {e}")
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'message': 'Test fallito'
+            }), 500
+    
+    # Log delle route registrate
+    logger.info("🔗 Route DataTables contratti aggiunte a contratti_routes.py:")
+    logger.info("   📋 /api/contracts/datatable/ajax (GET)")
+    logger.info("   🖥️ /api/contracts/datatable/serverside (GET/POST)")
+    logger.info("   📊 /api/contracts/datatable/summary (GET)")
+    logger.info("   🧪 /api/contracts/datatable/test (GET)")
+    
+    return {
+        'routes_added': [
+            '/api/contracts/datatable/ajax',
+            '/api/contracts/datatable/serverside', 
+            '/api/contracts/datatable/summary',
+            '/api/contracts/datatable/test'
         ],
         'routes_count': 4
     }

@@ -10,7 +10,7 @@
     "description": "",
     "is_active": true,
     "created_at": "2025-05-26T18:59:31.217053",
-    "updated_at": "2025-06-08T12:28:40.668593",
+    "updated_at": "2025-06-11T11:00:05.232283",
     "custom_markup_percent": 0.0,
     "price_with_markup": 1.0
   },
@@ -25,7 +25,7 @@
     "description": "Chiamate verso numeri mobili",
     "is_active": true,
     "created_at": "2025-05-26T18:59:31.217065",
-    "updated_at": "2025-06-08T12:40:30.869917",
+    "updated_at": "2025-06-11T11:00:05.232299",
     "custom_markup_percent": 0.0,
     "price_with_markup": 2.0
   },
@@ -40,7 +40,7 @@
     "description": "",
     "is_active": true,
     "created_at": "2025-06-06T15:08:07.776380",
-    "updated_at": "2025-06-08T12:28:40.668615",
+    "updated_at": "2025-06-11T11:00:05.232305",
     "custom_markup_percent": 0.0,
     "price_with_markup": 3.0
   },
@@ -55,9 +55,9 @@
     "description": "",
     "is_active": true,
     "created_at": "2025-06-06T15:08:58.950625",
-    "updated_at": "2025-06-08T12:28:40.668619",
-    "custom_markup_percent": 0.0,
-    "price_with_markup": 4.0
+    "updated_at": "2025-06-11T11:00:18.757052",
+    "custom_markup_percent": 300.0,
+    "price_with_markup": 16.0
   },
   "ND": {
     "name": "ND",
@@ -70,7 +70,7 @@
     "description": "",
     "is_active": true,
     "created_at": "2025-06-06T15:09:33.223458",
-    "updated_at": "2025-06-08T12:28:40.668621",
+    "updated_at": "2025-06-11T11:00:05.232312",
     "custom_markup_percent": 0.0,
     "price_with_markup": 0.0001
   }

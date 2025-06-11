@@ -86,7 +86,9 @@ class CDRCategory:
     
     def calculate_cost(self, duration_seconds: int, unit: str = 'per_minute', use_markup: bool = True) -> Dict[str, Any]:
         """Calcola il costo per una chiamata con opzione markup"""
-        price_to_use = self.price_with_markup if use_markup and self.price_with_markup else self.price_per_minute
+        # price_to_use = self.price_with_markup if use_markup and self.price_with_markup else self.price_per_minute
+        # price_to_use = self.price_with_markup if self.price_with_markup else self.price_per_minute
+        price_to_use = self.price_with_markup
         
         if unit == 'per_second':
             cost = price_to_use * (duration_seconds / 60.0)
@@ -398,7 +400,7 @@ class CDRCategoriesManager:
         category = self.classify_call_type(call_type)
         
         if category:
-            result = category.calculate_cost(duration_seconds, unit)
+            result = category.calculate_cost(duration_seconds, unit, use_markup=True)
             result['matched'] = True
             result['original_call_type'] = call_type
             result['markup_percent_applied'] = category.get_effective_markup_percent(self.global_markup_percent)
@@ -907,8 +909,18 @@ class CDRAnalyticsEnhanced:
             now = datetime.now()
             timestamp = now.strftime("%Y%m%d_%H%M%S")
             current_month = now.strftime("%m")
-            filename = f"{contract_code}_{current_month}_categories.json"
-            filepath = self.analytics_directory / filename
+            current_year = now.strftime("%Y")
+            # filename = f"{contract_code}_{current_month}_{timestamp}_categories.json"
+
+            year_folder = self.analytics_directory / current_year
+            month_folder = year_folder / current_month
+
+            month_folder.mkdir(parents=True, exist_ok=True)
+
+            # filename = f"{contract_code}_{current_month}_categories.json"
+            filename = f"{contract_code}_report.json"
+            # filepath = self.analytics_directory / filename
+            filepath = month_folder / filename
             
             report = {
                 'metadata': {
@@ -952,11 +964,27 @@ class CDRAnalyticsEnhanced:
     def _generate_summary_report(self, grouped_data: Dict, metadata: Dict) -> Optional[str]:
         """Genera report riassuntivo globale con breakdown per categoria"""
         try:
+            # now = datetime.now()
+            # timestamp = now.strftime("%Y%m%d_%H%M%S")
+            # current_month = now.strftime("%m")
+            # filename = f"SUMMARY_CATEGORIES_{current_month}.json"
+            # filepath = self.analytics_directory / filename
+
             now = datetime.now()
             timestamp = now.strftime("%Y%m%d_%H%M%S")
             current_month = now.strftime("%m")
-            filename = f"SUMMARY_CATEGORIES_{current_month}.json"
-            filepath = self.analytics_directory / filename
+            current_year = now.strftime("%Y")
+            # filename = f"{contract_code}_{current_month}_{timestamp}_categories.json"
+
+            year_folder = self.analytics_directory / current_year
+            month_folder = year_folder / current_month
+
+            month_folder.mkdir(parents=True, exist_ok=True)
+
+            # filename = f"{contract_code}_{current_month}_categories.json"
+            filename = f"SUMMARY_REPORTS.json"
+            # filepath = self.analytics_directory / filename
+            filepath = month_folder / filename
             
             contracts_summary = {}
             global_totals = {

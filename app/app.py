@@ -38,7 +38,10 @@ from cdr_categories_enhanced import integrate_enhanced_cdr_system
 from routes.cdr_categories_routes import add_cdr_categories_routes
 
 #ROUTE contratti
-from routes.contratti_routes import contratti_routes, api_contract_routes
+from routes.contratti_routes import contratti_routes, api_contract_routes, add_datatable_routes_to_contratti
+
+#ROUTE Fatture
+from routes.fatture_routes import fatture_routes
 
 #ROUTE ODOO
 from routes.odoo_routes import add_odoo_routes
@@ -148,9 +151,14 @@ def main():
         gestione_contratti = contratti_routes(app, secure_config)
         log_success(f"Route categorie registrate: {gestione_contratti['routes_count']} endpoint")
 
-        # log_info("Registrazione route gestione contratti...")
-        # contratti = add_cdr_contracts_datatable_routes(app, secure_config)
-        # log_success(f"Route categorie registrate: {contratti['routes_count']} endpoint")
+        # GESTIONE FATTURE
+        log_info("Registrazione route gestione fatture...")
+        gestione_fatture = fatture_routes(app, secure_config)
+        log_success(f"Route categorie registrate: {gestione_fatture['routes_count']} endpoint")
+
+        log_info("Registrazione route gestione contratti...")
+        contratti = add_datatable_routes_to_contratti(app, secure_config)
+        log_success(f"Route categorie registrate: {contratti['routes_count']} endpoint")
     
         # GESTIONE ODOO
         log_info("Registrazione route gestione ODOO...")

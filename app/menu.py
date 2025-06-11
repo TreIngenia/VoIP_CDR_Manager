@@ -50,6 +50,15 @@ MENU_ITEMS = [
     # },
     {
         'type': 'section',
+        'title': 'Fatture'
+    },
+    {
+        'endpoint': 'gestione_fatture',
+        'title': 'Gestione Fatture',
+        'icon': 'ki-outline ki-cheque fs-2 ',
+    },
+    {
+        'type': 'section',
         'title': 'Contratti'
     },
     {
