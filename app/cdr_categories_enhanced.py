@@ -86,9 +86,9 @@ class CDRCategory:
     
     def calculate_cost(self, duration_seconds: int, unit: str = 'per_minute', use_markup: bool = True) -> Dict[str, Any]:
         """Calcola il costo per una chiamata con opzione markup"""
-        # price_to_use = self.price_with_markup if use_markup and self.price_with_markup else self.price_per_minute
+        price_to_use = self.price_with_markup if use_markup and self.price_with_markup else self.price_per_minute
         # price_to_use = self.price_with_markup if self.price_with_markup else self.price_per_minute
-        price_to_use = self.price_with_markup
+        # price_to_use = self.price_with_markup
         
         if unit == 'per_second':
             cost = price_to_use * (duration_seconds / 60.0)
@@ -400,7 +400,7 @@ class CDRCategoriesManager:
         category = self.classify_call_type(call_type)
         
         if category:
-            result = category.calculate_cost(duration_seconds, unit, use_markup=True)
+            result = category.calculate_cost(duration_seconds, unit)
             result['matched'] = True
             result['original_call_type'] = call_type
             result['markup_percent_applied'] = category.get_effective_markup_percent(self.global_markup_percent)
