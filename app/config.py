@@ -33,7 +33,8 @@ class SecureConfig:
             'ftp_directory': os.getenv('FTP_DIRECTORY', '/'),
             'download_all_files': self._str_to_bool(os.getenv('DOWNLOAD_ALL_FILES', 'false')),
             'specific_filename': os.getenv('SPECIFIC_FILENAME', ''),
-            'output_directory': os.getenv('OUTPUT_DIRECTORY', 'output'),
+            'output_directory': os.getenv('OUTPUT_DIRECTORY', './output'),
+            'ANALYTICS_OUTPUT_FOLDER': os.getenv('ANALYTICS_OUTPUT_FOLDER', './output/cdr_analytics'),
             'config_directory': os.getenv('CONFIG_DIRECTORY', 'config'),
             'categories_config_file': os.getenv('CATEGORIES_CONFIG_FILE', 'cdr_categories.json'),
             'file_naming_pattern': os.getenv('FILE_NAMING_PATTERN', 'monthly'),
@@ -54,10 +55,16 @@ class SecureConfig:
             'voip_price_unit': os.getenv('VOIP_PRICE_UNIT', 'per_minute'),
             'schedule_interval_type': os.getenv('SCHEDULE_INTERVAL_TYPE', 'minutes'),
             'schedule_interval_value': self._str_to_int(os.getenv('SCHEDULE_INTERVAL_VALUE', '30'), 30),
+            'CONTRACTS_CONFIG_DIRECTORY': os.getenv('CONTRACTS_CONFIG_DIRECTORY', 'config'),
+            'CONTRACTS_CONFIG_FILE': os.getenv('CONTRACTS_CONFIG_FILE', 'cdr_contracts.json'),
+            'TEMPLATE_FOLDER': os.getenv('TEMPLATE_FOLDER', 'templates'),
+            'STATIC_FOLDER': os.getenv('STATIC_FOLDER', 'assets'),
+            'STATIC_URL_PATH': os.getenv('STATIC_URL_PATH', '/assets'),
             'FLASK_ENV': os.getenv('FLASK_ENV', 'development'),
             'FLASK_DEBUG': self._str_to_bool(os.getenv('FLASK_DEBUG', 'true')),
             'APP_PORT': self._str_to_int(os.getenv('APP_PORT', '5001'), 5001),
             'APP_HOST': os.getenv('APP_HOST', '127.0.0.1'),
+            'BASE_HOST': os.getenv('BASE_HOST', 'http://127.0.0.1'),
         }
 
     def get_config_file_path(self, filename: str = None) -> Path:
@@ -291,7 +298,6 @@ def save_config_to_env(secure_config, app_secret_key):
         
         # Contenuto del nuovo file .env
         env_content = f"""# Configurazione aggiornata automaticamente - {datetime.now().isoformat()}
-
 # Parametri di configurazione per accesso ad ODOO
 ODOO_URL={config['ODOO_URL']}
 ODOO_DB={config['ODOO_DB']}
@@ -311,6 +317,7 @@ FTP_DIRECTORY={config['ftp_directory']}
 DOWNLOAD_ALL_FILES={str(config['download_all_files']).lower()}
 SPECIFIC_FILENAME={config['specific_filename']}
 OUTPUT_DIRECTORY={config['output_directory']}
+ANALYTICS_OUTPUT_FOLDER={config['ANALYTICS_OUTPUT_FOLDER']}
 FILE_NAMING_PATTERN={config['file_naming_pattern']}
 CUSTOM_PATTERN={config['custom_pattern']}
 FILTER_PATTERN={config.get('filter_pattern', '')}
@@ -336,11 +343,22 @@ VOIP_PRICE_MOBILE_FINAL={config['voip_price_mobile_final']}
 VOIP_CURRENCY={config['voip_currency']}
 VOIP_PRICE_UNIT={config['voip_price_unit']}
 
+# Configurazione elenco cotratti
+CONTRACTS_CONFIG_DIRECTORY={config.get('CONTRACTS_CONFIG_DIRECTORY', 'config')}
+CONTRACTS_CONFIG_FILE={config.get('CONTRACTS_CONFIG_FILE', 'cdr_contracts.json')}
+
+#Templates
+TEMPLATE_FOLDER={config.get('TEMPLATE_FOLDER', 'templates')}
+STATIC_FOLDER={config.get('STATIC_FOLDER', 'assets')}
+STATIC_URL_PATH={config.get('STATIC_URL_PATH', '/assets')}
+
 # Configurazione Applicazione
 FLASK_ENV={config.get('FLASK_ENV', 'development')}
 FLASK_DEBUG={str(config.get('FLASK_DEBUG', True)).lower()}
 APP_PORT={config.get('APP_PORT', 5001)}
 APP_HOST={config.get('APP_HOST', '127.0.0.1')}
+BASE_HOST={config.get('BASE_HOST', 'http://127.0.0.1')}
+
 """
         # Scrittura dei file .env e .env.local
         with open('.env', 'w', encoding='utf-8') as f:

@@ -1078,7 +1078,7 @@ class OdooClient:
         try:
             search_filters = [
                 ('active', '=', True),
-                ('customer_rank', '>', 0)
+                ('customer_rank', '>=', 0)
             ]
             
             context = {'active_test': False}
@@ -1124,6 +1124,106 @@ class OdooClient:
             self.logger.error(f"Errore recupero partner per Select2: {e}")
             raise OdooException(f"Errore recupero partner per Select2: {e}", 'PARTNERS_SELECT_ERROR')
     
+
+    def get_all_payment_terms_for_select(self) -> List[Dict[str, Any]]:
+        """Payment Terms per Select2 ottimizzato per 18.2+"""
+        try:
+            search_filters = [
+                ('active', '=', True)
+            ]
+            
+            context = {'active_test': False}
+            
+            # Prima cerca gli ID con ordinamento corretto
+            payment_term_ids = self.execute(
+                'account.payment.term',
+                'search',
+                search_filters,
+                order='name asc',  # Ordinamento per nome
+                context=context
+            )
+            
+            if not payment_term_ids:
+                return []
+            
+            # Poi leggi i dati necessari
+            payment_terms_data = self.execute(
+                'account.payment.term',
+                'read',
+                payment_term_ids,
+                fields=['id', 'name', 'display_name'],
+                context=context
+            )
+            
+            select_payment_terms = []
+            for payment_term in payment_terms_data:
+                select_payment_terms.append({
+                    'id': payment_term.get('id'),
+                    'name': payment_term.get('name', ''),
+                    'display_name': payment_term.get('display_name', payment_term.get('name', ''))
+                })
+            
+            self.logger.info(f"Recuperati {len(select_payment_terms)} payment terms per Select2")
+            return select_payment_terms
+            
+        except Exception as e:
+            self.logger.error(f"Errore recupero payment terms per Select2: {e}")
+            raise OdooException(f"Errore recupero payment terms per Select2: {e}", 'PAYMENT_TERMS_SELECT_ERROR')
+
+    def get_all_products_for_select(self) -> List[Dict[str, Any]]:
+        """Prodotti per Select2 ottimizzato per 18.2+"""
+        try:
+            search_filters = [
+                ('active', '=', True),
+                ('sale_ok', '=', True)  # Solo prodotti vendibili
+            ]
+            
+            context = {'active_test': False}
+            
+            # Prima cerca gli ID con ordinamento corretto
+            product_ids = self.execute(
+                'product.product',
+                'search',
+                search_filters,
+                order='name asc',  # Ordinamento per nome
+                context=context
+            )
+            
+            if not product_ids:
+                return []
+            
+            # Poi leggi i dati necessari
+            products_data = self.execute(
+                'product.product',
+                'read',
+                product_ids,
+                fields=['id', 'name', 'display_name', 'default_code', 'list_price', 'uom_name'],
+                context=context
+            )
+            
+            select_products = []
+            for product in products_data:
+                # Costruisci un display_name più informativo se disponibile
+                display_name = product.get('display_name', product.get('name', ''))
+                if product.get('default_code'):
+                    display_name = f"[{product['default_code']}] {display_name}"
+                
+                select_products.append({
+                    'id': product.get('id'),
+                    'name': product.get('name', ''),
+                    'display_name': display_name,
+                    'default_code': product.get('default_code', ''),
+                    'list_price': product.get('list_price', 0.0),
+                    'uom_name': product.get('uom_name', '')
+                })
+            
+            self.logger.info(f"Recuperati {len(select_products)} prodotti per Select2")
+            return select_products
+            
+        except Exception as e:
+            self.logger.error(f"Errore recupero prodotti per Select2: {e}")
+            raise OdooException(f"Errore recupero prodotti per Select2: {e}", 'PRODUCTS_SELECT_ERROR')
+            
     # Metodi helper
     def _calculate_due_date(self, invoice_date: str, invoice_data: InvoiceData) -> str:
         """Calcola data scadenza fattura"""
@@ -1291,4 +1391,43 @@ def test_odoo_18_2_compatibility():
 
 
 if __name__ == '__main__':
-    test_odoo_18_2_compatibility()
+    # test_odoo_18_2_compatibility()
+    # Carica variabili dal file .env (opzionale)
+    import os
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()  # Carica variabili dal file .env
+        print("📁 File .env caricato")
+    except ImportError:
+        print("⚠️ python-dotenv non installato - usando solo variabili d'ambiente del sistema")
+
+    # Configurazione tramite variabili d'ambiente (più sicuro)
+    url = os.getenv('ODOO_URL')
+    db = os.getenv('ODOO_DB')
+    username = os.getenv('ODOO_USERNAME')  # Valore di default aggiunto
+    api_key = os.getenv('ODOO_API_KEY')  # Legge da variabile d'ambiente
+    
+    def get_odoo_client():
+        """Helper per creare client Odoo con configurazione"""
+        try:
+
+            odoo_config = {
+                'ODOO_URL': url,
+                'ODOO_DB': db,
+                'ODOO_USERNAME': username,
+                'ODOO_API_KEY': api_key
+            }
+            
+            # Verifica configurazione
+            missing = [k for k, v in odoo_config.items() if not v]
+            if missing:
+                raise Exception(f"Configurazione Odoo incompleta: {missing}")
+            
+            return create_odoo_client(odoo_config)
+            
+        except Exception as e:
+            logger.error(f"Errore creazione client Odoo: {e}")
+            raise
+
+    client = get_odoo_client()
+    client.get_all_products_for_select()

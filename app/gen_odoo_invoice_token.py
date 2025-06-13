@@ -12,9 +12,9 @@ except ImportError:
     print("⚠️ python-dotenv non installato - usando solo variabili d'ambiente del sistema")
 
 # Configurazione tramite variabili d'ambiente (più sicuro)
-url = os.getenv('ODOO_URL', 'https://mysite.odoo.com/')
-db = os.getenv('ODOO_DB', 'mydb_test')
-username = os.getenv('ODOO_USERNAME', 'nome.cognome@dominio.ext')  # Valore di default aggiunto
+url = os.getenv('ODOO_URL')
+db = os.getenv('ODOO_DB')
+username = os.getenv('ODOO_USERNAME')  # Valore di default aggiunto
 api_key = os.getenv('ODOO_API_KEY')  # Legge da variabile d'ambiente
 
 if not api_key:
@@ -524,7 +524,11 @@ class OdooAPI:
     def gen_fattura(fact_data):
         # print (fact_data['partner_id'])
         partner_id = fact_data['partner_id']
-        due_days = fact_data['due_days']
+        
+        if fact_data['due_days'] != "":
+            due_days = fact_data['due_days']
+        else:
+            due_days = ""    
         manual_due_date = fact_data['manual_due_date']
         items = fact_data['items']
         da_confermare = fact_data['da_confermare']
@@ -536,28 +540,29 @@ class OdooAPI:
         
         if not odoo.connect():
             return
-        
+        result = False
         if da_confermare not in ["SI",""]:
-            if due_days:
+            if due_days != "":
                 invoice_id = odoo.create_and_confirm_invoice(partner_id=partner_id, items=items, due_days=due_days)
             else:
                 invoice_id = odoo.create_and_confirm_invoice(partner_id=partner_id, items=items, manual_due_date=manual_due_date)
+                
+            # Visualizza dettagli fattura creata
+            odoo.get_invoice_details(invoice_id)
+            # Invia email
+            result = odoo.send_invoice_email(invoice_id)
         else:
             if due_days:
                 invoice_id = odoo.create_invoice(partner_id=partner_id, items=items, due_days=due_days)
             else:
                 invoice_id = odoo.create_invoice(partner_id=partner_id, items=items, manual_due_date=manual_due_date)
-            
         if not invoice_id:
             print("❌ Impossibile creare la fattura")
             return
 
         # Visualizza dettagli fattura creata
-        print("\n📋 DETTAGLI FATTURA FINALE:")
-        odoo.get_invoice_details(invoice_id)
+        print(f"DATI DI ODOO: | {result}")
         
-        # Invia email
-        result = odoo.send_invoice_email(invoice_id)
         if result:
             print("✅ Email inviata con successo!")
             print(result)

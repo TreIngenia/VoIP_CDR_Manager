@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 import os
 from pathlib import Path
-from flask import request, jsonify, render_template, Response
+from flask import request, jsonify, render_template, Response, request
 import csv
 import io
 
@@ -135,7 +135,7 @@ def api_contract_routes(app, secure_config, processor):
         try:
             config_dir = Path(secure_config.get_config().get('CONTRACTS_CONFIG_DIRECTORY', 
             secure_config.get_config().get('config_directory', 'config')))
-            contracts_filename = secure_config.get_config().get('CONTRACTS_CONFIG_FILE', 'cdr_contracts.json')
+            contracts_filename = secure_config.get_config().get('CONTRACTS_CONFIG_FILE')
             contracts_file = config_dir / contracts_filename
             
             if not contracts_file.exists():
@@ -194,8 +194,8 @@ def api_contract_routes(app, secure_config, processor):
             
             # Carica configurazione esistente
             config_dir = Path(secure_config.get_config().get('CONTRACTS_CONFIG_DIRECTORY',
-                                                           secure_config.get_config().get('config_directory', 'config')))
-            contracts_filename = secure_config.get_config().get('CONTRACTS_CONFIG_FILE', 'cdr_contracts.json')
+            secure_config.get_config().get('config_directory', 'config')))
+            contracts_filename = secure_config.get_config().get('CONTRACTS_CONFIG_FILE')
             contracts_file = config_dir / contracts_filename
             
             if not contracts_file.exists():
@@ -223,6 +223,8 @@ def api_contract_routes(app, secure_config, processor):
                 contract['odoo_client_id'] = data['odoo_client_id'].strip()
             if 'contract_type' in data:
                 contract['contract_type'] = data['contract_type'].strip()
+            if 'payment_term' in data:
+                contract['payment_term'] = data['payment_term'].strip()
             if 'notes' in data:
                 contract['notes'] = data['notes'].strip()
             
@@ -305,8 +307,8 @@ def add_datatable_routes_to_contratti(app, secure_config):
                 }), 500
             
             logger.info(f"✅ Restituiti {len(data['data'])} contratti in formato AJAX")
-            with open('output/contracts_output.json', 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            # with open('output/contracts_output.json', 'w', encoding='utf-8') as f:
+            #     json.dump(data, f, ensure_ascii=False, indent=2)
             return jsonify(data)
             
         except Exception as e:
@@ -486,4 +488,231 @@ def add_datatable_routes_to_contratti(app, secure_config):
             '/api/contracts/datatable/test'
         ],
         'routes_count': 4
+    }
+
+def add_elaborazione_contratti_routes(app, secure_config, elaboratore_instance=None):
+    """
+    Aggiunge route API Flask per l'elaborazione contratti
+    
+    Args:
+        app: Istanza Flask
+        elaboratore_instance: Istanza ElaborazioneContratti (opzionale)
+    
+    Returns:
+        Dict con informazioni sulle route aggiunte
+    """
+    
+    # Import della classe (modifica il percorso secondo la tua struttura)
+    from contratti import ElaborazioneContratti
+    
+    # Crea istanza se non fornita
+    if elaboratore_instance is None:
+        elaboratore_instance = ElaborazioneContratti()
+    
+    @app.route('/api/contracts/info', methods=['GET'])
+    def api_contracts_info():
+        """
+        GET /api/contracts/info
+        Restituisce informazioni sui contratti senza elaborarli
+        
+        Response:
+        {
+            "success": true,
+            "data": {
+                "total": 21,
+                "valid": 15,
+                "invalid": 6,
+                "types": {"A CONSUMO": 15}
+            },
+            "timestamp": "2024-06-11T..."
+        }
+        """
+        try:
+            logger.info("📊 Richiesta info contratti")
+            info = elaboratore_instance.ottieni_info_contratti()
+            
+            return jsonify({
+                'success': True,
+                'data': info,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"❌ Errore API info contratti: {e}")
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }), 500
+    
+    @app.route('/api/contracts/process', methods=['GET'])
+    def api_process_contracts_get():
+        """
+        GET /api/contracts/run
+        Elabora tutti i contratti - SUPER SEMPLICE
+        
+        Parametri opzionali:
+        ?timeout=60
+        """
+        timeout = int(request.args.get('timeout', 30))
+        
+        # Chiama elaborazione
+        result = elaboratore_instance.elabora_tutti_contratti_get(timeout)
+        
+        # Restituisci risultato
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+        
+    @app.route('/api/contracts/process', methods=['POST'])
+    def api_process_contracts():
+        """
+        POST /api/contracts/process
+        Elabora tutti i contratti validi
+        
+        Request Body (opzionale):
+        {
+            "processor_name": "nome_funzione_personalizzata",
+            "timeout": 30,
+            "custom_params": {...}
+        }
+        
+        Response:
+        {
+            "success": true,
+            "message": "Elaborazione completata: 15 successi, 0 errori",
+            "results": [...],
+            "summary": {
+                "total_processed": 15,
+                "successful": 15,
+                "failed": 0,
+                "timeout_used": 30
+            }
+        }
+        """
+        try:
+            # Leggi parametri dalla richiesta
+            data = request.get_json() or {}
+            timeout = data.get('timeout', 30)
+            processor_name = data.get('processor_name', 'default')
+            custom_params = data.get('custom_params', {})
+            
+            logger.info(f"🔄 Avvio elaborazione contratti (timeout: {timeout}s)")
+            
+            # Funzione di elaborazione di default
+            def default_processor(contract_code: str, contract_type: str, odoo_client_id: str):
+                """Elaborazione di default - PERSONALIZZA QUESTA FUNZIONE"""
+                logger.info(f"🔄 Elaborando contratto {contract_code}")
+                
+                # ============================================
+                # QUI AGGIUNGI LA TUA LOGICA SPECIFICA:
+                # - Generazione report CDR
+                # - Chiamate ad altre API
+                # - Aggiornamento database
+                # - Invio email/notifiche
+                # - etc.
+                # ============================================
+                
+                # Esempio base di elaborazione
+                elaboration_result = {
+                    'contract_code': contract_code,
+                    'contract_type': contract_type,
+                    'odoo_client_id': odoo_client_id,
+                    'status': 'processed',
+                    'processor_used': processor_name,
+                    'timestamp': datetime.now().isoformat(),
+                    'custom_params': custom_params
+                }
+                
+                # Aggiungi logica personalizzata qui
+                # elaboration_result['report_generated'] = generate_cdr_report(contract_code)
+                # elaboration_result['email_sent'] = send_notification(contract_code)
+                
+                return elaboration_result
+            
+            # Esegui elaborazione di tutti i contratti validi
+            results = elaboratore_instance.elabora_tutti_contratti(
+                processor_func=default_processor,
+                timeout=timeout
+            )
+            
+            # Calcola statistiche risultati
+            successi = len([r for r in results if r.get('status') != 'failed'])
+            errori = len(results) - successi
+            
+            logger.info(f"✅ Elaborazione completata: {successi} successi, {errori} errori")
+            
+            return jsonify({
+                'success': True,
+                'message': f'Elaborazione completata: {successi} successi, {errori} errori',
+                'results': results,
+                'summary': {
+                    'total_processed': len(results),
+                    'successful': successi,
+                    'failed': errori,
+                    'timeout_used': timeout,
+                    'processor_used': processor_name,
+                    'execution_time': datetime.now().isoformat()
+                },
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"❌ Errore API elaborazione contratti: {e}")
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }), 500
+    
+    @app.route('/api/contracts/process/status', methods=['GET'])
+    def api_contracts_status():
+        """
+        GET /api/contracts/process/status
+        Verifica lo stato del sistema elaborazione contratti
+        """
+        try:
+            # Testa connessione API contratti
+            info = elaboratore_instance.ottieni_info_contratti()
+            
+            if 'error' in info:
+                status = 'error'
+                message = f"Errore connessione API: {info['error']}"
+            else:
+                status = 'ready'
+                message = f"Sistema pronto - {info.get('valid', 0)} contratti validi disponibili"
+            
+            return jsonify({
+                'success': True,
+                'status': status,
+                'message': message,
+                'api_url': elaboratore_instance.api_url,
+                'contracts_info': info,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"❌ Errore verifica status: {e}")
+            return jsonify({
+                'success': False,
+                'status': 'error',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }), 500
+    
+    # Log delle route registrate
+    logger.info("🔗 Route API ElaborazioneContratti registrate:")
+    logger.info("   GET  /api/contracts/info - Info contratti")
+    logger.info("   POST /api/contracts/process - Elabora contratti")
+    logger.info("   GET  /api/contracts/process/status - Status sistema")
+    
+    return {
+        'routes_added': [
+            '/api/contracts/info',
+            '/api/contracts/process',
+            '/api/contracts/process/status'
+        ],
+        'routes_count': 3,
+        'elaboratore_instance': elaboratore_instance
     }

@@ -42,6 +42,7 @@ def add_odoo_routes(app, secure_config):
             logger.error(f"Errore creazione client Odoo: {e}")
             raise
 
+
     # ==================== PAGINE WEB ====================
     
     @app.route('/odoo_partners')
@@ -274,7 +275,68 @@ def add_odoo_routes(app, secure_config):
                 'message': str(e),
                 'results': []
             }), 500
+        
+    @app.route('/api/odoo/products/select', methods=['GET'])
+    def get_all_products_for_select():
+        """API per recuperare partner per Select2"""
+        try:
+            client = get_odoo_client()
+            products = client.get_all_products_for_select()
 
+            select2_data = []
+            for product in products:
+                if isinstance(product, dict):
+                    select2_data.append({
+                        'id': product.get('id'),
+                        'text': product.get('display_name', 'Nome non disponibile')
+                    })
+                else:
+                    logger.warning(f"Partner non è un dict: {type(product)}")
+            
+            return jsonify({
+                'success': True,
+                'results': select2_data,
+                'total': len(select2_data)
+            })
+            
+        except Exception as e:
+            logger.error(f"Errore API partners Select2: {e}")
+            return jsonify({
+                'success': False,
+                'message': str(e),
+                'results': []
+            }), 500
+
+    @app.route('/api/odoo/payment_terms/select', methods=['GET'])
+    def get_all_payment_terms_for_select():
+        """API per recuperare partner per Select2"""
+        try:
+            client = get_odoo_client()
+            payment_terms = client.get_all_payment_terms_for_select()
+
+            select2_data = []
+            for payment_term in payment_terms:
+                if isinstance(payment_term, dict):
+                    select2_data.append({
+                        'id': payment_term.get('id'),
+                        'text': payment_term.get('display_name', 'Nome non disponibile')
+                    })
+                else:
+                    logger.warning(f"Partner non è un dict: {type(payment_term)}")
+            
+            return jsonify({
+                'success': True,
+                'results': select2_data,
+                'total': len(select2_data)
+            })
+            
+        except Exception as e:
+            logger.error(f"Errore API partners Select2: {e}")
+            return jsonify({
+                'success': False,
+                'message': str(e),
+                'results': []
+            }), 500        
     # ==================== API PRODOTTI ====================
     
     @app.route('/api/odoo/products', methods=['GET'])

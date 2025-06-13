@@ -9,7 +9,7 @@ import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
-
+from utils import extract_data_from_api
 logger = logging.getLogger(__name__)
 
 class FTPProcessor:
@@ -740,6 +740,7 @@ class FTPProcessor:
                     }
             
             logger.info(f"Processo completato: {len(converted_files)} file convertiti")
+            extract_data_from_api("/api/cdr/extract_contracts")
             return result
             
         except Exception as e:

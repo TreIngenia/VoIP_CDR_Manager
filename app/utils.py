@@ -8,6 +8,8 @@ import socket
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+import json
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -397,3 +399,67 @@ def retry_on_failure(max_attempts=3, delay_seconds=1, exceptions=(Exception,)):
             raise last_exception
         return wrapper
     return decorator
+
+def extract_data_from_api(api_link):
+    """Versione completa con gestione errori"""
+    base_url = os.getenv("BASE_HOST")
+    base_port = os.getenv("APP_PORT")
+    base_url = f"{base_url}:{base_port}"
+    url = f"{base_url}{api_link}"
+    
+    # Headers (opzionali)
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+    
+    # Dati opzionali
+    data = {
+        "source": "api_call",
+        "timestamp": "2024-06-11T10:00:00Z"
+    }
+    
+    try:
+        print("🔄 Chiamando API extract_contracts...")
+        
+        response = requests.post(
+            url, 
+            json=data, 
+            headers=headers,
+            timeout=30  # Timeout di 30 secondi
+        )
+        
+        # Controlla status code
+        response.raise_for_status()
+        
+        # Parse JSON response
+        result = response.json()
+        
+        print("✅ API chiamata con successo!")
+        print(f"Status: {result.get('status', 'unknown')}")
+        print(f"Message: {result.get('message', 'N/A')}")
+        
+        if 'data' in result:
+            print(f"Dati ricevuti: {len(result['data'])} elementi")
+        
+        return result
+        
+    except requests.exceptions.Timeout:
+        print("⏱️ Timeout - L'API ha impiegato troppo tempo")
+        return None
+        
+    except requests.exceptions.ConnectionError:
+        print("🔌 Errore di connessione - Verifica che il server sia attivo")
+        return None
+        
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ Errore HTTP {e.response.status_code}: {e.response.text}")
+        return None
+        
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Errore generico: {e}")
+        return None
+        
+    except json.JSONDecodeError:
+        print("❌ Risposta non è JSON valido")
+        return None

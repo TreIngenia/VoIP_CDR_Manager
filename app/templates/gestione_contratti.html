@@ -64,7 +64,7 @@
         <div class="row">
                 <form id="contracts-form">
                     <div class="table-responsive">
-                        <table id="kt_datatable" class="table table-rounded table-striped border gy-5 gs-7 align-middle dataTable">
+                        <table id="kt_datatable" class="table table-rounded table-striped border gy-5 gs-7 align-middle dataTable table-hover">
                           
                             <!-- <tbody id="contracts-container">
                                 
@@ -91,6 +91,7 @@
         </div>
     </div>
 </div>
+<pre id="test"></pre>
 {% endblock %}
 
 {% block scripts %}
@@ -101,6 +102,7 @@
     let isEditMode = false;
     let contractTypeOptions = [];
     let odooclient = [];
+    let payment_terms = [];
     var target = document.querySelector("#kt_app_main"); 
         var blockUI = new KTBlockUI(target);
         if (blockUI.isBlocked()) {
@@ -167,7 +169,9 @@
 
                 } else {
                     $('#kt_datatable1').DataTable().clear().destroy();
-                    view_datatables('#kt_datatable');
+                    loadSelectOptions(function () {
+                        view_datatables('#kt_datatable');
+                    });
                 }
                 
                 
@@ -228,7 +232,7 @@
                 {   
                     data: "phone_number",
                     title: "N. telefono",
-                    width: "15%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
+                    width: "10%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         // var date_db = moment(data).format("DD/MM/YYYY - HH:mm");
                         return data;
@@ -237,7 +241,7 @@
                 {   
                     data: "contract_name",
                     title: "Cliente",
-                    width: "23%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
+                    width: "20%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         // return remove_char(data, '');
                         return data
@@ -249,13 +253,36 @@
                     width: "15%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         // var date_db = moment(data).format("DD/MM/YYYY - HH:mm");
-                        return data
+                        let html = getTextByIdFromResults(contractTypeOptions,data) ? getTextByIdFromResults(contractTypeOptions,data) : ""
+                        return html
+                    },
+                },
+                {   
+                    data: "payment_term",
+                    title: "Modalità pagamento",
+                    width: "15%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
+                    "render": function ( data, type, row ) {
+                        // html = `
+                        //     <select 
+                        //         id="payment_term_${row.contract_code}" 
+                        //         class="form-select form-select-sm payment_term-select" 
+                        //         data-control="select2" 
+                        //         data-dropdown-css-class="" 
+                        //         data-placeholder="Seleziona tipologia" 
+                        //         data-selected="${data || ''}"
+                        //         data-hide-search="true">
+                        //     </select> 
+                        // `+
+                        // payment_terms = JSON.parse(payment_terms)
+                        // return getTextByIdFromResults(payment_terms,data)
+                        html = getTextByIdFromResults(payment_terms,data) ? getTextByIdFromResults(payment_terms,data) : ""
+                        return html
                     },
                 },
                 {   
                     data: "notes",
                     title: "Note",
-                    width: "38%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
+                    width: "33%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         // var date_db = moment(data).format("DD/MM/YYYY - HH:mm");
                         return data;
@@ -331,7 +358,7 @@
                 {   
                     data: "phone_number",
                     title: "N. telefono",
-                    width: "15%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
+                    width: "10%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         html = `<span class="fs-2"> ${data || ''}</span>`
                         return html;
@@ -340,7 +367,7 @@
                 {   
                     data: "contract_name",
                     title: "Cliente",
-                    width: "23%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
+                    width: "20%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         // Salva il valore selezionato nei data attributes per uso successivo
                         html = `
@@ -378,9 +405,28 @@
                     },
                 },
                 {   
+                    data: "payment_term",
+                    title: "Modalità pagamento",
+                    width: "15%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
+                    "render": function ( data, type, row ) {
+                        html = `
+                            <select 
+                                id="payment_term_${row.contract_code}" 
+                                class="form-select form-select-sm payment_term-select" 
+                                data-control="select2" 
+                                data-dropdown-css-class="" 
+                                data-placeholder="Seleziona pagamento" 
+                                data-selected="${data || ''}"
+                                data-hide-search="true">
+                            </select> 
+                        `
+                        return html
+                    },
+                },
+                {   
                     data: "notes",
                     title: "Note",
-                    width: "38%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
+                    width: "31%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         html = `
                             <textarea id="notes_${row['contract_code']}" name="notes_${row['contract_code']}" 
@@ -432,7 +478,8 @@
                 // Distruggi tutti i select2 esistenti prima di ricrearli
                 $('.contract-type-select.select2-hidden-accessible').select2('destroy');
                 $('.odoo-select.select2-hidden-accessible').select2('destroy');
-                
+                $('.payment_term.select2-hidden-accessible').select2('destroy');
+
                 // Inizializza select per tipo contratto
                 $('.contract-type-select').each(function () {
                     const $select = $(this);
@@ -497,6 +544,40 @@
                         $select.val(null).trigger('change.select2');
                     }
                 });
+                $('.payment_term-select').each(function () {
+                    const $select = $(this);
+                    const selectedValue = $select.data('selected');
+                    const selectedText = $select.data('selected-text');
+                    
+                    // Inizializza select2
+                    $select.select2({
+                        data: payment_terms,
+                        allowClear: true
+                    });
+                    
+                    // Imposta il valore selezionato
+                    if (selectedValue && selectedValue !== '') {
+                        // Verifica che il valore esista nelle opzioni
+                        const optionExists = payment_terms.some(opt => 
+                            opt.id == selectedValue
+                        );
+                        
+                        if (optionExists) {
+                            $select.val(selectedValue).trigger('change.select2');
+                        } else {
+                            // Se il valore non esiste, aggiungi un'opzione temporanea se abbiamo il testo
+                            if (selectedText && selectedText !== '') {
+                                const newOption = new Option(selectedText, selectedValue, true, true);
+                                $select.append(newOption);
+                            } else {
+                                console.warn(`Valore non trovato nelle opzioni cliente Odoo: ${selectedValue}`);
+                                $select.val(null).trigger('change.select2');
+                            }
+                        }
+                    } else {
+                        $select.val(null).trigger('change.select2');
+                    }
+                });
             },
             
             "initComplete": function(settings, json){
@@ -516,84 +597,16 @@
         return parseInt(first, 10) || null;
     }
 
-    
-    
-    function loadContractTypeOptions_callback(callback) {
-        // if (contractTypeOptions) {
-        //     callback(); // Se già presenti, chiama subito
-        //     return;
-        // }
-
-        $.ajax({
-            url: '/api/cdr/contract_type',
-            dataType: 'json',
-            success: function (data) {
-                contractTypeOptions = data;
-                callback();
-            },
-            error: function () {
-                console.error("Errore nel caricamento della tipologia contratti");
-                contractTypeOptions = [];
-                callback();
-            }
-        });
-    }
-
-    function loadClientOptions_callback(callback) {
-        // if (contractTypeOptions) {
-        //     callback(); // Se già presenti, chiama subito
-        //     return;
-        // }
-
-        $.ajax({
-            url: '/api/odoo/partners/select',
-            dataType: 'json',
-            success: function (data) {
-                odooclient = data.results;
-                callback();
-            },
-            error: function () {
-                console.error("Errore nel caricamento dell'elenco utenti Odoo");
-                odooclient = [];
-                callback();
-            }
-        });
-    }
-
-    function loadContractTypeOptions() {
-        $.ajax({
-            url: '/api/cdr/contract_type',
-            dataType: 'json',
-            success: function (data) {
-                contractTypeOptions = data;
-            },
-            error: function () {
-                console.error("Errore nel caricamento della tipologia contratti");
-                contractTypeOptions = [];
-            }
-        });
-    }
-    function loadClientOptions() {
-        $.ajax({
-            url: '/api/odoo/partners/select',
-            dataType: 'json',
-            success: function (data) {
-                odooclient = data.results;
-            },
-            error: function () {
-                console.error("Errore nel caricamento dell'elenco utenti Odoo");
-                odooclient = [];
-            }
-        });
-    }
-
     function loadSelectOptions(callback) {
         $.when(
-            $.getJSON('/api/cdr/contract_type', function (data) {
-                contractTypeOptions = data;
+            $.getJSON('/api/odoo/products/select', function (data) {
+                contractTypeOptions = data.results;
             }),
             $.getJSON('/api/odoo/partners/select', function (data) {
                 odooclient = data.results;
+            }),
+            $.getJSON('/api/odoo/payment_terms/select', function (data) {
+                payment_terms = data.results;
             })
         ).done(function () {
             callback();
@@ -601,6 +614,7 @@
             alert("Errore nel caricamento dei dati");
         });
     }
+
 
     async function saveContract(contractCode) {
         // const statusElement = document.getElementById(`status_${contractCode}`);
@@ -613,12 +627,14 @@
         const odooClientId = document.getElementById(`odoo_${contractCode}`).value.trim();
         const notes = document.getElementById(`notes_${contractCode}`).value.trim();
         const contractType = document.getElementById(`contracttype_${contractCode}`).value.trim();
-        
+        const payment_term = document.getElementById(`payment_term_${contractCode}`).value.trim();
+
         const updateData = {
             contract_code: contractCode,
             contract_name: contractName,
             contract_type: contractType,
             odoo_client_id: odooClientId,
+            payment_term: payment_term,
             notes: notes
         };
         
@@ -670,27 +686,29 @@
                 const original = contractsData.contracts[contractCode] || {};
                 
                 // Verifica che gli elementi esistano prima di accedervi
-                const selectElement = document.getElementById(`odoo_${contractCode}`);
+                const odooElement = document.getElementById(`odoo_${contractCode}`);
                 const notesElement = document.getElementById(`notes_${contractCode}`);
                 const contractTypeElement = document.getElementById(`contracttype_${contractCode}`);
-                
+                const payment_termElement = document.getElementById(`payment_term_${contractCode}`);
+
                 // Se gli elementi non esistono, salta questa iterazione
-                if (!selectElement || !notesElement || !contractTypeElement) {
+                if (!odooElement || !notesElement || !contractTypeElement) {
                     console.warn(`Elementi mancanti per il contratto: ${contractCode}`);
                     continue; // Continua con il prossimo contratto
                 }
                 
                 // Gestisci il caso in cui non ci sia un'opzione selezionata
-                const contractName = selectElement.selectedIndex >= 0 ? 
-                    selectElement.options[selectElement.selectedIndex].text : '';
-                const odooClientId = selectElement.value ? selectElement.value.trim() : '';
+                const contractName = odooElement.selectedIndex >= 0 ? odooElement.options[odooElement.selectedIndex].text : '';
+                const odooClientId = odooElement.value ? odooElement.value.trim() : '';
                 const notes = notesElement.value ? notesElement.value.trim() : '';
                 const contractType = contractTypeElement.value ? contractTypeElement.value.trim() : '';
+                const payment_term = payment_termElement.value ? payment_termElement.value.trim() : '';
                 
                 const isModified = 
                     contractName !== (original.contract_name || '') ||
                     odooClientId !== (original.odoo_client_id || '') ||
                     contractType !== (original.contract_type || '') ||
+                    payment_term !== (original.payment_term || '') ||
                     notes !== (original.notes || '');
 
                 if (isModified) {
@@ -702,6 +720,7 @@
                         contract_name: contractName,
                         odoo_client_id: odooClientId,
                         contract_type: contractType,
+                        payment_term: payment_term,
                         notes: notes
                     };
                     
@@ -749,8 +768,16 @@
             blockUI.release();
         }
     }
-        
-        
+    
+
+
+    function getTextByIdFromResults(results, targetId) {
+        const id = Number(targetId);
+        const found = results.find(item => item.id === id);
+        return found ? found.text : null;
+    }
+
+
 </script>
 
 {% endblock scripts %}

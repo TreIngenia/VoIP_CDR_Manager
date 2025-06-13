@@ -10,6 +10,7 @@ import socket
 from datetime import timedelta
 from pathlib import Path
 
+
 # Carica variabili dal file .env (opzionale)
 try:
     from dotenv import load_dotenv
@@ -26,7 +27,7 @@ from flask import Flask, send_from_directory, jsonify
 from logger_config import get_logger, log_success, log_error, log_warning, log_info
 from config_validator import ConfigValidator
 from performance_monitor import get_performance_monitor
-from config import save_config_to_env, load_config_from_env_local
+from config import load_config_from_env_local
 from ftp_processor import FTPProcessor
 from scheduler import SchedulerManager
 
@@ -38,7 +39,7 @@ from cdr_categories_enhanced import integrate_enhanced_cdr_system
 from routes.cdr_categories_routes import add_cdr_categories_routes
 
 #ROUTE contratti
-from routes.contratti_routes import contratti_routes, api_contract_routes, add_datatable_routes_to_contratti
+from routes.contratti_routes import contratti_routes, api_contract_routes, add_datatable_routes_to_contratti, add_elaborazione_contratti_routes
 
 #ROUTE Fatture
 from routes.fatture_routes import fatture_routes
@@ -150,6 +151,11 @@ def main():
         log_info("Registrazione route gestione contratti...")
         gestione_contratti = contratti_routes(app, secure_config)
         log_success(f"Route categorie registrate: {gestione_contratti['routes_count']} endpoint")
+
+        # GESTIONE ELABORAZIONE CONTRATTI
+        log_info("Registrazione route gestione dell'elaborazione dei contratti...")
+        elaborazione_contratti = add_elaborazione_contratti_routes(app, secure_config)
+        log_success(f"Route categorie registrate: {elaborazione_contratti['routes_count']} endpoint")
 
         # GESTIONE FATTURE
         log_info("Registrazione route gestione fatture...")
@@ -296,7 +302,6 @@ def verify_unified_categories_system(processor):
             
     except Exception as e:
         log_error(f"Errore verifica sistema categorie unificato: {e}")
-
-
+    
 if __name__ == '__main__':
     main()

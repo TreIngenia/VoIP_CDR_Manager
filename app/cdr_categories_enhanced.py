@@ -754,7 +754,6 @@ class CDRAnalyticsEnhanced:
                     'durata_fatturata_minuti': cost_calculation['duration_billed'],
                     'categoria_matched': cost_calculation['matched'],
                     'valuta_categoria': cost_calculation['currency'],
-                    
                     'costo_originale_euro': costo_originale,
                     'differenza_costo_euro': round(cost_calculation['cost_calculated'] - costo_originale, 4),
                     'risparmio_percentuale': round(
@@ -880,6 +879,15 @@ class CDRAnalyticsEnhanced:
             data['avg_cost_per_call'] = round(data['cost_client_euro'] / data['calls'], 4) if data['calls'] > 0 else 0
             data['avg_duration_per_call'] = round(data['duration_seconds'] / data['calls'], 1) if data['calls'] > 0 else 0
             data['match_rate'] = round((data['matched_calls'] / data['calls']) * 100, 1) if data['calls'] > 0 else 0
+
+            category_obj = self.categories_manager.get_category(cat_name)
+            if category_obj:
+                data['price_per_minute_with_markup'] = category_obj.price_with_markup or category_obj.price_per_minute
+                data['markup'] = category_obj.get_effective_markup_percent(self.categories_manager.global_markup_percent)
+            else:
+                # Fallback se categoria non trovata
+                data['price_per_minute_with_markup'] = data['price_per_minute']
+                data['markup'] = 0.0
         
         result = {
             **contract_info,

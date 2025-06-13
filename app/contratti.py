@@ -3,10 +3,11 @@
 CDR Contracts Service - Servizio per gestire i dati dei contratti CDR
 Converte i dati per DataTables in formato serverside e ajax
 """
-
+import requests
 import logging
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Callable
 from datetime import datetime
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,7 @@ class CDRContractsService:
             contract_name = contract_data.get('contract_name', "")
             odoo_client_id = contract_data.get('odoo_client_id', "")
             contract_type = contract_data.get('contract_type', "")
+            payment_term = contract_data.get('payment_term', "")
             notes = contract_data.get('notes', "")
             
             # Assicurati che tutti i valori siano stringhe per evitare errori di serializzazione
@@ -86,6 +88,7 @@ class CDRContractsService:
                 'contract_name': str(contract_name) if contract_name is not None else "",
                 'odoo_client_id': str(odoo_client_id) if odoo_client_id is not None else "",
                 'contract_type': str(contract_type) if contract_type is not None else "",
+                'payment_term': str(payment_term) if payment_term is not None else "",
                 'notes': str(notes) if notes is not None else ""
             }
             
@@ -98,6 +101,7 @@ class CDRContractsService:
                 'contract_name': "",
                 'odoo_client_id': "",
                 'contract_type': "",
+                'payment_term':"",
                 'notes': ""
             }
     
@@ -138,6 +142,7 @@ class CDRContractsService:
                         'contract_name': extracted_fields['contract_name'],
                         'odoo_client_id': extracted_fields['odoo_client_id'],
                         'contract_type': extracted_fields['contract_type'],
+                        'payment_term': extracted_fields['payment_term'],
                         'notes': extracted_fields['notes']
                     }
                     
@@ -319,17 +324,202 @@ def create_contracts_service(app=None) -> CDRContractsService:
     return CDRContractsService(app)
 
 
-def test_contracts_service():
-    """Funzione di test per il servizio"""
+class ElaborazioneContratti:
+    """Classe per elaborare contratti recuperati da API"""
+    
+    def __init__(self, api_url: str = "http://127.0.0.1:5001/api/contracts/datatable/ajax"):
+        """
+        Inizializza la classe
+        
+        Args:
+            api_url: URL dell'API per recuperare i contratti
+        """
+        self.api_url = api_url
+    
+    def elabora_tutti_contratti(self, processor_func: Callable, timeout: int = 30) -> List[Dict[str, Any]]:
+        """
+        Recupera contratti dall'API e processa quelli validi
+        
+        Args:
+            processor_func: Funzione che riceve (contract_code, contract_type, odoo_client_id)
+            timeout: Timeout richiesta in secondi
+            
+        Returns:
+            Lista risultati elaborazione
+        """
+        try:
+            # Recupera dati dall'API
+            logger.info(f"🌐 Recupero contratti da: {self.api_url}")
+            response = requests.get(self.api_url, timeout=timeout)
+            response.raise_for_status()
+            
+            contracts = response.json().get('data', [])
+            logger.info(f"📊 Contratti ricevuti: {len(contracts)}")
+            
+            # Filtra e processa contratti validi
+            results = []
+            valid_count = 0
+            
+            for contract in contracts:
+                # Verifica validità
+                odoo_id = contract.get('odoo_client_id', '').strip()
+                contract_type = contract.get('contract_type', '').strip()
+                contract_code = contract.get('contract_code', '')
+                
+                if not odoo_id or not contract_type:
+                    logger.debug(f"⚠️ Contratto {contract_code} saltato: odoo_id='{odoo_id}', type='{contract_type}'")
+                    continue
+                
+                # Processa contratto valido
+                try:
+                    valid_count += 1
+                    result = processor_func(contract_code, contract_type, odoo_id)
+                    results.append(result)
+                    logger.info(f"✅ Processato contratto {contract_code}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Errore processing {contract_code}: {e}")
+                    results.append({
+                        'contract_code': contract_code,
+                        'error': str(e),
+                        'status': 'failed'
+                    })
+            
+            logger.info(f"🎯 Completato: {valid_count}/{len(contracts)} contratti validi processati")
+            return results
+            
+        except Exception as e:
+            logger.error(f"❌ Errore generale: {e}")
+            return []
+        
+    def elabora_tutti_contratti_get(self, timeout: int = 30) -> Dict[str, Any]:
+        """
+        Elabora tutti i contratti validi - VERSIONE SEMPLIFICATA
+        
+        Args:
+            timeout: Timeout in secondi
+            
+        Returns:
+            Dict con risultati
+        """
+        try:
+            logger.info(f"🔄 Elaborazione contratti...")
+            
+            # Recupera contratti
+            response = requests.get(self.api_url, timeout=timeout)
+            contracts = response.json().get('data', [])
+            
+            # Elabora contratti validi
+            results = []
+            print(contracts)
+            for contract in contracts:
+                odoo_id = contract.get('odoo_client_id', '').strip()
+                contract_type = contract.get('contract_type', '').strip()
+                contract_code = contract.get('contract_code', '')
+                
+                if odoo_id and contract_type:  # Se valido
+                    # QUI AGGIUNGI LA TUA LOGICA:
+                    # generate_report(contract_code)
+                    # send_email(contract_code)
+                    # etc.
+                    
+                    results.append({
+                        'contract_code': contract_code,
+                        'odoo_id': odoo_id,
+                        'contract_type': contract_type,
+                        'status': 'ok'
+                    })
+                    logger.info(f"✅ {contract_code}")
+            
+            return {
+                'success': True,
+                'total': len(results),
+                'results': results
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Errore: {e}")
+            return {'success': False, 'error': str(e)}
+        
+    def ottieni_info_contratti(self) -> Dict[str, Any]:
+        """
+        Ottieni informazioni sui contratti senza processarli
+        
+        Returns:
+            Statistiche sui contratti
+        """
+        try:
+            response = requests.get(self.api_url, timeout=30)
+            response.raise_for_status()
+            
+            contracts = response.json().get('data', [])
+            
+            # Conta contratti validi/invalidi
+            valid = 0
+            contract_types = {}
+            
+            for contract in contracts:
+                odoo_id = contract.get('odoo_client_id', '').strip()
+                contract_type = contract.get('contract_type', '').strip()
+                
+                if odoo_id and contract_type:
+                    valid += 1
+                    contract_types[contract_type] = contract_types.get(contract_type, 0) + 1
+            
+            return {
+                'total': len(contracts),
+                'valid': valid,
+                'invalid': len(contracts) - valid,
+                'types': contract_types
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Errore info contratti: {e}")
+            return {'error': str(e)}
+        
+# Esempio di utilizzo
+if __name__ == "__main__":
     try:
         print("🧪 Test CDR Contracts Service")
         print("=" * 50)
         print("⚠️  Nota: Per il test completo è necessaria un'istanza Flask attiva")
         print("   Il test può essere eseguito dall'interno dell'applicazione principale")
-        
+        # Funzioni.test()
     except Exception as e:
         print(f"❌ Errore nel test: {e}")
 
 
-if __name__ == "__main__":
-    test_contracts_service()
+    # logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    
+    # # Inizializza la classe
+    # elaboratore = ElaborazioneContratti()
+    
+    # # Definisci la tua funzione di elaborazione
+    # def my_processor(contract_code: str, contract_type: str, odoo_client_id: str):
+    #     """La tua logica di elaborazione"""
+    #     print(f"Elaborando: {contract_code} - {contract_type} - Cliente: {odoo_client_id}")
+        
+    #     # QUI AGGIUNGI LA TUA LOGICA
+    #     # Es: generate_report(contract_code, contract_type, odoo_client_id)
+        
+    #     return {
+    #         'contract_code': contract_code,
+    #         'status': 'success'
+    #     }
+    
+    # # Visualizza info contratti
+    # print("📊 Info contratti:")
+    # info = elaboratore.ottieni_info_contratti()
+    # print(f"   Totali: {info.get('total', 0)}")
+    # print(f"   Validi: {info.get('valid', 0)}")
+    # print(f"   Tipi: {info.get('types', {})}")
+    
+    # # Processa tutti i contratti validi
+    # print("\n🔄 Inizio elaborazione...")
+    # results = elaboratore.elabora_tutti_contratti(my_processor)
+    
+    # print(f"\n✅ Elaborati {len(results)} contratti")
+    
+    # # Mostra primi 3 risultati
+    # for result in results[:3]:
+    #     print(f"   {result}")

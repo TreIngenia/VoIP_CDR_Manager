@@ -237,7 +237,7 @@ def save_contracts_config(contracts_data: Dict[str, Any], secure_config) -> Dict
         
         # ✅ LEGGI PERCORSI DA .ENV
         config_dir = Path(config.get('CONTRACTS_CONFIG_DIRECTORY', config.get('config_directory', 'config')))
-        contracts_filename = config.get('CONTRACTS_CONFIG_FILE', 'cdr_contracts.json')
+        contracts_filename = config.get('CONTRACTS_CONFIG_FILE')
         
         config_dir.mkdir(parents=True, exist_ok=True)
         contracts_file = config_dir / contracts_filename
@@ -263,10 +263,10 @@ def save_contracts_config(contracts_data: Dict[str, Any], secure_config) -> Dict
                 logger.info(f"📊 Contratti esistenti: {len(existing_contracts)}")
                 
                 # Crea backup del file esistente
-                backup_file = config_dir / f'{contracts_filename}_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
-                import shutil
-                shutil.copy2(contracts_file, backup_file)
-                logger.info(f"💾 Backup creato: {backup_file}")
+                # backup_file = config_dir / f'{contracts_filename}_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+                # import shutil
+                # shutil.copy2(contracts_file, backup_file)
+                # logger.info(f"💾 Backup creato: {backup_file}")
                 
             except Exception as e:
                 logger.error(f"❌ Errore lettura file esistente: {e}")
@@ -300,7 +300,15 @@ def save_contracts_config(contracts_data: Dict[str, Any], secure_config) -> Dict
                 if contract_info['last_seen_file'] not in files_list:
                     files_list.append(contract_info['last_seen_file'])
                     existing_contract['files_found_in'] = files_list
-                
+                existing_phones = existing_contract.get('phone_numbers', [])
+                new_phones = contract_info.get('phone_numbers', [])
+
+                for phone in new_phones:
+                    if phone not in existing_phones:
+                        existing_phones.append(phone)
+
+                existing_contract['phone_numbers'] = existing_phones
+
                 logger.debug(f"🔄 Contratto esistente aggiornato (statistiche): {contract_code}")
         
         # ✅ PREPARA METADATA AGGIORNATA
