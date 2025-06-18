@@ -55,7 +55,7 @@ def processa_json_results():
         contract_code = item.get('contract_code')
         status = item.get('status')
         contract_type = item.get('contract_type')
-        odoo_id = item.get('odoo_id')
+        odoo_id = int(item.get('odoo_id'))
         # Esegue la funzione per ogni elemento
         processa_json_reports(contract_code, periodi_corrente, contract_type, odoo_id)
     
@@ -242,7 +242,7 @@ def processa_json_reports(nome_file, periodi, contract_type, odoo_id):
                             "product_id": 15,
                             "quantity": 1,  # o un altro campo
                             "price_unit": dato['costo_cliente_totale_euro'],  # o altro campo
-                            "name": f"Tipo cotnratto: {dato['contract_type']} dettaglio: {dato['costo_cliente_totale_euro_by_category']}"
+                            "name": f"Tipo contratto: {dato['contract_type']} dettaglio: {dato['costo_cliente_totale_euro_by_category']}"
                         })
 
                     # COSTRUISCI JSON FINALE

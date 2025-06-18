@@ -1,15 +1,16 @@
-#!/usr/bin/env python3
 """
 Odoo Integration v18.2+ - VERSIONE COMPLETAMENTE CORRETTA
 Integrazione ottimizzata per Odoo SaaS~18.2+ con gestione dinamica dei campi
 e correzioni specifiche per l'ultima versione
 """
-
+import os
 import xmlrpc.client
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Union
 from dataclasses import dataclass
+from flask import jsonify
 import logging
+import json
 
 # Import dei moduli del progetto
 try:
@@ -20,10 +21,32 @@ except ImportError:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     
-    class OdooException(Exception):
-        def __init__(self, message: str, error_code: str = 'ODOO_ERROR'):
-            super().__init__(message)
-            self.error_code = error_code
+class OdooException(Exception):
+    def __init__(self, message: str, error_code: str = 'ODOO_ERROR'):
+        super().__init__(message)
+        self.error_code = error_code
+
+def get_odoo_client(secure_config):
+        """Helper per creare client Odoo con configurazione"""
+        try:
+            config = secure_config.get_config()
+            odoo_config = {
+                'ODOO_URL': config.get('ODOO_URL', ''),
+                'ODOO_DB': config.get('ODOO_DB', ''),
+                'ODOO_USERNAME': config.get('ODOO_USERNAME', ''),
+                'ODOO_API_KEY': config.get('ODOO_API_KEY', '')
+            }
+            
+            # Verifica configurazione
+            missing = [k for k, v in odoo_config.items() if not v]
+            if missing:
+                raise Exception(f"Configurazione Odoo incompleta: {missing}")
+            
+            return create_odoo_client(odoo_config)
+            
+        except Exception as e:
+            logger.error(f"Errore creazione client Odoo: {e}")
+            raise
 
 @dataclass
 class InvoiceItem:
@@ -243,250 +266,6 @@ class OdooClient:
                 self.logger.debug(f"Campo {field} non disponibile")
         
         return safe_fields
-    
-    def create_invoice(self, invoice_data: InvoiceData) -> Optional[int]:
-        """Crea fattura ottimizzata per Odoo 18.2+"""
-        try:
-            invoice_vals = self._prepare_invoice_data_v18_2(invoice_data)
-            
-            # Context specifico per creazione fatture in 18.2+
-            context = self._get_default_context()
-            context.update({
-                'default_move_type': 'out_invoice',
-                'move_type': 'out_invoice',
-                'check_move_validity': False,  # Velocizza creazione
-                'skip_account_move_synchronization': True  # Evita sync automatica
-            })
-            
-            invoice_id = self.execute(
-                'account.move', 
-                'create', 
-                [invoice_vals],
-                context=context
-            )
-            
-            # Gestione risposta (lista o singolo ID)
-            if isinstance(invoice_id, list):
-                invoice_id = invoice_id[0] if invoice_id else None
-            
-            if invoice_id:
-                self.logger.info(f"Fattura creata con ID: {invoice_id}")
-                return invoice_id
-            else:
-                raise OdooException("Creazione fattura fallita", 'INVOICE_CREATE_ERROR')
-            
-        except Exception as e:
-            self.logger.error(f"Errore creazione fattura: {e}")
-            raise OdooException(f"Errore creazione fattura: {e}", 'INVOICE_CREATE_ERROR')
-    
-    def _prepare_invoice_data_v18_2(self, invoice_data: InvoiceData) -> Dict[str, Any]:
-        """Prepara dati fattura specifici per Odoo 18.2+ con gestione errori migliorata"""
-        invoice_date = datetime.now().strftime('%Y-%m-%d')
-        due_date = self._calculate_due_date(invoice_date, invoice_data)
-        
-        # Prepara righe fattura con controlli di sicurezza
-        invoice_lines = []
-        for item in invoice_data.items:
-            line_vals = {
-                'product_id': item.product_id,
-                'quantity': item.quantity,
-                'price_unit': item.price_unit,
-                'name': item.name,
-            }
-            
-            # Verifica e ottieni account di default se non specificato
-            if item.account_id:
-                line_vals['account_id'] = item.account_id
-            else:
-                # Prova a ottenere account di default dal prodotto
-                try:
-                    product_data = self.execute(
-                        'product.product',
-                        'read',
-                        [item.product_id],
-                        fields=['categ_id']
-                    )
-                    
-                    if product_data and product_data[0].get('categ_id'):
-                        categ_id = product_data[0]['categ_id'][0]
-                        categ_data = self.execute(
-                            'product.category',
-                            'read',
-                            [categ_id],
-                            fields=['property_account_income_categ_id']
-                        )
-                        
-                        if categ_data and categ_data[0].get('property_account_income_categ_id'):
-                            line_vals['account_id'] = categ_data[0]['property_account_income_categ_id'][0]
-                            self.logger.info(f"Account automatico trovato: {line_vals['account_id']}")
-                    
-                except Exception as e:
-                    self.logger.warning(f"Impossibile ottenere account automatico: {e}")
-                    # Odoo userà l'account di default se non specificato
-            
-            # Gestione analitici per 18.2+
-            if item.analytic_distribution:
-                line_vals['analytic_distribution'] = item.analytic_distribution
-            
-            # Gestione tasse
-            if item.tax_ids:
-                line_vals['tax_ids'] = [(6, 0, item.tax_ids)]
-                
-            invoice_lines.append((0, 0, line_vals))
-        
-        # Verifica che ci siano righe
-        if not invoice_lines:
-            raise OdooException("Nessuna riga fattura valida trovata", 'INVALID_INVOICE_LINES')
-        
-        # Dati fattura base per 18.2+
-        invoice_vals = {
-            'partner_id': invoice_data.partner_id,
-            'move_type': 'out_invoice',
-            'invoice_date': invoice_date,
-            'invoice_date_due': due_date,
-            'invoice_line_ids': invoice_lines,
-            'state': 'draft',  # Sempre draft inizialmente
-        }
-        
-        # Campi opzionali con validazione
-        if invoice_data.reference:
-            invoice_vals['ref'] = invoice_data.reference[:64]  # Limita lunghezza
-        
-        if invoice_data.journal_id:
-            # Verifica che il journal esista
-            try:
-                journal_exists = self.execute(
-                    'account.journal',
-                    'search_count',
-                    [('id', '=', invoice_data.journal_id), ('type', '=', 'sale')]
-                )
-                if journal_exists > 0:
-                    invoice_vals['journal_id'] = invoice_data.journal_id
-                else:
-                    self.logger.warning(f"Journal {invoice_data.journal_id} non trovato, uso default")
-            except:
-                self.logger.warning(f"Errore verifica journal {invoice_data.journal_id}")
-        
-        # Campo payment term corretto per 18.2+
-        if invoice_data.payment_term_id:
-            try:
-                term_exists = self.execute(
-                    'account.payment.term',
-                    'search_count',
-                    [('id', '=', invoice_data.payment_term_id)]
-                )
-                if term_exists > 0:
-                    invoice_vals['invoice_payment_term_id'] = invoice_data.payment_term_id
-                else:
-                    self.logger.warning(f"Payment term {invoice_data.payment_term_id} non trovato")
-            except:
-                self.logger.warning(f"Errore verifica payment term {invoice_data.payment_term_id}")
-        
-        if invoice_data.currency_id:
-            try:
-                currency_exists = self.execute(
-                    'res.currency',
-                    'search_count',
-                    [('id', '=', invoice_data.currency_id)]
-                )
-                if currency_exists > 0:
-                    invoice_vals['currency_id'] = invoice_data.currency_id
-            except:
-                pass
-        
-        if invoice_data.company_id:
-            try:
-                company_exists = self.execute(
-                    'res.company',
-                    'search_count',
-                    [('id', '=', invoice_data.company_id)]
-                )
-                if company_exists > 0:
-                    invoice_vals['company_id'] = invoice_data.company_id
-            except:
-                pass
-        
-        self.logger.info(f"Dati fattura preparati con {len(invoice_lines)} righe")
-        return invoice_vals
-    
-    def confirm_invoice(self, invoice_id: int) -> bool:
-        """Conferma fattura per Odoo 18.2+"""
-        try:
-            # Verifica stato attuale
-            invoice_data = self.execute(
-                'account.move', 
-                'read', 
-                [invoice_id], 
-                fields=['state', 'name']
-            )
-            
-            if not invoice_data:
-                raise OdooException(f"Fattura {invoice_id} non trovata", 'INVOICE_NOT_FOUND')
-            
-            current_state = invoice_data[0].get('state', 'draft')
-            
-            if current_state == 'posted':
-                self.logger.info('Fattura già confermata')
-                return True
-            elif current_state == 'draft':
-                # In 18.2+ usa sempre action_post
-                self.execute('account.move', 'action_post', [invoice_id])
-                self.logger.info(f'Fattura {invoice_id} confermata')
-                return True
-            else:
-                self.logger.warning(f'Stato fattura non gestito: {current_state}')
-                return False
-                
-        except Exception as e:
-            self.logger.error(f'Errore conferma fattura {invoice_id}: {e}')
-            raise OdooException(f'Errore conferma fattura: {e}', 'INVOICE_CONFIRM_ERROR')
-    
-    def get_invoice_details(self, invoice_id: int) -> Optional[Dict[str, Any]]:
-        """Ottieni dettagli fattura per Odoo 18.2+"""
-        try:
-            # Campi verificati per 18.2+
-            fields = [
-                'name', 'partner_id', 'invoice_date', 'invoice_date_due', 
-                'amount_total', 'state', 'move_type', 'currency_id',
-                'invoice_payment_term_id', 'journal_id', 'company_id', 'ref',
-                'amount_untaxed', 'amount_tax', 'payment_state'
-            ]
-            
-            invoice_data = self.execute(
-                'account.move', 
-                'read', 
-                [invoice_id],
-                fields=fields
-            )
-            
-            if invoice_data:
-                inv = invoice_data[0]
-                return {
-                    'id': invoice_id,
-                    'name': inv.get('name'),
-                    'partner_name': inv['partner_id'][1] if inv.get('partner_id') else None,
-                    'partner_id': inv['partner_id'][0] if inv.get('partner_id') else None,
-                    'invoice_date': inv.get('invoice_date'),
-                    'due_date': inv.get('invoice_date_due'),
-                    'amount_total': inv.get('amount_total', 0.0),
-                    'amount_untaxed': inv.get('amount_untaxed', 0.0),
-                    'amount_tax': inv.get('amount_tax', 0.0),
-                    'state': inv.get('state'),
-                    'move_type': inv.get('move_type'),
-                    'currency': inv['currency_id'][1] if inv.get('currency_id') else 'EUR',
-                    'payment_state': inv.get('payment_state'),
-                    'reference': inv.get('ref', ''),
-                    'journal_name': inv['journal_id'][1] if inv.get('journal_id') else None,
-                    'company_name': inv['company_id'][1] if inv.get('company_id') else None,
-                    'payment_term_id': inv['invoice_payment_term_id'][0] if inv.get('invoice_payment_term_id') else None,
-                    'payment_term_name': inv['invoice_payment_term_id'][1] if inv.get('invoice_payment_term_id') else None,
-                }
-            
-            return None
-            
-        except Exception as e:
-            self.logger.error(f"Errore recupero dettagli fattura: {e}")
-            raise OdooException(f"Errore recupero dettagli fattura: {e}", 'INVOICE_READ_ERROR')
     
     def get_partners_list(self, limit: int = 100, offset: int = 0, filters: List = None) -> List[Dict[str, Any]]:
         """Ottiene lista partner per Odoo 18.2+"""
@@ -804,65 +583,7 @@ class OdooClient:
             self.logger.error(f"Errore recupero info azienda: {e}")
             raise OdooException(f"Errore recupero info azienda: {e}", 'COMPANY_READ_ERROR')
     
-    def get_available_services(self, limit: int = 100, search_term: str = "") -> List[Dict[str, Any]]:
-        """Servizi/prodotti vendibili per 18.2+"""
-        try:
-            filters = [
-                ('active', '=', True),
-                ('sale_ok', '=', True)
-            ]
-            
-            if search_term:
-                filters.append(('name', 'ilike', search_term))
-            
-            service_ids = self.execute(
-                'product.product',
-                'search',
-                filters,
-                limit=limit,
-                order='name asc'
-            )
-            
-            if not service_ids:
-                return []
-            
-            # Campi verificati per 18.2+
-            fields = [
-                'id', 'name', 'display_name', 'list_price', 'standard_price', 
-                'type', 'default_code', 'sale_ok', 'categ_id', 'uom_id',
-                'taxes_id'  # IVA di vendita
-            ]
-            
-            services = self.execute(
-                'product.product',
-                'read',
-                service_ids,
-                fields=fields
-            )
-            
-            result = []
-            for service in services:
-                result.append({
-                    'id': service['id'],
-                    'name': service['name'],
-                    'display_name': service['display_name'],
-                    'default_code': service.get('default_code', ''),
-                    'list_price': service.get('list_price', 0.0),
-                    'standard_price': service.get('standard_price', 0.0),
-                    'type': service.get('type', 'service'),
-                    'category': service.get('categ_id')[1] if service.get('categ_id') else '',
-                    'uom': service.get('uom_id')[1] if service.get('uom_id') else '',
-                    'taxes': [tax[1] for tax in service.get('taxes_id', [])],
-                    'tax_ids': [tax[0] for tax in service.get('taxes_id', [])],
-                    'sale_ok': service.get('sale_ok', False),
-                    'suggested_price': service.get('list_price', 0.0)
-                })
-            
-            return result
-            
-        except Exception as e:
-            self.logger.error(f"Errore recupero servizi: {e}")
-            raise OdooException(f"Errore servizi: {e}", 'SERVICES_ERROR')
+    
     
     def get_payment_terms(self) -> List[Dict[str, Any]]:
         """Modalità di pagamento per 18.2+"""
@@ -890,188 +611,7 @@ class OdooClient:
             self.logger.error(f"Errore recupero modalità pagamento: {e}")
             raise OdooException(f"Errore modalità pagamento: {e}", 'PAYMENT_TERMS_ERROR')
     
-    def create_service_invoice(self, 
-                            partner_id: int,
-                            service_id: int,
-                            service_description: str,
-                            price_without_tax: float,
-                            payment_term_id: Optional[int] = None,
-                            create_draft: bool = False,
-                            due_days: Optional[int] = None,
-                            reference: str = "") -> Dict[str, Any]:
-        """Crea fattura servizio ottimizzata per 18.2+ con gestione errori migliorata"""
-        try:
-            self.logger.info(f"Creazione fattura servizio - Cliente: {partner_id}, Servizio: {service_id}")
-            
-            # 1. Verifica partner
-            partner_data = self.get_partner_by_id(partner_id)
-            if not partner_data:
-                raise OdooException(f"Cliente {partner_id} non trovato", 'PARTNER_NOT_FOUND')
-            
-            # 2. Verifica servizio con campi minimi sicuri
-            try:
-                service_data = self.execute(
-                    'product.product', 
-                    'read', 
-                    [service_id],
-                    fields=['id', 'name', 'sale_ok', 'list_price', 'taxes_id', 'categ_id', 'uom_id']
-                )
-                
-                if not service_data:
-                    raise OdooException(f"Servizio {service_id} non trovato", 'SERVICE_NOT_FOUND')
-                
-                service = service_data[0]
-                if not service.get('sale_ok', False):
-                    raise OdooException(f"Servizio {service_id} non vendibile", 'SERVICE_NOT_SALEABLE')
-                
-            except Exception as e:
-                self.logger.error(f"Errore verifica servizio {service_id}: {e}")
-                raise OdooException(f"Errore verifica servizio: {e}", 'SERVICE_VALIDATION_ERROR')
-            
-            # 3. Ottieni tasse del servizio
-            tax_ids = [tax[0] for tax in service.get('taxes_id', [])]
-            self.logger.info(f"Tasse trovate per servizio: {tax_ids}")
-            
-            # 4. Determina modalità pagamento con fallback sicuro
-            final_payment_term_id = payment_term_id
-            if not final_payment_term_id:
-                # Prova a usare modalità pagamento del cliente
-                try:
-                    partner_payment_term = self.execute(
-                        'res.partner',
-                        'read',
-                        [partner_id],
-                        fields=['property_payment_term_id']
-                    )
-                    if partner_payment_term and partner_payment_term[0].get('property_payment_term_id'):
-                        final_payment_term_id = partner_payment_term[0]['property_payment_term_id'][0]
-                except:
-                    # Se fallisce, usa None (default di sistema)
-                    final_payment_term_id = None
-            
-            # 5. Ottieni account di default per il prodotto
-            try:
-                default_account = None
-                if service.get('categ_id'):
-                    categ_data = self.execute(
-                        'product.category',
-                        'read',
-                        [service['categ_id'][0]],
-                        fields=['property_account_income_categ_id']
-                    )
-                    if categ_data and categ_data[0].get('property_account_income_categ_id'):
-                        default_account = categ_data[0]['property_account_income_categ_id'][0]
-            except:
-                default_account = None
-            
-            # 6. Crea item fattura con dati sicuri
-            invoice_item = InvoiceItem(
-                product_id=service_id,
-                quantity=1.0,
-                price_unit=price_without_tax,
-                name=service_description,
-                tax_ids=tax_ids if tax_ids else None
-            )
-            
-            # Aggiungi account se disponibile
-            if default_account:
-                invoice_item.account_id = default_account
-            
-            # 7. Crea dati fattura con gestione sicura dei campi
-            invoice_data = InvoiceData(
-                partner_id=partner_id,
-                items=[invoice_item],
-                due_days=due_days,
-                reference=reference,
-                payment_term_id=final_payment_term_id
-            )
-            
-            # 8. Crea fattura con gestione errori dettagliata
-            try:
-                if create_draft:
-                    invoice_id = self.create_invoice(invoice_data)
-                    status = "draft"
-                    self.logger.info(f"Fattura bozza creata: {invoice_id}")
-                else:
-                    invoice_id = self.create_and_confirm_invoice(invoice_data)
-                    status = "posted"
-                    self.logger.info(f"Fattura confermata creata: {invoice_id}")
-                
-                if not invoice_id:
-                    raise OdooException("Creazione fattura fallita - ID nullo", 'INVOICE_CREATION_FAILED')
-                
-            except Exception as e:
-                self.logger.error(f"Errore dettagliato creazione fattura: {e}")
-                # Prova a creare sempre come bozza se la conferma fallisce
-                if not create_draft:
-                    self.logger.warning("Tentativo creazione come bozza dopo fallimento conferma")
-                    try:
-                        invoice_id = self.create_invoice(invoice_data)
-                        status = "draft"
-                        self.logger.info(f"Fattura bozza creata come fallback: {invoice_id}")
-                    except Exception as e2:
-                        raise OdooException(f"Creazione fattura fallita completamente: {e2}", 'INVOICE_CREATION_FAILED')
-                else:
-                    raise OdooException(f"Creazione fattura fallita: {e}", 'INVOICE_CREATION_FAILED')
-            
-            # 9. Ottieni dettagli fattura con fallback
-            try:
-                invoice_details = self.get_invoice_details(invoice_id)
-            except Exception as e:
-                self.logger.warning(f"Errore recupero dettagli fattura {invoice_id}: {e}")
-                # Crea dettagli minimi di fallback
-                invoice_details = {
-                    'id': invoice_id,
-                    'name': f'Fattura {invoice_id}',
-                    'state': status,
-                    'partner_name': partner_data.get('display_name'),
-                    'amount_total': price_without_tax * 1.22,  # Stima con IVA 22%
-                    'amount_untaxed': price_without_tax,
-                    'amount_tax': price_without_tax * 0.22,
-                    'error': 'Dettagli parziali - recupero completo fallito'
-                }
-            
-            # 10. Prepara risposta completa
-            result = {
-                'success': True,
-                'invoice_id': invoice_id,
-                'status': status,
-                'message': f"Fattura {'bozza' if create_draft or status == 'draft' else 'confermata'} creata con successo",
-                'invoice_details': invoice_details,
-                'service_info': {
-                    'service_id': service_id,
-                    'service_name': service.get('name'),
-                    'service_description': service_description,
-                    'price_without_tax': price_without_tax,
-                    'taxes_applied': len(tax_ids) if tax_ids else 0,
-                    'default_account': default_account
-                },
-                'partner_info': {
-                    'partner_id': partner_id,
-                    'partner_name': partner_data.get('display_name'),
-                    'partner_email': partner_data.get('email')
-                },
-                'payment_info': {
-                    'payment_term_id': final_payment_term_id,
-                    'due_date': invoice_details.get('due_date') if invoice_details else None,
-                    'payment_term_source': 'custom' if payment_term_id else 'partner_default_or_system'
-                },
-                'debug_info': {
-                    'taxes_found': tax_ids,
-                    'account_used': default_account,
-                    'fallback_used': status == 'draft' and not create_draft
-                },
-                'created_at': datetime.now().isoformat()
-            }
-            
-            return result
-            
-        except OdooException:
-            raise
-        except Exception as e:
-            error_msg = f"Errore generale creazione fattura servizio: {e}"
-            self.logger.error(error_msg)
-            raise OdooException(error_msg, 'SERVICE_INVOICE_ERROR')
+    
     
     def get_all_partners_for_select(self) -> List[Dict[str, Any]]:
         """Partner per Select2 ottimizzato per 18.2+"""
@@ -1238,24 +778,7 @@ class OdooClient:
             due_dt = invoice_dt + timedelta(days=30)
             return due_dt.strftime('%Y-%m-%d')
     
-    def create_and_confirm_invoice(self, invoice_data: InvoiceData) -> Optional[int]:
-        """Crea e conferma fattura"""
-        try:
-            invoice_id = self.create_invoice(invoice_data)
-            
-            if not invoice_id:
-                return None
-            
-            if self.confirm_invoice(invoice_id):
-                self.logger.info(f"Fattura {invoice_id} creata e confermata")
-                return invoice_id
-            else:
-                self.logger.warning(f"Fattura {invoice_id} creata ma non confermata")
-                return invoice_id
-                
-        except Exception as e:
-            self.logger.error(f"Errore creazione e conferma fattura: {e}")
-            raise
+    
     
     # Metodi di debug per 18.2+
     def debug_model_fields(self, model: str) -> Dict[str, Any]:
@@ -1313,121 +836,1138 @@ class OdooClient:
         
         return key_fields
 
-
 def create_odoo_client(config: Dict[str, Any]) -> OdooClient:
     """Factory function per creare client Odoo 18.2+"""
     return OdooClient(config)
 
 
-# Esempi di utilizzo per test
-def test_odoo_18_2_compatibility():
-    """Test compatibilità completa per Odoo 18.2+"""
-    config = {
-        'ODOO_URL': 'https://your-instance.odoo.com',
-        'ODOO_DB': 'your-database',
-        'ODOO_USERNAME': 'your-username',
-        'ODOO_API_KEY': 'your-api-key'
-    }
+# Carica variabili dal file .env (opzionale)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Carica variabili dal file .env
+    print("📁 File .env caricato")
+except ImportError:
+    print("⚠️ python-dotenv non installato - usando solo variabili d'ambiente del sistema")
+
+# Configurazione tramite variabili d'ambiente (più sicuro)
+url = os.getenv('ODOO_URL')
+db = os.getenv('ODOO_DB')
+username = os.getenv('ODOO_USERNAME')  # Valore di default aggiunto
+api_key = os.getenv('ODOO_API_KEY')  # Legge da variabile d'ambiente
+
+if not api_key:
+    raise ValueError("ODOO_API_KEY environment variable is required")
+
+class OdooAPI:
+
+    """
+    Classe per gestire connessioni Odoo in modo sicuro
+    """
     
-    try:
-        print("🚀 Test Odoo SaaS~18.2+ Integration")
-        print("=" * 50)
+    def __init__(self, url, db, username, api_key):
+        self.url = url
+        self.db = db
+        self.username = username
+        self.api_key = api_key
+        self.uid = None
+        self.common = None
+        self.models = None
         
-        # Crea client
-        client = create_odoo_client(config)
-        
-        # Test connessione
-        print("🔌 Test connessione:")
-        test_result = client.test_connection()
-        
-        if test_result['success']:
-            version = test_result['connection_info']['server_version']
-            print(f"✅ Connesso a Odoo {version}")
-            
-            # Mostra compatibilità
-            compat = test_result['compatibility']
-            print(f"📱 Campo mobile: {'✅' if compat['mobile_field_available'] else '❌'}")
-            print(f"💳 Campo payment_term: {'✅' if compat['invoice_payment_term_id_available'] else '❌'}")
-            print(f"📊 Campo analytic_distribution: {'✅' if compat['analytic_distribution_available'] else '❌'}")
-            
-        else:
-            print(f"❌ Errore connessione: {test_result['error']}")
-            return
-        
-        # Test lettura partner
-        print(f"\n👥 Test partner (primi 3):")
-        partners = client.get_partners_list(limit=3)
-        
-        for partner in partners:
-            print(f"   {partner['id']}: {partner['display_name']}")
-            print(f"      📧 {partner['email'] or 'N/A'}")
-            print(f"      📞 {partner['phone'] or 'N/A'}")
-            print(f"      📱 {partner['mobile'] or 'N/A'}")
-        
-        # Test servizi
-        print(f"\n🛍️ Test servizi (primi 3):")
-        services = client.get_available_services(limit=3)
-        
-        for service in services:
-            print(f"   {service['id']}: {service['name']}")
-            print(f"      💰 Prezzo: {service['list_price']} EUR")
-            print(f"      🏷️ Categoria: {service['category']}")
-        
-        # Test debug campi
-        print(f"\n🔍 Debug campi modelli:")
-        
-        for model in ['res.partner', 'account.move', 'account.move.line']:
-            debug_info = client.debug_model_fields(model)
-            if debug_info['success']:
-                print(f"   {model}: {debug_info['total_fields']} campi")
-                print(f"      Campi chiave: {', '.join(debug_info['key_fields'][:5])}")
-            
-        print(f"\n✅ Test completato con successo!")
-            
-    except OdooException as e:
-        print(f"❌ Errore Odoo: {e}")
-    except Exception as e:
-        print(f"❌ Errore generico: {e}")
-
-
-if __name__ == '__main__':
-    # test_odoo_18_2_compatibility()
-    # Carica variabili dal file .env (opzionale)
-    import os
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()  # Carica variabili dal file .env
-        print("📁 File .env caricato")
-    except ImportError:
-        print("⚠️ python-dotenv non installato - usando solo variabili d'ambiente del sistema")
-
-    # Configurazione tramite variabili d'ambiente (più sicuro)
-    url = os.getenv('ODOO_URL')
-    db = os.getenv('ODOO_DB')
-    username = os.getenv('ODOO_USERNAME')  # Valore di default aggiunto
-    api_key = os.getenv('ODOO_API_KEY')  # Legge da variabile d'ambiente
-    
-    def get_odoo_client():
-        """Helper per creare client Odoo con configurazione"""
+    def connect(self):
+        """
+        Connessione e autenticazione
+        """
         try:
-
-            odoo_config = {
-                'ODOO_URL': url,
-                'ODOO_DB': db,
-                'ODOO_USERNAME': username,
-                'ODOO_API_KEY': api_key
-            }
+            self.common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
+            self.uid = self.common.authenticate(self.db, self.username, self.api_key, {})
             
-            # Verifica configurazione
-            missing = [k for k, v in odoo_config.items() if not v]
-            if missing:
-                raise Exception(f"Configurazione Odoo incompleta: {missing}")
-            
-            return create_odoo_client(odoo_config)
+            if not self.uid:
+                raise Exception("Autenticazione fallita - controlla username e API key")
+                
+            self.models = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/object')
+            print(f"✅ Connesso con UID: {self.uid}")
+            return True
             
         except Exception as e:
-            logger.error(f"Errore creazione client Odoo: {e}")
-            raise
+            print(f"❌ Errore connessione: {e}")
+            return False
+    
+    def execute(self, model, method, *args, **kwargs):
+        """
+        Wrapper per execute_kw con gestione corretta dei parametri
+        """
+        if not self.uid or not self.models:
+            raise Exception("Non ancora connesso - chiama connect() prima")
+        
+        # Se ci sono kwargs, li passiamo come ultimo parametro
+        if kwargs:
+            return self.models.execute_kw(
+                self.db, self.uid, self.api_key, 
+                model, method, list(args), kwargs
+            )
+        else:
+            return self.models.execute_kw(
+                self.db, self.uid, self.api_key, 
+                model, method, list(args)
+            )
+    
+    def get_partner_payment_terms(self, partner_id):
+        """
+        Ottieni i termini di pagamento del cliente
+        """
+        try:
+            partner_data = self.execute('res.partner', 'read', partner_id, 
+                fields=['property_payment_term_id', 'name'])
+            
+            # Gestisci sia il caso di singolo record che lista
+            partner = partner_data[0] if isinstance(partner_data, list) else partner_data
+            
+            if partner and partner['property_payment_term_id']:
+                payment_term_id = partner['property_payment_term_id'][0]
+                payment_term_name = partner['property_payment_term_id'][1]
+                
+                print(f"👤 Cliente: {partner['name']}")
+                print(f"💰 Termini di pagamento: {payment_term_name} (ID: {payment_term_id})")
+                
+                return payment_term_id, payment_term_name
+            else:
+                print(f"👤 Cliente: {partner['name'] if partner else 'Sconosciuto'}")
+                print("⚠️ Nessun termine di pagamento impostato per questo cliente")
+                return None, None
+                
+        except Exception as e:
+            print(f"❌ Errore nel recupero termini pagamento: {e}")
+            return None, None
 
-    client = get_odoo_client()
-    client.get_all_products_for_select()
+    def calculate_due_date_from_terms(self, invoice_date_str, payment_term_id):
+        """
+        Calcola la data di scadenza basata sui termini di pagamento
+        Versione semplificata che usa direttamente i giorni del termine
+        """
+        try:
+            # Per ora usiamo un mapping semplice basato sui termini più comuni
+            # Questo evita problemi con i campi delle righe dei termini di pagamento
+            common_terms = {
+                1: 0,   # Immediate Payment
+                2: 15,  # 15 Days
+                3: 30,  # 30 Days  
+                4: 60,  # 60 Days
+                5: 45,  # 45 Days
+                6: 90,  # 90 Days
+            }
+            
+            days = common_terms.get(payment_term_id, 30)  # Default 30 giorni
+            
+            # Calcola la data di scadenza
+            invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d')
+            due_date = invoice_date + timedelta(days=days)
+            
+            print(f"📅 Calcolato automaticamente: {days} giorni → scadenza {due_date.strftime('%Y-%m-%d')}")
+            
+            return due_date.strftime('%Y-%m-%d')
+            
+        except Exception as e:
+            print(f"❌ Errore nel calcolo data scadenza: {e}")
+            return None
+
+    def calculate_due_date_manual(self, invoice_date_str, days_offset):
+        """
+        Calcola la data di scadenza aggiungendo giorni alla data fattura (metodo manuale)
+        """
+        invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d')
+        due_date = invoice_date + timedelta(days=days_offset)
+        return due_date.strftime('%Y-%m-%d')
+    
+    def create_invoice(self, partner_id, items, due_days=None, manual_due_date=None):
+        """
+        Crea una fattura con gestione intelligente della data di scadenza
+        
+        Args:
+            partner_id: ID del cliente
+            items: Lista di prodotti/servizi per la fattura
+            due_days: Giorni manuali per la scadenza (opzionale)
+            manual_due_date: Data di scadenza specifica (formato 'YYYY-MM-DD', opzionale)
+        """
+        invoice_date = datetime.now().strftime('%Y-%m-%d')
+        due_date = None
+        force_due_date = False  # Flag per forzare la data dopo la creazione
+        
+        print("=" * 50)
+        print("🧾 CREAZIONE FATTURA")
+        print("=" * 50)
+        
+        # LOGICA PER LA DATA DI SCADENZA (PRIORITÀ CORRETTA):
+        # 1. PRIORITÀ MASSIMA: Data manuale specificata
+        # 2. PRIORITÀ ALTA: Giorni manuali specificati
+        # 3. PRIORITÀ MEDIA: Termini di pagamento del cliente
+        # 4. FALLBACK: 30 giorni di default
+        
+        if manual_due_date is not None and manual_due_date != '':
+            # Opzione 1: Data manuale specificata (PRIORITÀ MASSIMA)
+            due_date = manual_due_date
+            force_due_date = True  # Forza la data dopo la creazione
+            print(f"📅 ✅ Usando data di scadenza manuale: {due_date}")
+            
+        elif due_days is not None:
+            # Opzione 2: Giorni manuali specificati (PRIORITÀ ALTA)
+            due_date = self.calculate_due_date_manual(invoice_date, due_days)
+            force_due_date = True  # Forza la data dopo la creazione
+            print(f"📅 ✅ Usando giorni manuali: {due_days} giorni → {due_date}")
+            
+        else:
+            # Opzione 3: Prova a usare i termini di pagamento del cliente (PRIORITÀ MEDIA)
+            print("🔍 Controllo termini di pagamento del cliente...")
+            payment_term_id, payment_term_name = self.get_partner_payment_terms(partner_id)
+            
+            if payment_term_id:
+                due_date = self.calculate_due_date_from_terms(invoice_date, payment_term_id)
+                
+            if not due_date:
+                # Opzione 4: Fallback a 30 giorni (ULTIMA RISORSA)
+                due_date = self.calculate_due_date_manual(invoice_date, 30)
+                print(f"📅 Usando fallback: 30 giorni → {due_date}")
+        
+        # SOLUZIONE: Se dobbiamo forzare la data, creiamo la fattura senza termini di pagamento
+        if force_due_date:
+            print(f"🔧 Creando fattura con data personalizzata...")
+            
+            invoice_data = {
+                'partner_id': partner_id,
+                'move_type': 'out_invoice',
+                'invoice_date': invoice_date,
+                'invoice_date_due': due_date,
+                'invoice_payment_term_id': False,  # ← CHIAVE: Nessun termine di pagamento
+                'invoice_line_ids': [(0, 0, item) for item in items],
+            }
+        else:
+            # Creazione normale con termini di pagamento del cliente
+            invoice_data = {
+                'partner_id': partner_id,
+                'move_type': 'out_invoice',
+                'invoice_date': invoice_date,
+                'invoice_date_due': due_date,
+                'invoice_line_ids': [(0, 0, item) for item in items],
+            }
+        
+        invoice_id = self.execute('account.move', 'create', [invoice_data])
+        
+        print(f'✅ Fattura (bozza) creata con ID: {invoice_id}')
+        print(f'📅 Data fattura: {invoice_date}')
+        print(f'📅 Data scadenza: {due_date}')
+        
+        # VERIFICA: Leggi immediatamente la fattura creata per confermare le date
+        try:
+            created_invoice = self.execute('account.move', 'read', invoice_id, 
+                fields=['invoice_date', 'invoice_date_due', 'name'])
+            created = created_invoice[0] if isinstance(created_invoice, list) else created_invoice
+            print(f"✅ Fattura verificata:")
+            print(f"  - Nome: {created.get('name', 'Bozza')}")
+            print(f"  - Data fattura: {created.get('invoice_date', 'N/A')}")
+            print(f"  - Data scadenza: {created.get('invoice_date_due', 'N/A')}")
+        except:
+            print(f"✅ Fattura creata con successo")
+        
+        print("=" * 50)
+        
+        return invoice_id
+    
+    def confirm_invoice(self, invoice_id, expected_due_date=None):
+        """
+        Conferma una fattura (la passa da bozza a confermata/posted)
+        
+        Args:
+            invoice_id: ID della fattura
+            expected_due_date: Data di scadenza attesa (per verifica)
+        """
+        try:
+            # Prima verifica lo stato della fattura
+            invoice_data = self.execute('account.move', 'read', invoice_id, 
+                fields=['state', 'name', 'invoice_date_due'])
+            
+            invoice = invoice_data[0] if isinstance(invoice_data, list) else invoice_data
+            current_state = invoice.get('state', 'draft')
+            invoice_name = invoice.get('name', 'N/A')
+            
+            print(f"📄 Fattura {invoice_name} - Stato attuale: {current_state}")
+            
+            if current_state == 'posted':
+                print('✅ La fattura è già confermata.')
+                return True
+            elif current_state == 'draft':
+                print('🔄 Confermando la fattura...')
+                # Usa action_post per confermare la fattura
+                self.execute('account.move', 'action_post', invoice_id)
+                print('✅ Fattura confermata e numerata.')
+                return True
+            else:
+                print(f'⚠️ Stato fattura non gestito: {current_state}')
+                return False
+                
+        except Exception as e:
+            print(f'❌ Errore nella conferma della fattura: {e}')
+            return False
+
+    def create_and_confirm_invoice(self, partner_id, items, due_days=None, manual_due_date=None):
+        """
+        Crea e conferma una fattura in un unico passaggio
+        
+        Args:
+            partner_id: ID del cliente
+            items: Lista di prodotti/servizi per la fattura
+            due_days: Giorni manuali per la scadenza (opzionale)
+            manual_due_date: Data di scadenza specifica (formato 'YYYY-MM-DD', opzionale)
+        """
+        print("=" * 50)
+        print("🧾 CREAZIONE E CONFERMA FATTURA")
+        print("=" * 50)
+        
+        # Determina la data attesa
+        expected_due_date = None
+        if manual_due_date is not None and manual_due_date != '':
+            expected_due_date = manual_due_date
+        elif due_days is not None:
+            invoice_date = datetime.now().strftime('%Y-%m-%d')
+            expected_due_date = self.calculate_due_date_manual(invoice_date, due_days)
+        
+        # Step 1: Crea la fattura (bozza)
+        invoice_id = self.create_invoice(
+            partner_id=partner_id, 
+            items=items, 
+            due_days=due_days,
+            manual_due_date=manual_due_date
+        )
+        
+        if not invoice_id:
+            print("❌ Errore nella creazione della fattura")
+            return None
+        
+        # Step 2: Conferma la fattura
+        if self.confirm_invoice(invoice_id, expected_due_date):
+            print("🎉 Fattura creata e confermata con successo!")
+            return invoice_id
+        else:
+            print("⚠️ Fattura creata ma non confermata")
+            return invoice_id
+    
+    def get_invoice_details(self, invoice_id):
+        """
+        Ottieni dettagli di una fattura
+        """
+        try:
+            invoice_data = self.execute('account.move', 'read', invoice_id, 
+                fields=['name', 'partner_id', 'invoice_date', 'invoice_date_due', 'amount_total', 'state'])
+            
+            if invoice_data:
+                inv = invoice_data[0] if isinstance(invoice_data, list) else invoice_data
+                print(f"📄 Fattura: {inv['name']}")
+                print(f"👤 Cliente: {inv['partner_id'][1] if inv['partner_id'] else 'N/A'}")
+                print(f"📅 Data: {inv['invoice_date']}")
+                print(f"📅 Scadenza: {inv['invoice_date_due']}")
+                print(f"💰 Totale: €{inv['amount_total']}")
+                print(f"📊 Stato: {inv['state']}")
+                
+                return inv
+            
+        except Exception as e:
+            print(f"❌ Errore recupero dettagli fattura: {e}")
+            return None
+
+    def check_email_configuration(self):
+        """
+        Verifica la configurazione email di Odoo
+        """
+        try:
+            # Controlla se ci sono server email configurati
+            smtp_servers = self.execute('ir.mail_server', 'search_read', [], 
+                fields=['name', 'smtp_host', 'smtp_port'])
+            
+            if not smtp_servers:
+                print("⚠️ PROBLEMA: Nessun server SMTP configurato in Odoo")
+                return False
+            
+            print(f"📧 Server SMTP trovati: {len(smtp_servers)}")
+            for server in smtp_servers:
+                print(f"  - {server['name']}: {server['smtp_host']}:{server['smtp_port']}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Errore nel controllo configurazione email: {e}")
+            return False
+
+    def send_invoice_email_method1(self, invoice_id):
+        """
+        Metodo 1: Invio tramite message_post con email
+        """
+        try:
+            # Ottieni i dati della fattura
+            invoice_data = self.execute('account.move', 'read', invoice_id, 
+                fields=['partner_id', 'name', 'amount_total', 'invoice_date'])
+            
+            invoice = invoice_data[0] if isinstance(invoice_data, list) else invoice_data
+            
+            if not invoice:
+                print("Fattura non trovata")
+                return False
+                
+            partner_id = invoice['partner_id'][0] if invoice['partner_id'] else False
+            
+            if not partner_id:
+                print("Partner non trovato")
+                return False
+            
+            # Ottieni l'email del partner
+            partner_data = self.execute('res.partner', 'read', partner_id, 
+                fields=['email', 'name'])
+            
+            partner = partner_data[0] if isinstance(partner_data, list) else partner_data
+            
+            if not partner or not partner['email']:
+                print("Email del cliente non trovata")
+                return False
+                
+            partner_email = partner['email']
+            partner_name = partner['name']
+            invoice_name = invoice['name']
+            
+            # Invia email tramite message_post con notifica email
+            self.execute('account.move', 'message_post', invoice_id, 
+                body=f'<p>Gentile {partner_name},</p><p>La fattura {invoice_name} è pronta per il download.</p>',
+                subject=f'Fattura {invoice_name}',
+                message_type='email',
+                subtype_xmlid='mail.mt_comment',
+                partner_ids=[partner_id]
+            )
+            
+            print(f'📧 Fattura {invoice_id} inviata via email a {partner_email} (Metodo 1).')
+            return True
+            
+        except Exception as e:
+            print(f"❌ Errore nell'invio della fattura per email (Metodo 1): {e}")
+            return False
+
+    def send_invoice_email_method2(self, invoice_id):
+        """
+        Metodo 2: Invio manuale tramite creazione diretta mail.mail
+        """
+        try:
+            # Ottieni i dati della fattura e del partner
+            invoice_data = self.execute('account.move', 'read', invoice_id, 
+                fields=['partner_id', 'name', 'amount_total', 'invoice_date'])
+            
+            invoice = invoice_data[0] if isinstance(invoice_data, list) else invoice_data
+            
+            if not invoice:
+                print("Fattura non trovata")
+                return False
+                
+            partner_id = invoice['partner_id'][0] if invoice['partner_id'] else False
+            if not partner_id:
+                print("Partner non trovato")
+                return False
+            
+            partner_data = self.execute('res.partner', 'read', partner_id, 
+                fields=['email', 'name'])
+            
+            partner = partner_data[0] if isinstance(partner_data, list) else partner_data
+            
+            if not partner or not partner['email']:
+                print("Email del cliente non trovata")
+                return False
+            
+            partner_email = partner['email']
+            partner_name = partner['name']
+            invoice_name = invoice['name']
+            amount = invoice['amount_total']
+            date = invoice['invoice_date']
+            
+            # Crea email manualmente
+            mail_data = {
+                'subject': f'Fattura {invoice_name}',
+                'body_html': f'''
+                    <p>Gentile {partner_name},</p>
+                    <p>Le inviamo in allegato la fattura <strong>{invoice_name}</strong> del {date} per un importo di <strong>€ {amount}</strong>.</p>
+                    <p>Cordiali saluti</p>
+                ''',
+                'email_to': partner_email,
+                'model': 'account.move',
+                'res_id': invoice_id,
+                'auto_delete': True,
+            }
+            
+            # Crea e invia
+            mail_id = self.execute('mail.mail', 'create', [mail_data])
+            
+            self.execute('mail.mail', 'send', mail_id)
+            
+            print(f'📧 Fattura {invoice_id} inviata via email a {partner_email} (Metodo 2).')
+            return True
+            
+        except Exception as e:
+            print(f"❌ Errore nell'invio della fattura per email (Metodo 2): {e}")
+            return False
+
+    def send_invoice_email_method3(self, invoice_id):
+        """
+        Metodo 3: Invio tramite mail.template con force_send
+        """
+        try:
+            # Cerca template per fatture
+            template_ids = self.execute('mail.template', 'search',
+                [['model', '=', 'account.move']])
+            
+            if not template_ids:
+                print("Nessun template email trovato")
+                return False
+                
+            template_id = template_ids[0]
+            
+            # Invia email con force_send=True
+            self.execute('mail.template', 'send_mail', 
+                template_id, invoice_id, 
+                force_send=True, raise_exception=True)
+            
+            print(f'📧 Fattura {invoice_id} inviata via email (Metodo 3).')
+            return True
+            
+        except Exception as e:
+            print(f"❌ Errore nell'invio della fattura per email (Metodo 3): {e}")
+            return False
+
+    def send_invoice_email(self, invoice_id):
+        """
+        Funzione principale che prova diversi metodi per inviare l'email
+        """
+        print("📧 Tentativo di invio email...")
+        
+        # Prima verifica la configurazione email
+        if not self.check_email_configuration():
+            print("⚠️ ATTENZIONE: La configurazione email potrebbe non essere visibile via API.")
+        
+        # Prova il Metodo 1 (message_post)
+        if self.send_invoice_email_method1(invoice_id):
+            return True
+        
+        # Se il Metodo 1 fallisce, prova il Metodo 2 (mail.mail diretto)
+        if self.send_invoice_email_method2(invoice_id):
+            return True
+        
+        # Se anche il Metodo 2 fallisce, prova il Metodo 3 (template)
+        if self.send_invoice_email_method3(invoice_id):
+            return True
+        
+        print("❌ Tutti i metodi di invio email hanno fallito.")
+        print("💡 Suggerimento: Prova a inviare manualmente la fattura dall'interfaccia web di Odoo per confermare che funzioni.")
+        return False
+    
+    def gen_fattura(fact_data):
+        # print (fact_data['partner_id'])
+        partner_id = fact_data['partner_id']
+        
+        if fact_data['due_days'] != "":
+            due_days = fact_data['due_days']
+        else:
+            due_days = ""    
+        manual_due_date = fact_data['manual_due_date']
+        items = fact_data['items']
+        da_confermare = fact_data['da_confermare']
+        # return
+        print("🚀 Sistema Fatturazione Odoo con API Key")
+        
+        # Inizializza connessione Odoo
+        odoo = OdooAPI(url, db, username, api_key)
+        
+        if not odoo.connect():
+            return
+        result = False
+        if da_confermare not in ["SI",""]:
+            if due_days != "":
+                invoice_id = odoo.create_and_confirm_invoice(partner_id=partner_id, items=items, due_days=due_days)
+            else:
+                invoice_id = odoo.create_and_confirm_invoice(partner_id=partner_id, items=items, manual_due_date=manual_due_date)
+                
+            # Visualizza dettagli fattura creata
+            odoo.get_invoice_details(invoice_id)
+            # Invia email
+            result = odoo.send_invoice_email(invoice_id)
+        else:
+            if due_days:
+                invoice_id = odoo.create_invoice(partner_id=partner_id, items=items, due_days=due_days)
+            else:
+                invoice_id = odoo.create_invoice(partner_id=partner_id, items=items, manual_due_date=manual_due_date)
+        if not invoice_id:
+            print("❌ Impossibile creare la fattura")
+            return
+
+        # Visualizza dettagli fattura creata
+        print(f"DATI DI ODOO: | {result}")
+        
+        if result:
+            print("✅ Email inviata con successo!")
+            print(result)
+        else:
+            result=False
+            print("⚠️ Problema con l'invio email - controlla la configurazione SMTP")
+        json_result= {
+            "invoice_id": invoice_id,
+            "send_email": result,
+            "partner_id": partner_id,
+            "due_days": due_days,
+            "manual_due_date": manual_due_date,
+            "items": items,
+            "da_confermare": da_confermare
+        }
+        print("\n🎉 Processo completato!")
+        return jsonify(json_result)
+
+class SubscriptionExtractor:
+    def __init__(self):
+        self.odoo = None
+        
+    def connect_odoo(self):
+        """Connessione a Odoo"""
+        try:
+            self.odoo = OdooAPI(
+                url=os.getenv('ODOO_URL'),
+                db=os.getenv('ODOO_DB'),
+                username=os.getenv('ODOO_USERNAME'),
+                api_key=os.getenv('ODOO_API_KEY')
+            )
+            
+            if not self.odoo.connect():
+                raise ConnectionError("Impossibile connettersi a Odoo")
+                
+            return True
+            
+        except Exception as e:
+            print(f"❌ Errore connessione Odoo: {e}")
+            return False
+    
+    def get_available_fields(self):
+        """Recupera i campi disponibili per sale.order"""
+        try:
+            fields_info = self.odoo.execute('sale.order', 'fields_get', [])
+            return list(fields_info.keys())
+        except:
+            return []
+    
+    def find_recurring_fields(self, available_fields):
+        """Identifica i campi che indicano ricorrenza"""
+        possible_fields = [
+            'is_subscription', 'subscription', 'recurring', 'ricorrente',
+            'subscription_management', 'subscription_id', 'recurrence_id',
+            'is_recurring', 'subscription_template_id', 'subscription_state'
+        ]
+        
+        return [field for field in possible_fields if field in available_fields]
+    
+    def get_orders_with_filters(self, partner_id=None, limit=100):
+        """Recupera ordini con filtri di ricorrenza"""
+        available_fields = self.get_available_fields()
+        recurring_fields = self.find_recurring_fields(available_fields)
+        
+        # Costruisce filtri
+        domain = [('state', 'in', ['sale', 'done'])]
+        
+        # Aggiunge filtri per ricorrenza
+        if 'is_subscription' in available_fields:
+            domain.append(('is_subscription', '=', True))
+        elif 'subscription' in available_fields:
+            domain.append(('subscription', '!=', False))
+        
+        # Filtro per partner specifico
+        if partner_id:
+            domain.append(('partner_id', '=', partner_id))
+        
+        # Campi da recuperare
+        fields_to_get = [
+            'id', 'name', 'partner_id', 'state', 'amount_total',
+            'date_order', 'invoice_status', 'order_line', 'currency_id'
+        ] + recurring_fields
+        
+        # Recupera ordini
+        orders = self.odoo.execute('sale.order', 'search_read',
+            domain,
+            fields=fields_to_get,
+            order='date_order desc',
+            limit=limit
+        )
+        
+        return orders, recurring_fields
+    
+    def identify_subscriptions_manually(self, orders):
+        """Identifica abbonamenti manualmente se non trovati con filtri diretti"""
+        subscriptions = []
+        
+        for order in orders:
+            is_subscription = False
+            
+            # Criterio 1: Cliente con più ordini
+            partner_id = order['partner_id'][0] if order['partner_id'] else None
+            if partner_id:
+                similar_orders = self.odoo.execute('sale.order', 'search_count',
+                    [
+                        ('partner_id', '=', partner_id),
+                        ('state', 'in', ['sale', 'done']),
+                        ('id', '!=', order['id'])
+                    ])
+                
+                if similar_orders >= 2:
+                    is_subscription = True
+            
+            # Criterio 2: Analisi prodotti per termini di abbonamento
+            if order.get('order_line') and not is_subscription:
+                try:
+                    lines = self.odoo.execute('sale.order.line', 'search_read',
+                        [('order_id', '=', order['id'])],
+                        fields=['name', 'product_id'])
+                    
+                    subscription_terms = [
+                        'abbonamento', 'subscription', 'piano', 'canone',
+                        'mensile', 'annuale', 'ricorrente', 'voip'
+                    ]
+                    
+                    for line in lines:
+                        line_name = (line.get('name', '') or '').lower()
+                        product_name = ''
+                        if line.get('product_id') and isinstance(line['product_id'], list):
+                            product_name = (line['product_id'][1] or '').lower()
+                        
+                        if any(term in line_name or term in product_name for term in subscription_terms):
+                            is_subscription = True
+                            break
+                            
+                except Exception:
+                    pass
+            
+            # Criterio 3: Righe con traffico extra
+            if order.get('order_line') and not is_subscription:
+                try:
+                    extra_lines = self.odoo.execute('sale.order.line', 'search_count',
+                        [
+                            ('order_id', '=', order['id']),
+                            ('name', 'like', 'EXTRA_TRAFFIC_')
+                        ])
+                    
+                    if extra_lines > 0:
+                        is_subscription = True
+                        
+                except:
+                    pass
+            
+            if is_subscription:
+                subscriptions.append(order)
+        
+        return subscriptions
+    
+    def analyze_order_lines(self, order_id):
+        """Analizza le righe di un ordine"""
+        try:
+            lines = self.odoo.execute('sale.order.line', 'search_read',
+                [('order_id', '=', order_id)],
+                fields=['name', 'price_unit', 'product_uom_qty', 'price_subtotal', 'product_id'])
+            
+            extra_lines = []
+            regular_lines = []
+            
+            for line in lines:
+                # Aggiunge informazioni prodotto
+                product_info = None
+                if line.get('product_id'):
+                    if isinstance(line['product_id'], list) and len(line['product_id']) > 1:
+                        product_info = {
+                            'id': line['product_id'][0],
+                            'name': line['product_id'][1]
+                        }
+                    elif isinstance(line['product_id'], int):
+                        product_info = {
+                            'id': line['product_id'],
+                            'name': 'N/A'
+                        }
+                
+                line['product_info'] = product_info
+                
+                if 'EXTRA_TRAFFIC_' in line['name']:
+                    extra_lines.append(line)
+                else:
+                    regular_lines.append(line)
+            
+            return {
+                'total_lines': len(lines),
+                'extra_lines': len(extra_lines),
+                'regular_lines': len(regular_lines),
+                'extra_amount': sum(line['price_subtotal'] for line in extra_lines),
+                'regular_amount': sum(line['price_subtotal'] for line in regular_lines),
+                'extra_details': extra_lines,
+                'regular_details': regular_lines,
+                'all_lines': lines
+            }
+            
+        except Exception:
+            return None
+    
+    def format_date(self, date_string):
+        """Formatta date per JSON"""
+        if date_string:
+            try:
+                date_obj = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+                return {
+                    "iso": date_obj.isoformat(),
+                    "formatted": date_obj.strftime('%Y-%m-%d %H:%M:%S'),
+                    "date_only": date_obj.strftime('%Y-%m-%d')
+                }
+            except:
+                return {"raw": date_string}
+        return None
+    
+    def get_subscriptions_json(self, partner_id=None, limit=100):
+        """Recupera abbonamenti e restituisce JSON"""
+        if not self.connect_odoo():
+            return None
+        
+        # Prova prima con filtri diretti
+        orders, recurring_fields = self.get_orders_with_filters(partner_id, limit)
+        
+        # Se non trova niente, prova ricerca manuale
+        if not orders:
+            alternative_domain = [('state', 'in', ['sale', 'done'])]
+            if partner_id:
+                alternative_domain.append(('partner_id', '=', partner_id))
+            
+            all_orders = self.odoo.execute('sale.order', 'search_read',
+                alternative_domain,
+                fields=[
+                    'id', 'name', 'partner_id', 'state', 'amount_total',
+                    'date_order', 'invoice_status', 'order_line', 'currency_id'
+                ],
+                order='date_order desc',
+                limit=limit * 2
+            )
+            
+            orders = self.identify_subscriptions_manually(all_orders)
+        
+        if not orders:
+            return {
+                "export_info": {
+                    "export_date": datetime.now().isoformat(),
+                    "total_subscriptions": 0,
+                    "partner_filter": partner_id,
+                    "status": "no_subscriptions_found"
+                },
+                "summary": {
+                    "total_subscriptions": 0,
+                    "total_amount": 0
+                },
+                "subscriptions": []
+            }
+        
+        # Costruisce JSON
+        json_data = {
+            "export_info": {
+                "export_date": datetime.now().isoformat(),
+                "total_subscriptions": len(orders),
+                "partner_filter": partner_id,
+                "odoo_connection": {
+                    "url": os.getenv('ODOO_URL'),
+                    "database": os.getenv('ODOO_DB')
+                }
+            },
+            "summary": {
+                "total_subscriptions": len(orders),
+                "total_amount": 0,
+                "total_extra_traffic": 0,
+                "subscriptions_with_extra": 0,
+                "currency_breakdown": {},
+                "partner_breakdown": {}
+            },
+            "subscriptions": []
+        }
+        
+        total_amount = 0
+        total_extra = 0
+        subscriptions_with_extra = 0
+        
+        # Processa ogni abbonamento
+        for order in orders:
+            partner_info = {
+                "id": order['partner_id'][0] if order['partner_id'] else None,
+                "name": order['partner_id'][1] if order['partner_id'] else None
+            }
+            
+            currency_info = {
+                "id": order['currency_id'][0] if order.get('currency_id') else None,
+                "name": order['currency_id'][1] if order.get('currency_id') else 'EUR'
+            }
+            
+            # Analizza righe
+            lines_analysis = self.analyze_order_lines(order['id']) if order.get('order_line') else None
+            
+            # Aggiorna statistiche
+            amount = order.get('amount_total', 0)
+            total_amount += amount
+            
+            if lines_analysis and lines_analysis['extra_lines'] > 0:
+                total_extra += lines_analysis['extra_amount']
+                subscriptions_with_extra += 1
+            
+            # Breakdown per valuta
+            currency_name = currency_info['name']
+            if currency_name not in json_data['summary']['currency_breakdown']:
+                json_data['summary']['currency_breakdown'][currency_name] = {
+                    "count": 0,
+                    "total_amount": 0
+                }
+            json_data['summary']['currency_breakdown'][currency_name]['count'] += 1
+            json_data['summary']['currency_breakdown'][currency_name]['total_amount'] += amount
+            
+            # Breakdown per partner
+            partner_name = partner_info['name'] or 'Unknown'
+            if partner_name not in json_data['summary']['partner_breakdown']:
+                json_data['summary']['partner_breakdown'][partner_name] = {
+                    "partner_id": partner_info['id'],
+                    "subscriptions_count": 0,
+                    "total_amount": 0
+                }
+            json_data['summary']['partner_breakdown'][partner_name]['subscriptions_count'] += 1
+            json_data['summary']['partner_breakdown'][partner_name]['total_amount'] += amount
+            
+            # Campi ricorrenza
+            recurring_info = {}
+            for field_name in recurring_fields:
+                if field_name in order and order[field_name]:
+                    recurring_info[field_name] = order[field_name]
+            
+            # Struttura abbonamento
+            subscription = {
+                "id": order['id'],
+                "name": order['name'],
+                "partner": partner_info,
+                "state": order['state'],
+                "amount_total": amount,
+                "currency": currency_info,
+                "dates": {
+                    "order_date": self.format_date(order.get('date_order'))
+                },
+                "invoice_status": order.get('invoice_status'),
+                "recurring_fields": recurring_info,
+                "has_extra_traffic": False,
+                "extra_traffic_amount": 0,
+                "lines_summary": {
+                    "total_lines": 0,
+                    "regular_lines": 0,
+                    "extra_lines": 0,
+                    "regular_amount": 0,
+                    "extra_amount": 0
+                }
+            }
+            
+            # Aggiunge analisi righe
+            if lines_analysis:
+                subscription.update({
+                    "has_extra_traffic": lines_analysis['extra_lines'] > 0,
+                    "extra_traffic_amount": lines_analysis['extra_amount'],
+                    "lines_summary": {
+                        "total_lines": lines_analysis['total_lines'],
+                        "regular_lines": lines_analysis['regular_lines'],
+                        "extra_lines": lines_analysis['extra_lines'],
+                        "regular_amount": lines_analysis['regular_amount'],
+                        "extra_amount": lines_analysis['extra_amount']
+                    }
+                })
+                
+                # Dettagli traffico extra
+                if lines_analysis['extra_details']:
+                    subscription['extra_traffic_details'] = []
+                    for line in lines_analysis['extra_details']:
+                        line_detail = {
+                            "name": line['name'],
+                            "amount": line['price_subtotal'],
+                            "quantity": line.get('product_uom_qty', 1),
+                            "unit_price": line.get('price_unit', 0),
+                            "product": line.get('product_info')
+                        }
+                        
+                        # Estrae periodo se possibile
+                        if 'EXTRA_TRAFFIC_' in line['name']:
+                            try:
+                                parts = line['name'].split('EXTRA_TRAFFIC_')[1].split('_')
+                                if len(parts) >= 2:
+                                    line_detail['traffic_period'] = {
+                                        "year": int(parts[0]),
+                                        "month": int(parts[1]),
+                                        "period_string": f"{parts[1]}/{parts[0]}"
+                                    }
+                            except:
+                                pass
+                        
+                        subscription['extra_traffic_details'].append(line_detail)
+                
+                # Dettagli righe regolari (prodotti abbonamento)
+                if lines_analysis['regular_details']:
+                    subscription['subscription_products'] = []
+                    for line in lines_analysis['regular_details']:
+                        product_detail = {
+                            "name": line['name'],
+                            "amount": line['price_subtotal'],
+                            "quantity": line.get('product_uom_qty', 1),
+                            "unit_price": line.get('price_unit', 0),
+                            "product": line.get('product_info')
+                        }
+                        subscription['subscription_products'].append(product_detail)
+                
+                # Riepilogo tutti i prodotti
+                subscription['all_products'] = []
+                for line in lines_analysis['all_lines']:
+                    product_summary = {
+                        "name": line['name'],
+                        "amount": line['price_subtotal'],
+                        "quantity": line.get('product_uom_qty', 1),
+                        "unit_price": line.get('price_unit', 0),
+                        "product": line.get('product_info'),
+                        "type": "extra_traffic" if 'EXTRA_TRAFFIC_' in line['name'] else "subscription"
+                    }
+                    subscription['all_products'].append(product_summary)
+            
+            json_data['subscriptions'].append(subscription)
+        
+        # Aggiorna summary
+        json_data['summary'].update({
+            'total_amount': total_amount,
+            'total_extra_traffic': total_extra,
+            'subscriptions_with_extra': subscriptions_with_extra,
+            'extra_traffic_percentage': (total_extra / total_amount * 100) if total_amount > 0 else 0
+        })
+        
+        return json_data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Esempi di utilizzo per test
+# def test_odoo_18_2_compatibility():
+#     """Test compatibilità completa per Odoo 18.2+"""
+#     config = {
+#         'ODOO_URL': 'https://your-instance.odoo.com',
+#         'ODOO_DB': 'your-database',
+#         'ODOO_USERNAME': 'your-username',
+#         'ODOO_API_KEY': 'your-api-key'
+#     }
+    
+#     try:
+#         print("🚀 Test Odoo SaaS~18.2+ Integration")
+#         print("=" * 50)
+        
+#         # Crea client
+#         client = create_odoo_client(config)
+        
+#         # Test connessione
+#         print("🔌 Test connessione:")
+#         test_result = client.test_connection()
+        
+#         if test_result['success']:
+#             version = test_result['connection_info']['server_version']
+#             print(f"✅ Connesso a Odoo {version}")
+            
+#             # Mostra compatibilità
+#             compat = test_result['compatibility']
+#             print(f"📱 Campo mobile: {'✅' if compat['mobile_field_available'] else '❌'}")
+#             print(f"💳 Campo payment_term: {'✅' if compat['invoice_payment_term_id_available'] else '❌'}")
+#             print(f"📊 Campo analytic_distribution: {'✅' if compat['analytic_distribution_available'] else '❌'}")
+            
+#         else:
+#             print(f"❌ Errore connessione: {test_result['error']}")
+#             return
+        
+#         # Test lettura partner
+#         print(f"\n👥 Test partner (primi 3):")
+#         partners = client.get_partners_list(limit=3)
+        
+#         for partner in partners:
+#             print(f"   {partner['id']}: {partner['display_name']}")
+#             print(f"      📧 {partner['email'] or 'N/A'}")
+#             print(f"      📞 {partner['phone'] or 'N/A'}")
+#             print(f"      📱 {partner['mobile'] or 'N/A'}")
+        
+#         # Test servizi
+#         print(f"\n🛍️ Test servizi (primi 3):")
+#         services = client.get_available_services(limit=3)
+        
+#         for service in services:
+#             print(f"   {service['id']}: {service['name']}")
+#             print(f"      💰 Prezzo: {service['list_price']} EUR")
+#             print(f"      🏷️ Categoria: {service['category']}")
+        
+#         # Test debug campi
+#         print(f"\n🔍 Debug campi modelli:")
+        
+#         for model in ['res.partner', 'account.move', 'account.move.line']:
+#             debug_info = client.debug_model_fields(model)
+#             if debug_info['success']:
+#                 print(f"   {model}: {debug_info['total_fields']} campi")
+#                 print(f"      Campi chiave: {', '.join(debug_info['key_fields'][:5])}")
+            
+#         print(f"\n✅ Test completato con successo!")
+            
+#     except OdooException as e:
+#         print(f"❌ Errore Odoo: {e}")
+#     except Exception as e:
+#         print(f"❌ Errore generico: {e}")
+
+
+# if __name__ == '__main__':
+#     # test_odoo_18_2_compatibility()
+#     # Carica variabili dal file .env (opzionale)
+#     import os
+#     try:
+#         from dotenv import load_dotenv
+#         load_dotenv()  # Carica variabili dal file .env
+#         print("📁 File .env caricato")
+#     except ImportError:
+#         print("⚠️ python-dotenv non installato - usando solo variabili d'ambiente del sistema")
+
+#     # Configurazione tramite variabili d'ambiente (più sicuro)
+#     url = os.getenv('ODOO_URL')
+#     db = os.getenv('ODOO_DB')
+#     username = os.getenv('ODOO_USERNAME')  # Valore di default aggiunto
+#     api_key = os.getenv('ODOO_API_KEY')  # Legge da variabile d'ambiente
+    
+#     def get_odoo_client():
+#         """Helper per creare client Odoo con configurazione"""
+#         try:
+
+#             odoo_config = {
+#                 'ODOO_URL': url,
+#                 'ODOO_DB': db,
+#                 'ODOO_USERNAME': username,
+#                 'ODOO_API_KEY': api_key
+#             }
+            
+#             # Verifica configurazione
+#             missing = [k for k, v in odoo_config.items() if not v]
+#             if missing:
+#                 raise Exception(f"Configurazione Odoo incompleta: {missing}")
+            
+#             return create_odoo_client(odoo_config)
+            
+#         except Exception as e:
+#             logger.error(f"Errore creazione client Odoo: {e}")
+#             raise
+
+#     client = get_odoo_client()
+#     client.get_all_products_for_select()

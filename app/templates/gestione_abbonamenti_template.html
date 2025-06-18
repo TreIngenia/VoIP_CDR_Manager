@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Ordini e Traffico Extra VoIP</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-badge {
+            font-size: 0.8em;
+            padding: 0.3em 0.6em;
+        }
+        .subscription-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #007bff;
+        }
+        .subscription-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .extra-traffic-badge {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            border: none;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .result-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .accordion-button:not(.collapsed) {
+            background-color: #e7f3ff;
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-sync-alt text-primary me-2"></i>
+                        Gestione Ordini VoIP
+                    </h1>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="scopriConfigurazione()">
+                            <i class="fas fa-search me-1"></i>Scopri Configurazione
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="processaOrdiniClienti()">
+                            <i class="fas fa-play me-1"></i>Processa Ordini Clienti
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sezione Configurazione -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cog me-2"></i>Configurazione Sistema
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="configurationStatus" class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Clicca su "Scopri Configurazione" per verificare la configurazione Odoo
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sezione Test Singolo Cliente -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-flask me-2"></i>Test Singolo Cliente
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="testPartnerId" class="form-label">ID Cliente</label>
+                                <input type="number" class="form-control" id="testPartnerId" placeholder="es. 1951">
+                                <small class="text-muted">Dalle tue informazioni: Claudio Sgroi INC (ID probabile)</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="testExtraAmount" class="form-label">Importo Extra (€)</label>
+                                <input type="number" class="form-control" id="testExtraAmount" value="10.00" step="0.01">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="testDescription" class="form-label">Descrizione</label>
+                                <input type="text" class="form-control" id="testDescription" placeholder="Test traffico extra">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-warning" onclick="testSingoloCliente()">
+                                <i class="fas fa-play me-1"></i>Esegui Test Cliente
+                            </button>
+                            <small class="text-muted ms-3">
+                                Questo test creerà/aggiornerà un ordine di vendita per il cliente con traffico extra
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sezione Rimozione Manuale Traffico Extra -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-trash-alt me-2"></i>Rimozione Manuale Traffico Extra
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="removePartnerId" class="form-label">ID Cliente</label>
+                                <input type="number" class="form-control" id="removePartnerId" placeholder="es. 1951">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="removePeriodMonth" class="form-label">Mese</label>
+                                <select class="form-control" id="removePeriodMonth">
+                                    <option value="">Mese corrente</option>
+                                    <option value="1">Gennaio</option>
+                                    <option value="2">Febbraio</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Aprile</option>
+                                    <option value="5">Maggio</option>
+                                    <option value="6">Giugno</option>
+                                    <option value="7">Luglio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Settembre</option>
+                                    <option value="10">Ottobre</option>
+                                    <option value="11">Novembre</option>
+                                    <option value="12">Dicembre</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="removePeriodYear" class="form-label">Anno</label>
+                                <input type="number" class="form-control" id="removePeriodYear" value="2025" min="2020" max="2030">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-danger" onclick="rimuoviTrafficoExtraCliente()">
+                                <i class="fas fa-trash me-1"></i>Rimuovi Traffico Extra Cliente
+                            </button>
+                            <small class="text-muted ms-3">
+                                Rimuove manualmente il traffico extra dagli ordini del cliente per il periodo specificato
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sezione Risultati -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-line me-2"></i>Risultati Operazioni
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearResults()">
+                            <i class="fas fa-trash me-1"></i>Pulisci
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="loadingSpinner" class="loading-spinner text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Caricamento...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Processando richiesta...</p>
+                        </div>
+                        <div id="resultContainer" class="result-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('resultContainer').innerHTML = '';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        function showResult(result, type = 'info') {
+            hideLoading();
+            const container = document.getElementById('resultContainer');
+            
+            const alertClass = {
+                'success': 'alert-success',
+                'error': 'alert-danger',
+                'warning': 'alert-warning',
+                'info': 'alert-info'
+            }[type] || 'alert-info';
+
+            const icon = {
+                'success': 'fas fa-check-circle',
+                'error': 'fas fa-exclamation-circle',
+                'warning': 'fas fa-exclamation-triangle',
+                'info': 'fas fa-info-circle'
+            }[type] || 'fas fa-info-circle';
+
+            const timestamp = new Date().toLocaleString('it-IT');
+            
+            const resultHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <div class="d-flex align-items-start">
+                        <i class="${icon} me-2 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <strong>Risultato operazione (${timestamp})</strong>
+                            <pre class="mt-2 mb-0"><code>${JSON.stringify(result, null, 2)}</code></pre>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('afterbegin', resultHtml);
+        }
+
+        function clearResults() {
+            document.getElementById('resultContainer').innerHTML = '';
+        }
+
+        // API calls
+        async function scopriConfigurazione() {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/fatturazione/scopri_configurazione');
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(result, 'success');
+                    updateConfigurationStatus(result.discovery_result);
+                } else {
+                    showResult(result, 'error');
+                }
+            } catch (error) {
+                showResult({error: error.message}, 'error');
+            }
+        }
+
+        function updateConfigurationStatus(discoveryResult) {
+            const statusDiv = document.getElementById('configurationStatus');
+            
+            if (discoveryResult && discoveryResult.connected) {
+                const primaryModel = discoveryResult.primary_model || 'Non identificato';
+                const modelCount = discoveryResult.available_models ? discoveryResult.available_models.length : 0;
+                
+                statusDiv.className = 'alert alert-success';
+                statusDiv.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Configurazione OK!</strong><br>
+                    Modello principale: <code>${primaryModel}</code><br>
+                    Modelli disponibili: ${modelCount}
+                `;
+            } else {
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.innerHTML = `
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Problema di configurazione!</strong><br>
+                    Impossibile connettersi a Odoo o identificare i modelli di abbonamento.
+                `;
+            }
+        }
+
+        async function processaAbbonamenti() {
+            if (!confirm('Sei sicuro di voler processare tutti gli abbonamenti? Questa operazione aggiungerà il traffico extra-soglia agli abbonamenti che ne hanno bisogno.')) {
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                // Questo triggererà il processamento dal tuo sistema esistente
+                // Dovrai adattare l'endpoint in base alla tua configurazione
+                const response = await fetch('/api/contracts/process_subscriptions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        process_type: 'subscriptions_only',
+                        auto_update: true
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(result, 'success');
+                } else {
+                    showResult(result, 'error');
+                }
+            } catch (error) {
+                showResult({error: error.message}, 'error');
+            }
+        }
+
+        async function testSingoloCliente() {
+            const partnerId = document.getElementById('testPartnerId').value;
+            const extraAmount = document.getElementById('testExtraAmount').value;
+            const description = document.getElementById('testDescription').value;
+            
+            if (!partnerId) {
+                alert('Inserisci un ID cliente valido');
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/fatturazione/test_cliente', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        partner_id: parseInt(partnerId),
+                        extra_amount: parseFloat(extraAmount),
+                        description: description || 'Test traffico extra'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(result, 'success');
+                } else {
+                    showResult(result, 'error');
+                }
+            } catch (error) {
+                showResult({error: error.message}, 'error');
+            }
+        }
+
+        async function rimuoviTrafficoExtraCliente() {
+            const partnerId = document.getElementById('removePartnerId').value;
+            const periodMonth = document.getElementById('removePeriodMonth').value;
+            const periodYear = document.getElementById('removePeriodYear').value;
+            
+            if (!partnerId) {
+                alert('Inserisci un ID cliente valido');
+                return;
+            }
+
+            if (!confirm(`Sei sicuro di voler rimuovere il traffico extra dal cliente ${partnerId}?`)) {
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/fatturazione/rimuovi_traffico_extra_cliente', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        partner_id: parseInt(partnerId),
+                        period_month: periodMonth ? parseInt(periodMonth) : null,
+                        period_year: periodYear ? parseInt(periodYear) : null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(result, 'success');
+                } else {
+                    showResult(result, 'error');
+                }
+            } catch (error) {
+                showResult({error: error.message}, 'error');
+            }
+        }
+
+        // Auto-load configuration on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Puoi decommentare questa riga per caricare automaticamente la configurazione
+            // scopriConfigurazione();
+        });
+    </script>
+</body>
+</html>
