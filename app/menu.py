@@ -10,6 +10,15 @@ MENU_ITEMS = [
     },
     {
         'type': 'section',  # Nessun titolo
+        'title': 'Listini'
+    },
+    {
+        'endpoint': 'listino',
+        'title': 'Listino prezzi',
+        'icon': 'ki-outline ki-element-11 fs-2',
+    },
+    {
+        'type': 'section',  # Nessun titolo
         'title': 'Categorie'
     },
     {

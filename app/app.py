@@ -47,6 +47,9 @@ from routes.fatture_routes import fatture_routes
 #ROUTE ODOO
 from routes.odoo_routes import add_odoo_routes
 
+#ROUTE LISTINO
+from routes.listino_routes import create_listino_routes
+
 def create_app():
     """Factory function per creare l'app Flask"""
     app = Flask(__name__, 
@@ -175,7 +178,14 @@ def main():
         log_info("Registrazione route gestione categorie unificato...")
         categories_info = add_cdr_categories_routes(app, processor.cdr_analytics, secure_config)
         log_success(f"Route categorie registrate: {categories_info['routes_count']} endpoint")
-        
+
+        # ✅ AGGIUNGI ROUTE IL LISTINO (aggiornate)
+        log_info("Registrazione route gestione listino prezzi...")
+        listino = create_listino_routes(app, secure_config)
+        log_success(f"Route listino prezzi registrate: {listino['routes_count']} endpoint")
+        log_info(f"Dashboard listino disponibile su: /listino/")
+        log_info(f"Directory upload listino: {listino['upload_folder']}")
+
         # Inizializza scheduler
         scheduler_manager = SchedulerManager()
         scheduler_manager.set_config(secure_config.get_config())
@@ -248,7 +258,7 @@ def main():
             host=app_host,
             port=app_port,
             threaded=True,
-            use_reloader=app_debug  # reloader solo se debug è attivo
+            use_reloader=False #app_debug  # reloader solo se debug è attivo
         )
         
     except KeyboardInterrupt:

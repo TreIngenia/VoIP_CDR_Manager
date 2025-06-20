@@ -2,10 +2,10 @@
   "metadata": {
     "version": "1.0",
     "created_date": "2025-06-15T22:01:24.120133",
-    "last_updated": "2025-06-16T17:21:40.388291",
+    "last_updated": "2025-06-18T15:12:46.910498",
     "total_contracts": 21,
     "extraction_source": "FTP_CDR_Files",
-    "manual_updates": 13,
+    "manual_updates": 15,
     "extraction_runs": 1,
     "last_extraction_added_contracts": 21,
     "description": "Configurazione codici contratto estratti da file CDR"
@@ -13,8 +13,8 @@
   "contracts": {
     "14": {
       "contract_code": "14",
-      "contract_name": "Claudio TEST",
-      "odoo_client_id": null,
+      "contract_name": "",
+      "odoo_client_id": "",
       "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
       "first_seen_date": "2025-06-15T22:01:24.110338",
       "last_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
@@ -28,8 +28,8 @@
         "016322183"
       ],
       "total_unique_numbers": 1,
-      "contract_type": "26",
-      "last_updated": "2025-06-15T22:11:32.054984"
+      "contract_type": "",
+      "last_updated": "2025-06-18T15:12:46.910492"
     },
     "83": {
       "contract_code": "83",
@@ -69,8 +69,8 @@
         "0662296324"
       ],
       "total_unique_numbers": 2,
-      "contract_type": "42",
-      "last_updated": "2025-06-16T17:21:40.388280"
+      "contract_type": "",
+      "last_updated": "2025-06-18T15:12:46.789779"
     },
     "58": {
       "contract_code": "58",

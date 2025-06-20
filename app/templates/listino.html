@@ -1,0 +1,422 @@
+{% extends 'base.html' %}
+{% block title %}>Listrino prezzi{% endblock %}
+{% block toolbar %}
+<link href="assets/treingenia/css/style.css" rel="stylesheet" type="text/css"/>
+
+<div class="col-4 d-flex justify-content-center justify-content-md-start pe-md-3">
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div class="row align-items-end">
+            <div class="col-md-8">
+                <div class="">
+                    <input type="file" class="form-control form-control-sm" id="csvFile" name="file" accept=".csv">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-upload me-2"></i>Carica
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="col-2 d-flex justify-content-center justify-content-md-start pe-md-3">
+    <div class="input-group input-group-sm">
+        <span class="input-group-text">Ricarico</span>
+        <input type="number" id="quickMarkupPercentage" class="form-control form-control-sm" value="100" 
+            title="Inserisci la percentuale di ricarico rapido" 
+            placeholder="Es. 10"
+            step="0.5">
+        <span class="input-group-text">%</span>
+        <button class="btn btn-primary btn-sm" id="quickMarkupButton">Applica</button>
+    </div>
+</div>
+<div class="col-1 d-flex justify-content-center justify-content-md-start">
+    <button id="reload_tables" class="btn btn-primary btn-sm">
+        <i class="fas fa-rotate me-2"></i>Ricarica
+    </button>
+    <!-- <div class="input-group">
+        <span class="input-group-text">Ricarico Rapido</span>
+        <input type="number" id="quickMarkupPercentage" class="form-control" value="100" 
+            title="Inserisci la percentuale di ricarico rapido" 
+            placeholder="Es. 10"
+            step="0.5">
+        <span class="input-group-text">%</span>
+        <button class="btn btn-outline-primary" id="quickMarkupButton">Applica</button>
+    </div> -->
+</div>
+<div class="col-1 d-flex align-items-center">
+    <d class="nav-link align-middle" href="#" data-bs-toggle="modal" data-bs-target="#helpModal">
+        <i class="fas fa-question-circle"></i> Aiuto
+    </d>
+    <button id="kt_drawer_example_advanced_button" class="btn btn-primary btn-sm btn-icon">A</button>
+</div>
+<div class="col-4 d-flex justify-content-center justify-content-md-end">
+    <div class="btn-group">
+        <!-- <button id="edit_button" type="button" class="btn btn-sm btn-primary" ><i class="fa-solid fa-pen-to-square me-2 fs-3"></i>Modifica</button>
+        <button id="save_all" type="button" class="btn btn-sm btn-warning disabled" onclick="saveAllContracts()"><i class="fa-solid fa-floppy-disk me-2 fs-3"></i>Salva Tutti i Contratti</button>
+        <button id="reload" type="button" class="btn btn-sm btn-info" onclick="loadContracts('load')"><i class="fa-solid fa-arrows-rotate me-2 fs-3"></i>Ricarica Dati</button> -->
+        
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#markupModal"><i class="fas fa-percentage me-2"></i>Applica Ricarico</button>
+        <button id="undoButton" class="btn btn-sm btn-warning" disabled><i class="fas fa-undo me-2"></i>Annulla Ultima Operazione</button>
+        <button id="saveButton" class="btn btn-sm btn-success"><i class="fas fa-save me-2"></i>Salva Modifiche</button>   
+    </div>
+</div>
+
+{% endblock %}     
+{% block content %}   
+<div id="kt_app_content" class="app-content  flex-column-fluid " >
+    <div id="kt_app_content_container" class="app-container  container-fluid ">
+        <div class="row">
+                <div id="toast_container"></div>
+                
+
+                <div class="container-fluid mt-0">
+                    <!-- Area caricamento file -->
+                    <div id="uploadStatus" class="alert alert-info mt-3 d-none">
+                        <span id="uploadStatusText"></span>
+                    </div>
+                    <!-- Card upload-->
+
+
+                    <!-- Area informazioni file corrente -->
+                    <div class="row mt-2 d-none" id="dataSection">
+                        <div class="col-12">
+                            <!-- Menu opzioni listino -->
+
+                            <!-- Tabella dati -->
+                            <div class="card shadow-sm mb-3">
+                                <!-- <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Dati del Listino</h5>
+                        <div>
+                            <button id="undoButton" class="btn btn-warning me-2" disabled>
+                            <i class="fas fa-undo me-2"></i>Annulla Ultima Operazione
+                            </button>
+                            <button id="saveButton" class="btn btn-success me-2">
+                            <i class="fas fa-save me-2"></i>Salva Modifiche
+                            </button>
+                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#markupModal">
+                            <i class="fas fa-percentage me-2"></i>Applica Ricarico
+                            </button>
+                        </div>
+                        </div>
+                    </div> -->
+                                <div class="card-body">
+                                  
+                                        <table id="kt_datatable" class="table-responsive table table-row-bordered table-rounded  border gy-5 gs-5 align-middle table-hover" style="width:100%">
+                                     
+                                        </table>
+                                  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal per il ricarico percentuale -->
+                <div class="modal fade" id="markupModal" tabindex="-1" aria-labelledby="markupModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="markupModalLabel">Applica Ricarico Percentuale</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="markupPercentage" class="form-label">Percentuale di Ricarico (%)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="markupPercentage"  step="0.5"
+                                            value="100">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    <div class="form-text">Inserisci la percentuale di ricarico da applicare ai prezzi selezionati
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Colonne da Modificare:</label>
+                                    <div id="priceColumnCheckboxes" class="form-check">
+                                        <!-- Generato dinamicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                <button type="button" class="btn btn-primary" id="applyMarkupButton">
+                                    <i class="fas fa-percentage me-2"></i>Applica Ricarico
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal per il ricarico individuale o modifica prezzo -->
+                <div class="modal fade" id="individualMarkupModal" tabindex="-1" aria-labelledby="individualMarkupModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="individualMarkupModalLabel">Modifica Prezzo Prodotto</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info mb-3">
+                                    <i class="fas fa-info-circle me-2"></i> Stai modificando i prezzi del prodotto:
+                                    <div class="fw-bold mt-1" id="productName"></div>
+                                </div>
+                                <div id="individualPriceInputs">
+                                    <!-- Generato dinamicamente -->
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                <button type="button" class="btn btn-primary" id="savePriceButton">Salva Modifiche</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal per il salvataggio -->
+                <div class="modal fade" id="saveModal" tabindex="-1" aria-labelledby="saveModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="saveModalLabel">Salva Modifiche</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Scegli il formato in cui salvare i dati:</p>
+
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="saveFormat" id="formatCSV" value="csv">
+                                    <label class="form-check-label" for="formatCSV">
+                                        <i class="fas fa-file-csv me-2"></i>CSV (Scarica sul tuo dispositivo)
+                                    </label>
+                                    <div class="form-text ms-4">Salva un file CSV che puoi aprire con Excel o altri programmi.</div>
+                                </div>
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="saveFormat" id="formatServer" value="server" checked>
+                                    <label class="form-check-label" for="formatServer">
+                                        <i class="fas fa-server me-2"></i>Salva sul server
+                                    </label>
+                                    <div class="form-text ms-4">Salva i dati sul server in formato JSON e CSV.</div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                <button type="button" class="btn btn-primary" id="confirmSaveButton">
+                                    <i class="fas fa-save me-2"></i>Salva
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal per aiuto -->
+                <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="helpModalLabel">Aiuto - Gestione Listino Prezzi</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <h4 class="text-primary">Introduzione</h4>
+                                <p>Questa applicazione permette di gestire i listini prezzi in formato CSV, applicando ricarichi e
+                                    modificando manualmente i prezzi.</p>
+
+                                <h4 class="text-primary">Caricamento del file</h4>
+                                <p>Carica un file CSV utilizzando il pulsante nella parte superiore della pagina. L'applicazione
+                                    rileverà automaticamente le colonne dei prezzi.</p>
+
+                                <h4 class="text-primary">Funzionalità principali</h4>
+                                <ul>
+                                    <li><strong>Ricarico globale</strong>: Applica una percentuale di ricarico a tutte le colonne di
+                                        prezzo o a colonne selezionate.</li>
+                                    <li><strong>Ricarico rapido</strong>: Applica velocemente un ricarico a tutte le colonne di
+                                        prezzo.</li>
+                                    <li><strong>Ricarico per prodotto</strong>: Applica un ricarico a un singolo prodotto.</li>
+                                    <li><strong>Modifica manuale</strong>: Modifica manualmente i prezzi di un prodotto.</li>
+                                    <li><strong>Ripristino originale</strong>: Ripristina i dati ai valori originali del
+                                        caricamento.</li>
+                                    <li><strong>Annulla operazione</strong>: Annulla l'ultima operazione effettuata.</li>
+                                </ul>
+
+                                <h4 class="text-primary">Visualizzazione dei prezzi</h4>
+                                <p>Per ogni cella di prezzo vengono mostrati:</p>
+                                <ul>
+                                    <li>Il prezzo attuale (in blu)</li>
+                                    <li>Il prezzo originale (tra parentesi, barrato)</li>
+                                    <li>La variazione percentuale (in verde se positiva, in rosso se negativa)</li>
+                                </ul>
+
+                                <h4 class="text-primary">Ricerca e filtri</h4>
+                                <p>Utilizza la ricerca globale per trovare rapidamente i prodotti. La tabella supporta anche filtri
+                                    per colonna, ordinamento e paginazione.</p>
+
+                                <h4 class="text-primary">Salvataggio</h4>
+                                <p>Puoi salvare le modifiche in diversi formati:</p>
+                                <ul>
+                                    <li><strong>CSV</strong>: Scarica direttamente un file CSV sul tuo dispositivo.</li>
+                                    <li><strong>Server</strong>: Salva i dati sul server in formato JSON e CSV.</li>
+                                </ul>
+
+                                <h4 class="text-primary">Scorciatoie</h4>
+                                <ul>
+                                    <li><strong>Ctrl+F</strong>: Attiva la ricerca globale</li>
+                                    <li><strong>Ctrl+S</strong>: Salva le modifiche</li>
+                                    <li><strong>Ctrl+Z</strong>: Annulla l'ultima operazione</li>
+                                </ul>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ho capito</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            <div class="modal modal-lg fade" tabindex="-1" id="carica_file">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Carica il file</h3>
+                            <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                                <i class="ki-solid ki-abstract-11 fs-1"></i>
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <form id="uploadForm" enctype="multipart/form-data">
+                                <div class="row align-items-end">
+                                    <div class="col-md-6">
+                                        <div class="">
+                                            <input type="file" class="form-control" id="csvFile" name="file" accept=".csv">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-upload me-2"></i>Carica e Analizza
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary">Save changes</button>
+                        </div> -->
+                    </div>
+                </div>
+            </div>    
+
+            <div class="modal modal-lg fade" tabindex="-1" id="filtri">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Applica filtri</h3>
+                            <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                                <i class="ki-solid ki-abstract-11 fs-1"></i>
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <div id="filterToggles" class="row row gy-2 gx-2 mb-2"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="button_filter_reset" type="button" class="btn btn-warning">Resetta tutti i filtri</button>
+                        </div>
+                    </div>
+                </div>
+            </div>   
+
+            <div class="modal modal-lg fade" tabindex="-1" id="colonne">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Gestione colonne</h3>
+                            <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                                <i class="ki-solid ki-abstract-11 fs-1"></i>
+                            </div>
+                        </div>
+                        <div class="modal-body">
+                            <div id="columnToggles" class="d-flex flex-wrap gap-2"></div>
+                            <div class="row mt-4">
+                                <div class="col-9">   
+                                    <button id="showHidePriceColumnsBtn" class="btn btn-outline-secondary me-2">
+                                        <i class="fas fa-eye-slash me-1"></i>Nascondi colonne non-prezzo
+                                    </button>
+                                    <div class="form-check form-switch d-inline-block ms-2">
+                                        <input class="form-check-input" type="checkbox" id="highlightPriceColumns">
+                                        <label class="form-check-label" for="highlightPriceColumns">Evidenzia prezzi</label>
+                                    </div>
+                                </div>
+                                <div class="col-3 text-end">
+                                    
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <div class="modal-footer">
+                            <button id="reset_column" class="btn btn-warning">
+                                <i class="fas fa-undo me-2 "></i>Resetta colonne base
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>   
+        </div>
+    </div>
+</div>
+<div
+    id="kt_drawer_example_advanced"
+
+    class="row bg-none"
+    data-kt-drawer="true"
+    data-kt-drawer-activate="true"
+    data-kt-drawer-toggle="#kt_drawer_example_advanced_button"
+    data-kt-drawer-close="#kt_drawer_example_advanced_close"
+    data-kt-drawer-name="docs"
+    data-kt-drawer-overlay="true"
+    data-kt-drawer-width="{default:'300px', 'md': '500px'}"
+    data-kt-drawer-direction="end"
+>
+    <div class="card shadow-sm  h-100">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-server fs-1 me-4"></i> Server FTP</h3>
+            <div class="card-toolbar">
+                <button type="button" class="btn btn-sm btn-light">
+                    Action
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-stack">
+                <div href="#" class="text-primary fw-semibold fs-6 me-2">Avg. Client Rating</div>
+                <div>fgdsgdsgsdfg</div>
+            </div>
+            <div class="separator separator-dashed my-3"></div>
+            <strong>Host:</strong> {{ config.ftp_host or 'Non configurato' }}<br>
+            <strong>Utente:</strong> {{ config.ftp_user or 'Non configurato' }}<br>
+            <strong>Directory:</strong> {{ config.ftp_directory }}
+        </div>
+        <div class="card-footer">
+            Footer
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="assets/plugins/custom/datatables/datatables.bundle.js"></script>
+<script type="text/javascript" src="assets/treingenia/js/listino_app.js"></script>
+
+{% endblock scripts %}
+    
+    
+   
+
+   
+
