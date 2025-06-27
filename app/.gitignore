@@ -31,3 +31,5 @@ ARCHIVIO_ROUTES
 *OLD*
 * - Copia.*
 * copy.*
+*.cdr
+.CDR
