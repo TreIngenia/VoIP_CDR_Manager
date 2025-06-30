@@ -9,7 +9,6 @@ __description__ = "Applicazione per download automatico e schedulato da server F
 
 # Import principali per facilitare l'uso
 from .config import SecureConfig, save_config_to_env, load_config_from_env_local
-from .ftp_processor import FTPProcessor
 from .scheduler import SchedulerManager
 from .utils import (
     find_free_port, 
@@ -22,7 +21,6 @@ from .utils import (
 
 __all__ = [
     'SecureConfig',
-    'FTPProcessor', 
     'SchedulerManager',
     'save_config_to_env',
     'load_config_from_env_local',

@@ -8,12 +8,14 @@ import logging
 from datetime import datetime
 import os
 from flask import request, jsonify, render_template, Response
+from cdr_categories_enhanced import CDRAnalyticsEnhanced    
 import csv
 import io
 
 logger = logging.getLogger(__name__)
 
-def add_cdr_categories_routes(app, cdr_analytics_enhanced, secure_config):
+
+def add_cdr_categories_routes(app, secure_config):
     """
     Aggiunge le route per la gestione delle categorie CDR con markup
     
@@ -22,7 +24,10 @@ def add_cdr_categories_routes(app, cdr_analytics_enhanced, secure_config):
         cdr_analytics_enhanced: Istanza CDRAnalyticsEnhanced con categories_manager
         secure_config: Configurazione sicura per markup globale
     """
-    categories_manager = cdr_analytics_enhanced.get_categories_manager()
+    # categories_manager = cdr_analytics_enhanced.get_categories_manager()
+    out_directory = secure_config.get_config()['config_directory']
+    analytics = CDRAnalyticsEnhanced(output_directory=out_directory)
+    categories_manager = analytics.get_categories_manager()
     
     @app.route('/cdr_categories_new')
     def cdr_categories_page_new():
@@ -846,7 +851,7 @@ def add_cdr_categories_routes(app, cdr_analytics_enhanced, secure_config):
             stats = categories_manager.get_statistics()
             
             # Report generati
-            reports = cdr_analytics_enhanced.list_generated_reports()
+            reports = analytics.list_generated_reports()
             
             # Statistiche sistema
             health_info = {

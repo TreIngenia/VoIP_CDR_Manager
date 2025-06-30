@@ -194,7 +194,7 @@
                                         <td>{{ report.created[:16].replace('T', ' ') }}</td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-primary" onclick="viewReport('{{ report.filename }}')">
+                                                <button class="btn btn-outline-primary" onclick="viewReport('{{ report.filename }}')" title="Chiudi">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 <a href="/cdr_analytics/reports/{{ report.filename }}" class="btn btn-outline-success">
@@ -255,7 +255,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Test Classificazione Categorie</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Chiudi"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -289,7 +289,7 @@ INTERNAZIONALE FRANCIA</textarea>
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Aggiungi Nuova Categoria</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Chiudi"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addCategoryForm">
@@ -338,7 +338,7 @@ INTERNAZIONALE FRANCIA</textarea>
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Importa Categorie</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Chiudi"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -368,7 +368,7 @@ INTERNAZIONALE FRANCIA</textarea>
 
     <script>
         // Variabili globali
-        let categoriesData = {{ categories | tojson | safe }};
+   
         
         // Funzioni principali
         function showAddCategoryModal() {

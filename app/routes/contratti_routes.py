@@ -31,98 +31,105 @@ def contratti_routes(app, secure_config):
         'routes_count': 1
     }
 
-def api_contract_routes(app, secure_config, processor):
-    from cdr_contract_extractor import extract_contracts_from_files, save_contracts_config
-    
+def api_contract_routes(app, secure_config):
+    from cdr_contract_extractor import extract_cdr_contracts_from_cdr
     @app.route('/api/cdr/extract_contracts', methods=['POST'])
     def extract_cdr_contracts():
-        """
-        API per estrarre tutti i codici contratto dai file CDR presenti sull'FTP
+        extract_cdr_contracts_from_cdr()    
+    # def extract_cdr_contracts():
+    
+    #     """
+    #     API per estrarre tutti i codici contratto dai file CDR presenti sull'FTP
         
-        Returns:
-            JSON con lista codici contratto unici e statistiche
-        """
-        try:
-            logger.info("🔍 Avvio estrazione codici contratto da CDR")
+    #     Returns:
+    #         JSON con lista codici contratto unici e statistiche
+    #     """
+    #     try:
+    #         logger.info("🔍 Avvio estrazione codici contratto da CDR")
             
-            # Parametri opzionali dalla richiesta
-            data = request.get_json() or {}
-            force_redownload = data.get('force_redownload', False)
-            pattern_filter = data.get('pattern_filter', 'RIV_*_*.CDR')  # Pattern per file CDR
+    #         # # Parametri opzionali dalla richiesta
+    #         data = request.get_json() or {}
+    #         force_redownload = data.get('force_redownload', False)
+    #         # pattern_filter = data.get('pattern_filter', 'RIV_*_*.CDR')  # Pattern per file CDR
             
-            # Step 1: Configura processore per scaricare tutti i file CDR
-            original_config = processor.config.copy()
-            temp_config = processor.config.copy()
+    #         # # Step 1: Configura processore per scaricare tutti i file CDR
+    #         # original_config = processor.config.copy()
+    #         # temp_config = processor.config.copy()
             
-            # Modifica temporanea configurazione per scaricare tutti i CDR
-            temp_config['download_all_files'] = False
-            temp_config['specific_filename'] = pattern_filter
-            temp_config['filter_pattern'] = pattern_filter
+    #         # Modifica temporanea configurazione per scaricare tutti i CDR
+    #         # temp_config['download_all_files'] = False
+    #         # temp_config['specific_filename'] = pattern_filter
+    #         # temp_config['filter_pattern'] = pattern_filter
             
-            processor.config = temp_config
+    #         # processor.config = temp_config
             
-            logger.info(f"📥 Configurazione download: pattern='{pattern_filter}'")
+    #         # logger.info(f"📥 Configurazione download: pattern='{pattern_filter}'")
             
-            # Step 2: Scarica tutti i file CDR
-            downloaded_files = processor.download_files()
+    #         # Step 2: Scarica tutti i file CDR
+    #         from ftp_downloader import FTPDownloader
+    #         from cdr_file_manager import get_files_by_extension
+    #         # downloader = FTPDownloader(secure_config)
             
-            if not downloaded_files:
-                logger.warning("⚠️ Nessun file CDR trovato sull'FTP")
-                return jsonify({
-                    'success': False,
-                    'message': 'Nessun file CDR trovato sul server FTP',
-                    'pattern_used': pattern_filter,
-                    'contracts_found': 0,
-                    'files_processed': 0
-                })
+    #         # downloaded_files = downloader.process_all_files()
+    #         downloaded_files = get_files_by_extension('./data', 'cdr', recursive=False)
+
+    #         if not downloaded_files:
+    #             logger.warning("⚠️ Nessun file CDR trovato sull'FTP")
+    #             return jsonify({
+    #                 'success': False,
+    #                 'message': 'Nessun file CDR trovato sul server FTP',
+    #                 # 'pattern_used': pattern_filter,
+    #                 'contracts_found': 0,
+    #                 'files_processed': 0
+    #             })
             
-            logger.info(f"📁 Scaricati {len(downloaded_files)} file CDR")
+    #         logger.info(f"📁 Scaricati {len(downloaded_files)} file CDR")
             
-            # Step 3: Estrai codici contratto da tutti i file
-            contracts_data = extract_contracts_from_files(downloaded_files, force_redownload)
+    #         # Step 3: Estrai codici contratto da tutti i file
+    #         contracts_data = extract_contracts_from_files(downloaded_files, force_redownload)
             
-            # Step 4: Salva/aggiorna configurazione contratti
-            save_result = save_contracts_config(contracts_data, secure_config)
+    #         # Step 4: Salva/aggiorna configurazione contratti
+    #         save_result = save_contracts_config(contracts_data, secure_config)
             
-            # Ripristina configurazione originale
-            processor.config = original_config
+    #         # Ripristina configurazione originale
+    #         # processor.config = original_config
             
-            # Step 5: Prepara risposta
-            response_data = {
-                'success': True,
-                'message': f'Estrazione completata: {save_result["new_contracts_added"]} nuovi contratti aggiunti',
-                'pattern_used': pattern_filter,
-                'files_processed': len(downloaded_files),
-                'contracts_found_in_files': len(contracts_data['contracts']),
-                'file_existed_before': save_result['file_existed'],
-                'contracts_before_extraction': save_result['contracts_before'],
-                'new_contracts_added': save_result['new_contracts_added'],
-                'total_contracts_after': save_result['total_contracts_after'],
-                'config_file_path': save_result['file_path'],
-                'statistics': contracts_data['statistics'],
-                'phone_numbers_summary': {
-                    'total_unique_calling_numbers': sum(c.get('total_unique_numbers', 0) for c in contracts_data['contracts'].values()),
-                    'contracts_with_numbers': sum(1 for c in contracts_data['contracts'].values() if c.get('total_unique_numbers', 0) > 0)
-                },
-                'contracts_preview': list(contracts_data['contracts'].keys())[:10],  # Prime 10 nuovi
-                'processing_timestamp': datetime.now().isoformat()
-            }
+    #         # Step 5: Prepara risposta
+    #         response_data = {
+    #             'success': True,
+    #             'message': f'Estrazione completata: {save_result["new_contracts_added"]} nuovi contratti aggiunti',
+    #             # 'pattern_used': pattern_filter,
+    #             'files_processed': len(downloaded_files),
+    #             'contracts_found_in_files': len(contracts_data['contracts']),
+    #             'file_existed_before': save_result['file_existed'],
+    #             'contracts_before_extraction': save_result['contracts_before'],
+    #             'new_contracts_added': save_result['new_contracts_added'],
+    #             'total_contracts_after': save_result['total_contracts_after'],
+    #             'config_file_path': save_result['file_path'],
+    #             'statistics': contracts_data['statistics'],
+    #             'phone_numbers_summary': {
+    #                 'total_unique_calling_numbers': sum(c.get('total_unique_numbers', 0) for c in contracts_data['contracts'].values()),
+    #                 'contracts_with_numbers': sum(1 for c in contracts_data['contracts'].values() if c.get('total_unique_numbers', 0) > 0)
+    #             },
+    #             'contracts_preview': list(contracts_data['contracts'].keys())[:10],  # Prime 10 nuovi
+    #             'processing_timestamp': datetime.now().isoformat()
+    #         }
             
-            logger.info(f"✅ Estrazione completata: +{save_result['new_contracts_added']} nuovi contratti")
-            return jsonify(response_data)
+    #         logger.info(f"✅ Estrazione completata: +{save_result['new_contracts_added']} nuovi contratti")
+    #         return jsonify(response_data)
             
-        except Exception as e:
-            logger.error(f"❌ Errore estrazione codici contratto: {e}")
-            # Ripristina configurazione in caso di errore
-            if 'original_config' in locals():
-                processor.config = original_config
+    #     except Exception as e:
+    #         logger.error(f"❌ Errore estrazione codici contratto: {e}")
+    #         # Ripristina configurazione in caso di errore
+    #         # if 'original_config' in locals():
+    #         #     processor.config = original_config
                 
-            return jsonify({
-                'success': False,
-                'message': f'Errore durante estrazione: {str(e)}',
-                'error_type': type(e).__name__,
-                'timestamp': datetime.now().isoformat()
-            }), 500
+    #         return jsonify({
+    #             'success': False,
+    #             'message': f'Errore durante estrazione: {str(e)}',
+    #             'error_type': type(e).__name__,
+    #             'timestamp': datetime.now().isoformat()
+    #         }), 500
 
     @app.route('/api/cdr/contracts_config', methods=['GET'])
     def get_contracts_config():
@@ -218,7 +225,7 @@ def api_contract_routes(app, secure_config, processor):
             contract = contracts_data['contracts'][str(contract_code)]
             
             if 'contract_name' in data:
-                contract['contract_name'] = data['contract_name'].strip()
+                contract['contract_name'] = data['contract_name'].strip() if data['contract_name'] is not None else None
             if 'odoo_client_id' in data:
                 contract['odoo_client_id'] = data['odoo_client_id'].strip()
             if 'contract_type' in data:

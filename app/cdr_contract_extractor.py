@@ -140,7 +140,7 @@ def extract_codes_from_single_file(file_path: Path) -> Dict[str, Any]:
             'codice_contratto', 'codice_servizio', 'cliente_finale_comune', 'prefisso_chiamato'
         ]
         
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='cp1252') as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
@@ -193,6 +193,7 @@ def extract_codes_from_single_file(file_path: Path) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Errore lettura file {file_path}: {e}")
         return None
+
 
 
 def is_cdr_file(file_path: Path) -> bool:
@@ -372,3 +373,106 @@ def save_contracts_config(contracts_data: Dict[str, Any], secure_config) -> Dict
     except Exception as e:
         logger.error(f"❌ Errore salvataggio configurazione contratti: {e}")
         raise
+
+def extract_cdr_contracts_from_cdr():
+    from config import SecureConfig
+    secure_config = SecureConfig()
+    config = secure_config.get_config()
+    """
+    API per estrarre tutti i codici contratto dai file CDR presenti sull'FTP
+    
+    Returns:
+        JSON con lista codici contratto unici e statistiche
+    """
+    try:
+        logger.info("🔍 Avvio estrazione codici contratto da CDR")
+        
+        # # Parametri opzionali dalla richiesta
+        data = {}
+        force_redownload = False
+
+        
+        # Step 2: Recupero i file scaricati
+        from cdr_file_manager import get_files_by_extension
+        
+        # downloaded_files = downloader.process_all_files()
+        downloaded_files = get_files_by_extension(config.get('output_directory'), 'cdr', recursive=False)
+
+        if not downloaded_files:
+            logger.warning("⚠️ Nessun file CDR trovato sull'FTP")
+            data = {
+                'success': False,
+                'message': 'Nessun file CDR trovato sul server FTP',
+                # 'pattern_used': pattern_filter,
+                'contracts_found': 0,
+                'files_processed': 0
+            }
+            my_json = json.dumps(data, indent=2, ensure_ascii=False)
+            return json
+        # Filtra solo file CDR
+            
+        logger.info(f"📁 Scaricati {len(downloaded_files)} file CDR")
+        
+        # Step 3: Estrai codici contratto da tutti i file
+        contracts_data = extract_contracts_from_files(downloaded_files, force_redownload)
+        
+        # Step 4: Salva/aggiorna configurazione contratti
+        save_result = save_contracts_config(contracts_data, secure_config)
+        
+        # Ripristina configurazione originale
+        # processor.config = original_config
+        
+        # Step 5: Prepara risposta
+        response_data = {
+            'success': True,
+            'message': f'Estrazione completata: {save_result["new_contracts_added"]} nuovi contratti aggiunti',
+            # 'pattern_used': pattern_filter,
+            'files_processed': len(downloaded_files),
+            'contracts_found_in_files': len(contracts_data['contracts']),
+            'file_existed_before': save_result['file_existed'],
+            'contracts_before_extraction': save_result['contracts_before'],
+            'new_contracts_added': save_result['new_contracts_added'],
+            'total_contracts_after': save_result['total_contracts_after'],
+            'config_file_path': save_result['file_path'],
+            'statistics': contracts_data['statistics'],
+            'phone_numbers_summary': {
+                'total_unique_calling_numbers': sum(c.get('total_unique_numbers', 0) for c in contracts_data['contracts'].values()),
+                'contracts_with_numbers': sum(1 for c in contracts_data['contracts'].values() if c.get('total_unique_numbers', 0) > 0)
+            },
+            'contracts_preview': list(contracts_data['contracts'].keys())[:10],  # Prime 10 nuovi
+            'processing_timestamp': datetime.now().isoformat()
+        }
+        
+        logger.info(f"✅ Estrazione completata: +{save_result['new_contracts_added']} nuovi contratti")
+        # return jsonify(response_data)
+        my_json = json.dumps(response_data, indent=2, ensure_ascii=False)
+        return my_json
+        
+    except Exception as e:
+        logger.error(f"❌ Errore estrazione codici contratto: {e}")
+        # Ripristina configurazione in caso di errore
+        # if 'original_config' in locals():
+        #     processor.config = original_config
+                    
+        data = {
+            'success': False,
+            'message': f'Errore durante estrazione: {str(e)}',
+            'error_type': type(e).__name__,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        my_json = json.dumps(data, indent=2, ensure_ascii=False)
+        return my_json, 500
+
+            
+        
+            
+        
+if __name__ == "__main__":
+
+    try:
+        result = extract_cdr_contracts_from_cdr()
+        if result:
+            print(json.dumps(result, indent=2, ensure_ascii=False))            
+    except Exception as e:
+        print(f"Errore: {e}")

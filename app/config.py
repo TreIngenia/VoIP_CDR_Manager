@@ -10,7 +10,7 @@ from pathlib import Path
 from logger_config import get_logger, log_success, log_error, log_warning, log_info
 
 # Inizializza logging
-logger = get_logger(__name__)
+# logger = get_logger(__name__)
 
 class SecureConfig:
     """Gestione sicura della configurazione"""
@@ -28,6 +28,7 @@ class SecureConfig:
             'ODOO_USERNAME': os.getenv('ODOO_USERNAME', ''),
             'ODOO_API_KEY': os.getenv('ODOO_API_KEY', ''),
             'ftp_host': os.getenv('FTP_HOST', ''),
+            'ftp_port': os.getenv('FTP_PORT', ''),
             'ftp_user': os.getenv('FTP_USER', ''),
             'ftp_password': os.getenv('FTP_PASSWORD', ''),
             'ftp_directory': os.getenv('FTP_DIRECTORY', '/'),
@@ -100,20 +101,36 @@ class SecureConfig:
         # Directory di configurazione
         config_dir = self.ensure_config_directory()
         
-        # Directory output
-        output_dir = Path(self.config['output_directory'])
-        if not output_dir.is_absolute():
-            # Percorso relativo
-            output_dir = Path.cwd() / output_dir
+        # # Directory output
+        # output_dir = Path(self.config['output_directory'])
+        # if not output_dir.is_absolute():
+        #     # Percorso relativo
+        #     output_dir = Path.cwd() / output_dir
         
+        # try:
+        #     output_dir.mkdir(parents=True, exist_ok=True)
+        #     self.config['output_directory'] = str(output_dir.resolve())
+        #     log_info(f"Directory output: {output_dir.resolve()}")
+        # except Exception as e:
+        #     log_error(f"Impossibile creare directory output: {e}")
+        #     # Fallback
+        #     self.config['output_directory'] = str(Path.cwd() / "output")
+        output_dir = Path(self.config['output_directory'])
+
+        # Se il path è relativo, usalo così com'è (senza convertirlo in assoluto)
         try:
             output_dir.mkdir(parents=True, exist_ok=True)
-            self.config['output_directory'] = str(output_dir.resolve())
-            log_info(f"Directory output: {output_dir.resolve()}")
+
+            # Mantenere il path come è stato fornito (senza .resolve())
+            self.config['output_directory'] = str(output_dir)
+
+            log_info(f"Directory output: {output_dir}")
         except Exception as e:
             log_error(f"Impossibile creare directory output: {e}")
-            # Fallback
-            self.config['output_directory'] = str(Path.cwd() / "output")
+            # Fallback a ./output
+            fallback = Path("./output")
+            fallback.mkdir(parents=True, exist_ok=True)
+            self.config['output_directory'] = str(fallback)
         
         # Validazione nome file categorie
         categories_file = self.config['categories_config_file']
@@ -124,7 +141,7 @@ class SecureConfig:
         # Valida pattern file
         if self.config['specific_filename']:
             if not self._validate_filename_pattern(self.config['specific_filename']):
-                logger.warning(f"Pattern filename potenzialmente non sicuro: {self.config['specific_filename']}")
+                log_warning(f"Pattern filename potenzialmente non sicuro: {self.config['specific_filename']}")
                 self.config['specific_filename'] = ''
         
         # Valida prezzi VoIP
@@ -170,7 +187,7 @@ class SecureConfig:
         all_errors.extend(self._validate_voip_config())
         
         if all_errors:
-            logger.warning(f"Errori di validazione configurazione: {all_errors}")
+            log_warning(f"Errori di validazione configurazione: {all_errors}")
             return False, all_errors
         
         return True, []
@@ -196,7 +213,7 @@ class SecureConfig:
                 # Validazione specifica per filename pattern
                 if key in ['specific_filename', 'filter_pattern']:
                     if value and not self._validate_filename_pattern(value):
-                        logger.warning(f"Pattern non sicuro ignorato: {value}")
+                        log_warning(f"Pattern non sicuro ignorato: {value}")
                         continue
                 
                 # Conversioni di tipo
@@ -228,10 +245,10 @@ class SecureConfig:
             self.config['voip_price_fixed_final'] = round(calculated_fixed, 4)
             self.config['voip_price_mobile_final'] = round(calculated_mobile, 4)
             
-            logger.info(f"Prezzi VoIP calcolati - Fisso: {base_fixed} + {markup_percent}% = {calculated_fixed:.4f}, Mobile: {base_mobile} + {markup_percent}% = {calculated_mobile:.4f}")
+            log_info(f"Prezzi VoIP calcolati - Fisso: {base_fixed} + {markup_percent}% = {calculated_fixed:.4f}, Mobile: {base_mobile} + {markup_percent}% = {calculated_mobile:.4f}")
             
         except Exception as e:
-            logger.error(f"Errore calcolo prezzi finali VoIP: {e}")
+            log_error(f"Errore calcolo prezzi finali VoIP: {e}")
     
     def update_voip_prices(self, base_fixed=None, base_mobile=None, markup_percent=None):
         """Aggiorna prezzi VoIP e ricalcola automaticamente i prezzi finali"""
@@ -309,6 +326,7 @@ SECRET_KEY={app_secret_key}
 
 # Configurazione Server FTP
 FTP_HOST={config['ftp_host']}
+FTP_PORT={config['ftp_port']}
 FTP_USER={config['ftp_user']}
 FTP_PASSWORD={config['ftp_password']}
 FTP_DIRECTORY={config['ftp_directory']}
@@ -401,7 +419,7 @@ def load_config_from_env_local(secure_config):
             env_file.exists() and 
             env_local_file.stat().st_mtime > env_file.stat().st_mtime):
             
-            logger.info("Caricamento configurazione da .env.local (più recente)")
+            log_info("Caricamento configurazione da .env.local (più recente)")
             
             # Ricarica le variabili d'ambiente da .env.local
             try:
@@ -411,6 +429,7 @@ def load_config_from_env_local(secure_config):
                 # Aggiorna CONFIG con i nuovi valori
                 updates = {
                     'ftp_host': os.getenv('FTP_HOST', ''),
+                    'ftp_port': os.getenv('FTP_PORT', ''),
                     'ftp_user': os.getenv('FTP_USER', ''),
                     'ftp_password': os.getenv('FTP_PASSWORD', ''),
                     'ftp_directory': os.getenv('FTP_DIRECTORY', '/'),
@@ -428,10 +447,10 @@ def load_config_from_env_local(secure_config):
                 }
                 
                 secure_config.update_config(updates)
-                logger.info("Configurazione aggiornata da .env.local")
+                log_info("Configurazione aggiornata da .env.local")
                 
             except ImportError:
-                logger.warning("python-dotenv non disponibile per .env.local")
+                log_warning("python-dotenv non disponibile per .env.local")
                 
     except Exception as e:
-        logger.error(f"Errore nel caricamento da .env.local: {e}")
+        log_error(f"Errore nel caricamento da .env.local: {e}")

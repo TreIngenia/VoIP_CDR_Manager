@@ -21,21 +21,23 @@ MENU_ITEMS = [
         'type': 'section',  # Nessun titolo
         'title': 'Categorie'
     },
+    ##########################################
     {
-                'endpoint': 'cdr_categories_dashboard',
-                'title': 'Dashboard categorie',
-                'icon': 'ki-outline ki-element-11',
-            },
-            {
-                'endpoint': 'cdr_categories_edit',
-                'title': 'Gestione categorie',
-                'icon': 'ki-outline ki-notepad-edit ',
-            },
-             {
-                'endpoint': 'cdr_categories_page_new',
-                'title': 'Modifica categorie NEW',
-                'icon': 'ki-outline ki-notepad-edit ',
-            },
+        'endpoint': 'cdr_categories_dashboard',
+        'title': 'Dashboard categorie',
+        'icon': 'ki-outline ki-element-11',
+    },
+    {
+        'endpoint': 'cdr_categories_edit',
+        'title': 'Gestione categorie',
+        'icon': 'ki-outline ki-notepad-edit ',
+    },
+        {
+        'endpoint': 'cdr_categories_page_new',
+        'title': 'Modifica categorie NEW',
+        'icon': 'ki-outline ki-notepad-edit ',
+    },
+    #######################################
     # {
     #     'title': 'Gestione categorie',
     #     'icon': 'ki-outline ki-minus-folder fs-2',
@@ -57,6 +59,7 @@ MENU_ITEMS = [
     #         }
     #     ]
     # },
+
     {
         'type': 'section',
         'title': 'Fatture'

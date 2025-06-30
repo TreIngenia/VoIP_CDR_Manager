@@ -37,7 +37,7 @@ class EndpointAnalyzer:
             
             # Crea componenti necessari
             secure_config = SecureConfig()
-            processor = FTPProcessor(secure_config.get_config())
+            processor = FTPProcessor(secure_config)
             scheduler_manager = SchedulerManager()
             
             # Crea app Flask

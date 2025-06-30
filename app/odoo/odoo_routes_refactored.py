@@ -5,51 +5,17 @@ Route Flask ottimizzate con manager modulari
 from flask import request, jsonify, render_template
 from datetime import datetime
 import logging
-import traceback
-import time
-from functools import wraps
 
 # Import dei manager riorganizzati
-from odoo.odoo_manager import get_odoo_manager
-from odoo.odoo_utils import (
+from odoo_manager import get_odoo_manager
+from odoo_utils import (
     build_api_response, build_select2_response, 
     validate_pagination_params, calculate_pagination_info,
     PerformanceTimer
 )
-from odoo.odoo_exceptions import OdooException
+from odoo_exceptions import OdooException
 
 logger = logging.getLogger(__name__)
-
-def handle_connection_errors(func):
-    """Decorator per gestire errori di connessione comuni"""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            error_str = str(e).lower()
-            
-            # Gestione specifica per errori di connessione
-            if any(error in error_str for error in [
-                'request-sent', 'cannotsendrequest', 'badstatusline',
-                'connectionreseterror', 'connection refused', 'timeout'
-            ]):
-                logger.warning(f"Errore di connessione rilevato: {e}")
-                
-                # Attendi un momento prima di restituire l'errore
-                time.sleep(0.2)
-                
-                return build_api_response(
-                    False,
-                    message="Errore di connessione temporaneo. Riprova tra qualche secondo.",
-                    error_code="CONNECTION_ERROR",
-                    status_code=503
-                )
-            
-            # Re-raise per altri tipi di errore
-            raise
-    
-    return wrapper
 
 def add_odoo_routes(app, secure_config):
     """Registra tutte le route Odoo mantenendo i nomi originali"""
@@ -205,6 +171,7 @@ def add_odoo_routes(app, secure_config):
         try:
             with PerformanceTimer("api_partners_for_select2"):
                 partners = odoo_manager.partners.get_all_partners_for_select()
+                
                 select2_data = []
                 for partner in partners:
                     if isinstance(partner, dict):
@@ -214,8 +181,8 @@ def add_odoo_routes(app, secure_config):
                         })
                 
                 return build_api_response(True, {
-                    'results': select2_data
-                    # 'total': len(select2_data)
+                    'results': select2_data,
+                    'total': len(select2_data)
                 })
                 
         except OdooException as e:

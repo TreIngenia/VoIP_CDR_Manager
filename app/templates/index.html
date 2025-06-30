@@ -34,6 +34,11 @@
             </a>
         </li>
         <li>
+            <a class="dropdown-item" href="#" onclick="reset_schedule()">
+                <i class="fas fa-arrow-rotate-right me-2"></i> Resetta
+            </a>
+        </li>
+        <li>
             <hr class="dropdown-divider">
         </li>
         <li><a class="dropdown-item" href="#" onclick="showScheduleInfo()">
@@ -487,6 +492,35 @@ function quickSchedule(scheduleType) {
     showLoading('Configurazione schedulazione...');
     
     fetch(`/quick_schedule/${scheduleType}`)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                displayResults({
+                    success: true,
+                    message: data.message,
+                    schedule_info: data.schedule_description,
+                    next_jobs: data.next_jobs
+                }, 'Schedulazione Rapida');
+                
+                // Aggiorna la pagina dopo 2 secondi per riflettere le modifiche
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                displayError('Errore configurazione: ' + data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            displayError('Errore nella configurazione: ' + error.message);
+        });
+}
+
+function reset_schedule() {
+    showLoading('Configurazione schedulazione...');
+    
+    fetch(`/schedule_reset`)
         .then(response => response.json())
         .then(data => {
             hideLoading();

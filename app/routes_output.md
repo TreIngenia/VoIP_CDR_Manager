@@ -2,18 +2,21 @@
 
 ## 📊 Riepilogo
 
-- **File analizzati**: 6
-- **Route totali**: 79
-- **Data estrazione**: 10/06/2025 21:20:45
+- **File analizzati**: 9
+- **Route totali**: 103
+- **Data estrazione**: 23/06/2025 10:41:34
 
 ## 📑 Indice dei File
 
 - [cdr_categories_routes.py](#cdr_categories_routes-py) (16 route)
-- [contratti_routes.py](#contratti_routes-py) (9 route)
+- [contratti_routes.py](#contratti_routes-py) (12 route)
 - [default_routes.py](#default_routes-py) (24 route)
-- [fatture_routes.py](#fatture_routes-py) (2 route)
+- [fatture_routes copy.py](#fatture_routes copy-py) (2 route)
+- [fatture_routes.py](#fatture_routes-py) (6 route)
+- [listino_routes copy.py](#listino_routes copy-py) (9 route)
+- [listino_routes.py](#listino_routes-py) (9 route)
 - [menu_routes.py](#menu_routes-py) (3 route)
-- [odoo_routes.py](#odoo_routes-py) (25 route)
+- [odoo_routes.py](#odoo_routes-py) (22 route)
 
 ## 📁 Route per File
 
@@ -42,7 +45,7 @@
 
 ### contratti_routes.py
 
-**Numero di route**: 9
+**Numero di route**: 12
 
 | Route |
 |-------|
@@ -54,6 +57,9 @@
 | `/api/contracts/datatable/serverside` |
 | `/api/contracts/datatable/summary` |
 | `/api/contracts/datatable/test` |
+| `/api/contracts/info` |
+| `/api/contracts/process` |
+| `/api/contracts/process/status` |
 | `/gestione_contratti` |
 
 ### default_routes.py
@@ -87,7 +93,7 @@
 | `/test_ftp` |
 | `/test_pattern` |
 
-### fatture_routes.py
+### fatture_routes copy.py
 
 **Numero di route**: 2
 
@@ -95,6 +101,51 @@
 |-------|
 | `/api/fatturazione/genera_fattura` |
 | `/gestione_fatture` |
+
+### fatture_routes.py
+
+**Numero di route**: 6
+
+| Route |
+|-------|
+| `/api/fatturazione/genera_fattura` |
+| `/api/fatturazione/genera_fatture_da_cdr` |
+| `/api/fatturazione/lista_clienti` |
+| `/api/fatturazione/ordini_cliente/<int:partner_id>` |
+| `/gestione_fatture` |
+| `/gestione_ordini` |
+
+### listino_routes copy.py
+
+**Numero di route**: 9
+
+| Route |
+|-------|
+| `/` |
+| `/api/apply-markup` |
+| `/api/export-csv` |
+| `/api/files/delete/<filename>` |
+| `/api/files/list` |
+| `/api/last-file` |
+| `/api/save` |
+| `/api/upload` |
+| `/static/<path:filename>` |
+
+### listino_routes.py
+
+**Numero di route**: 9
+
+| Route |
+|-------|
+| `/listino` |
+| `/listino/api/apply-markup` |
+| `/listino/api/files/delete/<filename>` |
+| `/listino/api/files/list` |
+| `/listino/api/last-file` |
+| `/listino/api/save` |
+| `/listino/api/upload` |
+| `/listino/logger/export-csv` |
+| `/listino/static/<path:filename>` |
 
 ### menu_routes.py
 
@@ -108,43 +159,41 @@
 
 ### odoo_routes.py
 
-**Numero di route**: 25
+**Numero di route**: 22
 
 | Route |
 |-------|
-| `/api/odoo/company_info` |
-| `/api/odoo/debug/compatibility_check` |
-| `/api/odoo/debug/model_fields/<model_name>` |
-| `/api/odoo/debug/test_data` |
-| `/api/odoo/info` |
-| `/api/odoo/invoices/<int:invoice_id>` |
-| `/api/odoo/invoices/<int:invoice_id>/confirm` |
-| `/api/odoo/invoices/bulk_create` |
-| `/api/odoo/invoices/create` |
+| `/api/docs` |
 | `/api/odoo/partners` |
 | `/api/odoo/partners/<int:partner_id>` |
 | `/api/odoo/partners/search` |
 | `/api/odoo/partners/select` |
 | `/api/odoo/partners/summary` |
 | `/api/odoo/payment_terms` |
-| `/api/odoo/products` |
-| `/api/odoo/quick_invoice` |
-| `/api/odoo/services/available` |
-| `/api/odoo/services/invoice/create` |
-| `/api/odoo/services/invoice/quick` |
-| `/api/odoo/services/invoice/validate` |
-| `/api/odoo/test/create_sample_invoice` |
-| `/api/odoo/test_connection` |
+| `/api/odoo/payment_terms/select` |
+| `/api/odoo/products/select` |
+| `/api/subscriptions` |
+| `/api/subscriptions/<int:subscription_id>` |
+| `/api/subscriptions/limit/<int:limit>` |
+| `/api/subscriptions/partner/<int:partner_id>` |
+| `/api/subscriptions/partner/<int:partner_id>/limit/<int:limit>` |
+| `/api/subscriptions/select` |
+| `/api/subscriptions/select/<int:subscription_id>` |
+| `/api/subscriptions/select/limit/<int:limit>` |
+| `/api/subscriptions/select/partner/<int:partner_id>` |
+| `/api/subscriptions/select/partner/<int:partner_id>/limit/<int:limit>` |
+| `/api/subscriptions/summary` |
 | `/odoo_invoices` |
 | `/odoo_partners` |
 
 ## 🗂️ Tutti i Route Ordinati
 
-**Totale route unici**: 78
+**Totale route unici**: 99
 
 | Route | Metodo Tipico |
 |-------|---------------|
 | `/` | GET |
+| `/api/apply-markup` | GET |
 | `/api/breadcrumb` | GET |
 | `/api/breadcrumb/<endpoint>` | GET |
 | `/api/categories` | GET |
@@ -172,31 +221,40 @@
 | `/api/contracts/datatable/serverside` | GET |
 | `/api/contracts/datatable/summary` | GET |
 | `/api/contracts/datatable/test` | GET |
+| `/api/contracts/info` | GET |
+| `/api/contracts/process` | GET |
+| `/api/contracts/process/status` | GET |
+| `/api/docs` | GET |
+| `/api/export-csv` | GET |
 | `/api/fatturazione/genera_fattura` | GET |
+| `/api/fatturazione/genera_fatture_da_cdr` | GET |
+| `/api/fatturazione/lista_clienti` | GET |
+| `/api/fatturazione/ordini_cliente/<int:partner_id>` | GET |
+| `/api/files/delete/<filename>` | DELETE |
+| `/api/files/list` | GET |
+| `/api/last-file` | GET |
 | `/api/menu/items` | GET |
-| `/api/odoo/company_info` | GET |
-| `/api/odoo/debug/compatibility_check` | GET |
-| `/api/odoo/debug/model_fields/<model_name>` | DELETE |
-| `/api/odoo/debug/test_data` | GET |
-| `/api/odoo/info` | GET |
-| `/api/odoo/invoices/<int:invoice_id>` | GET |
-| `/api/odoo/invoices/<int:invoice_id>/confirm` | GET |
-| `/api/odoo/invoices/bulk_create` | POST |
-| `/api/odoo/invoices/create` | POST |
 | `/api/odoo/partners` | GET |
 | `/api/odoo/partners/<int:partner_id>` | GET |
 | `/api/odoo/partners/search` | GET |
 | `/api/odoo/partners/select` | GET |
 | `/api/odoo/partners/summary` | GET |
 | `/api/odoo/payment_terms` | GET |
-| `/api/odoo/products` | GET |
-| `/api/odoo/quick_invoice` | GET |
-| `/api/odoo/services/available` | GET |
-| `/api/odoo/services/invoice/create` | POST |
-| `/api/odoo/services/invoice/quick` | GET |
-| `/api/odoo/services/invoice/validate` | GET |
-| `/api/odoo/test/create_sample_invoice` | POST |
-| `/api/odoo/test_connection` | GET |
+| `/api/odoo/payment_terms/select` | GET |
+| `/api/odoo/products/select` | GET |
+| `/api/save` | GET |
+| `/api/subscriptions` | GET |
+| `/api/subscriptions/<int:subscription_id>` | GET |
+| `/api/subscriptions/limit/<int:limit>` | GET |
+| `/api/subscriptions/partner/<int:partner_id>` | GET |
+| `/api/subscriptions/partner/<int:partner_id>/limit/<int:limit>` | GET |
+| `/api/subscriptions/select` | GET |
+| `/api/subscriptions/select/<int:subscription_id>` | GET |
+| `/api/subscriptions/select/limit/<int:limit>` | GET |
+| `/api/subscriptions/select/partner/<int:partner_id>` | GET |
+| `/api/subscriptions/select/partner/<int:partner_id>/limit/<int:limit>` | GET |
+| `/api/subscriptions/summary` | GET |
+| `/api/upload` | GET |
 | `/api/voip/calculate` | GET |
 | `/api/voip/update_prices` | PUT |
 | `/cdr_analytics/process_all` | GET |
@@ -209,8 +267,18 @@
 | `/default_page` | GET |
 | `/gestione_contratti` | GET |
 | `/gestione_fatture` | GET |
+| `/gestione_ordini` | GET |
 | `/health` | GET |
 | `/list_ftp_files` | GET |
+| `/listino` | GET |
+| `/listino/api/apply-markup` | GET |
+| `/listino/api/files/delete/<filename>` | DELETE |
+| `/listino/api/files/list` | GET |
+| `/listino/api/last-file` | GET |
+| `/listino/api/save` | GET |
+| `/listino/api/upload` | GET |
+| `/listino/logger/export-csv` | GET |
+| `/listino/static/<path:filename>` | GET |
 | `/logs` | GET |
 | `/manual_run` | GET |
 | `/odoo_invoices` | GET |
@@ -218,6 +286,7 @@
 | `/pattern_examples` | GET |
 | `/quick_schedule/<schedule_type>` | GET |
 | `/schedule_info` | GET |
+| `/static/<path:filename>` | GET |
 | `/status` | GET |
 | `/status_page` | GET |
 | `/test_ftp` | GET |
@@ -229,17 +298,29 @@
 
 | Prefisso | Numero Route |
 |----------|-------------|
-| `/api/odoo` | 23 |
 | `/api/categories` | 13 |
+| `/api/subscriptions` | 11 |
 | `/api/cdr` | 8 |
-| `/api/contracts` | 4 |
+| `/api/odoo` | 8 |
+| `/api/contracts` | 7 |
+| `/listino/api` | 6 |
+| `/api/fatturazione` | 4 |
 | `/api/breadcrumb` | 2 |
+| `/api/files` | 2 |
 | `/api/voip` | 2 |
-| `/api/fatturazione` | 1 |
+| `/api/apply-markup` | 1 |
+| `/api/docs` | 1 |
+| `/api/export-csv` | 1 |
+| `/api/last-file` | 1 |
 | `/api/menu` | 1 |
+| `/api/save` | 1 |
+| `/api/upload` | 1 |
 | `/cdr_analytics/process_all` | 1 |
 | `/cdr_analytics/report_details` | 1 |
+| `/listino/logger` | 1 |
+| `/listino/static` | 1 |
 | `/quick_schedule/<schedule_type>` | 1 |
+| `/static/<path:filename>` | 1 |
 
 ---
 *Documento generato automaticamente dallo script di estrazione route*

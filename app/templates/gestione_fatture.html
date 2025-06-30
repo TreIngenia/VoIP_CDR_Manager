@@ -696,12 +696,29 @@
             ]
         };
 
-fetch("http://127.0.0.1:5001/api/fatturazione/genera_fattura", {
-  method: "POST",
+// fetch("http://127.0.0.1:5001/api/fatturazione/genera_fattura", {
+//   method: "POST",
+//   headers: {
+//     "Content-Type": "application/json"
+//   },
+//   body: JSON.stringify(fatturaData)
+// })
+// .then(response => response.json())
+// .then(data => {
+//     document.getElementById("test").textContent = JSON.stringify(data, null, 2);
+//     // document.getElementById('test').textContent = data;
+//   console.log("Risposta:", data);
+
+// })
+// .catch(error => {
+//   console.error("Errore nella richiesta:", error);
+// });
+
+fetch("http://127.0.0.1:5001/api/fatturazione/genera_fatture_da_cdr", {
+  method: "GET",
   headers: {
     "Content-Type": "application/json"
-  },
-  body: JSON.stringify(fatturaData)
+  }
 })
 .then(response => response.json())
 .then(data => {
@@ -713,7 +730,6 @@ fetch("http://127.0.0.1:5001/api/fatturazione/genera_fattura", {
 .catch(error => {
   console.error("Errore nella richiesta:", error);
 });
-
         
 </script>
 

@@ -1,44 +1,76 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}CDR Analytics Dashboard{% endblock %}
+<!-- Inserimento Titolo -->
+{% block title %}>
+Gestione Contratti CDR
+{% endblock %}
 
+<!-- Inserimento ToolBar -->
+{% block toolbar %}
+<!-- <div class=" align-items-center gap-2">
+    <div class="text-gray-700">Totale contratti: <span class="text-white" id="total-contracts">0</span></div>
+    <div class="text-gray-700">Ultimo aggiornamento: <span class="text-white" id="last-updated">-</span></div>
+</div>
+<div class="col-4">
+    <input type="text" id="mySearch" class="form-control form-control-sm" placeholder="Cerca...">
+</div>
+<div class="d-flex align-items-center gap-2">
+    <div class="btn-group">
+        <button id="edit_button" type="button" class="btn btn-sm btn-primary" ><i class="fa-solid fa-pen-to-square me-2 fs-3"></i>Modifica</button>
+        <button id="save_all" type="button" class="btn btn-sm btn-warning disabled" onclick="saveAllContracts()"><i class="fa-solid fa-floppy-disk me-2 fs-3"></i>Salva Tutti i Contratti</button>
+        <button id="reload" type="button" class="btn btn-sm btn-info" onclick="loadContracts('load')"><i class="fa-solid fa-arrows-rotate me-2 fs-3"></i>Ricarica Dati</button>
+    </div>
+</div> -->
+{% endblock %}     
+
+<!-- Inserimento contenuto Pagina -->
 {% block content %}
-  <style>
-    .log-line {
-
-    }
-  </style>
-<div class="container-fluid">
-    <!-- Report Recenti -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card" style="height: calc(100vh - 40px)">
+<div id="kt_app_content" class="app-content  flex-column-fluid h-100" >
+    <div id="kt_app_content_container" class="app-container  container-fluid h-100">
+        <div class="row">
+          <div class="col-12">
+            <div class="card shadow-sm card-stretch">
                 <div class="card-header">
-                    <h5><i class="fas fa-clock"></i> System Logs</h5>
+                    <h3 class="card-title"><i class="fas fa-server fs-1 me-4"></i> Logs</h3>
+                    <div class="card-toolbar">
+                        <!-- <button type="button" class="btn btn-sm btn-light">
+                            Action
+                        </button> -->
+                    </div>
                 </div>
-                <div class="card-body overflow-scroll">
+                <div class="card-body card-scroll h-650px py-5">
                     {% for line in logs %}
                         <pre class="log-line mb-0"><code>{{ line }}</code></pre>
                     {% endfor %}
-                    
-                    <pre id="logs_content" class="log-line mb-0">{{ json }}</pre>
+                    <!-- <div class="d-flex flex-stack">
+                        <div href="#" class="text-primary fw-semibold fs-6 me-2">Avg. Client Rating</div>
+                        <div>fgdsgdsgsdfg</div>
+                    </div>
+                    <div class="separator separator-dashed my-3"></div>
+                    <strong>Host:</strong> {{ config.ftp_host or 'Non configurato' }}<br>
+                    <strong>Utente:</strong> {{ config.ftp_user or 'Non configurato' }}<br>
+                    <strong>Directory:</strong> {{ config.ftp_directory }} -->
                 </div>
+                <!-- <div class="card-footer">
+                    Footer
+                </div> -->
             </div>
+          </div>
         </div>
     </div>
-
 </div>
-<!-- <script>
-fetch('/status')
-  .then(res => res.json())
-  .then(data => {
-    const logOutput = document.getElementById('logs_content');
-    logOutput.innerHTML = data.map(line => line + '<br>').join('');
-  })
-  .catch(err => {
-    document.getElementById('logs_content').textContent = 'Errore nel caricamento dei log';
-  });
-</script> -->
 {% endblock %}
+
+<!-- Inserimento Script -->
+{% block scripts %}
+
+{% endblock scripts %}
+    
+    
+   
+
+   
+
+
 
 

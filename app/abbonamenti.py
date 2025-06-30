@@ -130,7 +130,7 @@ class Abbonamenti:
             product_ids = models.execute_kw(
                 self.odoo_db, uid, self.odoo_password,
                 'product.product', 'search',
-                [[('default_code', '=', 'ADDEBITO_TEMP')]]
+                [[('default_code', '=', 'VoIP_EXTRA')]]
             )
             
             if not product_ids:
@@ -138,8 +138,8 @@ class Abbonamenti:
                     self.odoo_db, uid, self.odoo_password,
                     'product.product', 'create',
                     [{
-                        'name': 'Addebito Temporaneo',
-                        'default_code': 'ADDEBITO_TEMP',
+                        'name': 'Traffico VoIP extra soglia.',
+                        'default_code': 'VoIP_EXTRA',
                         'type': 'service',
                         'list_price': 0.0,
                         'invoice_policy': 'order',
@@ -155,7 +155,7 @@ class Abbonamenti:
                 [{
                     'order_id': subscription_id,
                     'product_id': product_id,
-                    'name': f"{descrizione} - Contratto {contract_code}",
+                    'name': f"Dettaglio: {descrizione}", # - Contratto {contract_code}
                     'product_uom_qty': 1.0,
                     'price_unit': float(importo),
                 }]

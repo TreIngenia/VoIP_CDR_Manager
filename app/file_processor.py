@@ -12,10 +12,11 @@ import pandas as pd
 from utils import extract_data_from_api
 logger = logging.getLogger(__name__)
 
-class FTPProcessor:
+class ConvertFILE:
     """Classe per gestire operazioni FTP e conversioni file con sicurezza migliorata"""
     
-    def __init__(self, config):
+    def __init__(self, secureconfig):
+        config = secureconfig.get_config()
         self.config = config
         self.ensure_output_directory()
     
@@ -41,159 +42,6 @@ class FTPProcessor:
         
         return True
     
-    def connect_ftp(self):
-        """Connessione FTP con gestione errori migliorata e retry automatico"""
-        max_retries = 3
-        retry_delay = 2
-        
-        for attempt in range(max_retries):
-            ftp = None
-            try:
-                ftp = ftplib.FTP()
-                ftp.connect(self.config['ftp_host'], timeout=30)
-                ftp.login(self.config['ftp_user'], self.config['ftp_password'])
-                
-                # Validazione directory con controllo esistenza
-                if self.config['ftp_directory'] and self.config['ftp_directory'] != '/':
-                    clean_dir = self.config['ftp_directory'].strip('/')
-                    if '..' not in clean_dir:
-                        try:
-                            ftp.cwd('/' + clean_dir)
-                        except ftplib.error_perm as e:
-                            if "550" in str(e):  # Directory non esistente
-                                logger.warning(f"Directory {clean_dir} non esistente, uso directory root")
-                            else:
-                                raise
-                    else:
-                        logger.warning("Directory FTP contiene path traversal, uso directory root")
-                
-                logger.info(f"Connesso al server FTP: {self.config['ftp_host']}")
-                return ftp
-                
-            except (ftplib.error_perm, ftplib.error_temp) as e:
-                if ftp:
-                    try:
-                        ftp.quit()
-                    except:
-                        pass
-                
-                if attempt < max_retries - 1:
-                    logger.warning(f"Tentativo {attempt + 1} fallito: {e}. Riprovo in {retry_delay} secondi...")
-                    import time
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Backoff esponenziale
-                else:
-                    logger.error(f"Tutti i {max_retries} tentativi di connessione falliti: {e}")
-                    raise
-                    
-            except Exception as e:
-                if ftp:
-                    try:
-                        ftp.quit()
-                    except:
-                        pass
-                logger.error(f"Errore connessione FTP: {e}")
-                raise
-    
-    def list_ftp_files(self):
-        """Lista i file presenti sul server FTP"""
-        try:
-            ftp = self.connect_ftp()
-            files = ftp.nlst()
-            ftp.quit()
-            return files
-        except Exception as e:
-            logger.error(f"Errore nel listare i file FTP: {e}")
-            return []
-    
-    def download_file_from_ftp(self, filename, local_path):
-        """Download con gestione errori robusta e sovrascrittura file"""
-        ftp = None
-        temp_path = None
-        
-        try:
-            # Validazione filename
-            if not self._validate_filename(filename):
-                logger.error(f"Nome file non sicuro: {filename}")
-                return False
-            
-            # Converti local_path in Path object
-            local_path = Path(local_path)
-            
-            # Path temporaneo per download atomico
-            temp_path = local_path.parent / (local_path.name + '.tmp')
-            
-            # Rimuovi file temporaneo se esiste già
-            if temp_path.exists():
-                try:
-                    temp_path.unlink()
-                    logger.debug(f"File temporaneo esistente rimosso: {temp_path}")
-                except Exception as e:
-                    logger.warning(f"Impossibile rimuovere file temporaneo {temp_path}: {e}")
-            
-            ftp = self.connect_ftp()
-            
-            with open(temp_path, 'wb') as temp_file:
-                ftp.retrbinary(f'RETR {filename}', temp_file.write)
-            
-            # Gestione sovrascrittura file esistente (specifico per Windows)
-            if local_path.exists():
-                try:
-                    # Su Windows, prima rimuovi il file esistente
-                    if sys.platform.startswith('win'):
-                        local_path.unlink()
-                        logger.debug(f"File esistente rimosso per sovrascrittura: {local_path}")
-                    else:
-                        # Su Linux/Mac, rename sovrascrive automaticamente
-                        pass
-                except Exception as e:
-                    logger.warning(f"Impossibile rimuovere file esistente {local_path}: {e}")
-            
-            # Sposta il file temporaneo al nome finale
-            try:
-                temp_path.rename(local_path)
-                logger.info(f"File scaricato: {filename} -> {local_path}")
-                return True
-            except Exception as e:
-                # Se rename fallisce, prova con copy + delete
-                logger.warning(f"Rename fallito, provo con copy: {e}")
-                try:
-                    shutil.copy2(temp_path, local_path)
-                    temp_path.unlink()
-                    logger.info(f"File scaricato (con copy): {filename} -> {local_path}")
-                    return True
-                except Exception as e2:
-                    logger.error(f"Anche copy fallito: {e2}")
-                    return False
-            
-        except ftplib.error_perm as e:
-            logger.error(f"File non trovato o permessi insufficienti per {filename}: {e}")
-            return False
-        except ftplib.error_temp as e:
-            logger.error(f"Errore temporaneo FTP per {filename}: {e}")
-            return False
-        except IOError as e:
-            logger.error(f"Errore I/O per {filename}: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Errore generico per {filename}: {e}")
-            return False
-        finally:
-            # Cleanup
-            if ftp:
-                try:
-                    ftp.quit()
-                except:
-                    pass
-            
-            # Rimuovi file temporaneo se esiste ancora
-            if temp_path and temp_path.exists():
-                try:
-                    temp_path.unlink()
-                    logger.debug(f"File temporaneo pulito: {temp_path}")
-                except Exception as e:
-                    logger.warning(f"Impossibile rimuovere file temporaneo {temp_path}: {e}")
-
     def cleanup_output_directory(self, pattern="*.tmp"):
         """Pulisce file temporanei nella directory di output"""
         try:
@@ -352,22 +200,42 @@ class FTPProcessor:
         return result
     
     def download_files(self):
-        """Scarica i file dal server FTP basandosi sulla configurazione"""
+        """Scarica i file dal server FTP basandosi sulla configurazione - VERSIONE DEFINITIVAMENTE CORRETTA"""
         downloaded_files = []
         
         try:
-            # Debug: stampa configurazione
-            logger.info(f"Configurazione download: download_all_files={self.config['download_all_files']}")
+            # Debug: stampa configurazione COMPLETA
+            logger.info("=== CONFIGURAZIONE DOWNLOAD ===")
+            logger.info(f"download_all_files = {self.config.get('download_all_files')} (tipo: {type(self.config.get('download_all_files'))})")
+            logger.info(f"specific_filename = {self.config.get('specific_filename')}")
+            logger.info(f"filter_pattern = {self.config.get('filter_pattern')}")
+            logger.info(f"file_naming_pattern = {self.config.get('file_naming_pattern')}")
+            logger.info(f"custom_pattern = {self.config.get('custom_pattern')}")
+            logger.info("=== FINE CONFIGURAZIONE ===")
             
             # Pulizia file temporanei all'inizio
             self.cleanup_output_directory("*.tmp")
             
-            # Converti esplicitamente in booleano se è stringa
-            download_all = self.config['download_all_files']
-            if isinstance(download_all, str):
-                download_all = download_all.lower() in ('true', '1', 'yes', 'on')
-            elif download_all is None:
+            # CONVERSIONE BOOLEANA RIGOROSA - FIX DEFINITIVO
+            download_all_raw = self.config.get('download_all_files', False)
+            
+            # Gestione rigorosa di tutti i tipi possibili
+            if isinstance(download_all_raw, bool):
+                download_all = download_all_raw
+            elif isinstance(download_all_raw, str):
+                # FIX: "false" deve essere False, solo "true" deve essere True
+                download_all = download_all_raw.lower().strip() in ('true', '1', 'yes', 'on')
+            elif download_all_raw is None:
                 download_all = False
+            elif isinstance(download_all_raw, (int, float)):
+                # Per numeri: 0 = False, tutto il resto = True
+                download_all = bool(download_all_raw) and download_all_raw != 0
+            else:
+                # Conversione generica per altri tipi
+                download_all = False  # Default sicuro
+            
+            logger.info(f"download_all_raw = {repr(download_all_raw)}")
+            logger.info(f"download_all convertito = {download_all} (tipo: {type(download_all)})")
             
             # Ottieni lista completa file dal server
             all_files = self.list_ftp_files()
@@ -377,87 +245,107 @@ class FTPProcessor:
                 logger.warning("Nessun file trovato sul server FTP")
                 return []
             
-            if download_all:
-                # Modalità: scarica tutti i file
-                logger.info("Modalità: scarica tutti i file")
+            # CONTROLLO ESPLICITO E DEFINITIVO
+            if download_all == True:
+                logger.info("🔄 MODALITÀ: SCARICA TUTTI I FILE")
                 files_to_download = all_files
             else:
-                # Modalità: file specifico o con pattern
-                logger.info("Modalità: file specifico/pattern")
+                logger.info("🎯 MODALITÀ: SCARICA FILE SPECIFICI/PATTERN")
+                files_to_download = []
                 
-                if self.config.get('specific_filename'):
-                    # Nome file specifico
-                    specific_name = self.config['specific_filename']
-                    logger.info(f"Cercando file specifico: {specific_name}")
+                # STEP 1: Controlla SPECIFIC_FILENAME
+                specific_filename = self.config.get('specific_filename')
+                if specific_filename and specific_filename.strip():
+                    logger.info(f"🔍 STEP 1: Usando SPECIFIC_FILENAME = '{specific_filename}'")
                     
-                    # Controlla se è un pattern (contiene wildcard)
-                    if '*' in specific_name or '?' in specific_name:
-                        logger.info(f"Rilevato pattern wildcard: {specific_name}")
-                        files_to_download = self.filter_files_by_pattern(all_files, specific_name)
+                    # Controlla se è un pattern (contiene wildcard o variabili temporali)
+                    if '*' in specific_filename or '?' in specific_filename or '%' in specific_filename:
+                        logger.info(f"   ➜ Pattern rilevato, applico filtro")
+                        files_to_download = self.filter_files_by_pattern(all_files, specific_filename)
+                        logger.info(f"   ➜ File trovati con pattern: {len(files_to_download)}")
                     else:
-                        # Nome esatto
-                        files_to_download = [specific_name] if specific_name in all_files else []
-                        if not files_to_download:
-                            logger.warning(f"File specifico '{specific_name}' non trovato sul server")
+                        logger.info(f"   ➜ Nome esatto, cerco file specifico")
+                        files_to_download = [specific_filename] if specific_filename in all_files else []
+                        logger.info(f"   ➜ File trovato: {'Sì' if files_to_download else 'No'}")
                 
-                elif self.config.get('filter_pattern'):
-                    # Pattern di filtro dedicato
-                    filter_pattern = self.config['filter_pattern']
-                    logger.info(f"Usando pattern di filtro: {filter_pattern}")
+                # STEP 2: Se non trovato, controlla FILTER_PATTERN
+                elif self.config.get('filter_pattern') and self.config.get('filter_pattern').strip():
+                    filter_pattern = self.config.get('filter_pattern')
+                    logger.info(f"🔍 STEP 2: Usando FILTER_PATTERN = '{filter_pattern}'")
                     files_to_download = self.filter_files_by_pattern(all_files, filter_pattern)
+                    logger.info(f"   ➜ File trovati con pattern: {len(files_to_download)}")
                 
+                # STEP 3: Se non trovato, genera pattern temporale
                 else:
-                    # Genera nome basato su pattern temporale
+                    logger.info("🔍 STEP 3: Generando pattern temporale")
                     filename = self.generate_filename(
-                        self.config['file_naming_pattern'],
+                        self.config.get('file_naming_pattern', 'monthly'),
                         self.config.get('custom_pattern', '')
                     )
-                    logger.info(f"Nome file generato dal pattern: {filename}")
+                    logger.info(f"   ➜ Pattern generato: '{filename}'")
                     
                     # Controlla se il nome generato contiene wildcard
                     if '*' in filename or '?' in filename:
                         files_to_download = self.filter_files_by_pattern(all_files, filename)
+                        logger.info(f"   ➜ File trovati con pattern temporale: {len(files_to_download)}")
                     else:
                         files_to_download = [filename] if filename in all_files else []
-                        if not files_to_download:
-                            logger.warning(f"File generato '{filename}' non trovato sul server")
+                        logger.info(f"   ➜ File temporale trovato: {'Sì' if files_to_download else 'No'}")
+                
+                # CONTROLLO FINALE: Se non trova nulla, NON scaricare tutto!
+                if not files_to_download:
+                    logger.warning("❌ NESSUN FILE CORRISPONDE AI CRITERI - NON SCARICO NULLA")
+                    logger.warning("   Se vuoi scaricare tutti i file, imposta DOWNLOAD_ALL_FILES=true")
+                    return []
+                else:
+                    logger.info(f"✅ TROVATI {len(files_to_download)} FILE DA SCARICARE")
+                    for f in files_to_download:
+                        logger.info(f"   - {f}")
             
             # Download dei file selezionati
-            logger.info(f"File da scaricare: {len(files_to_download)}")
+            logger.info(f"📥 INIZIO DOWNLOAD: {len(files_to_download)} file")
             
             for filename in files_to_download:
                 # Ignora directory e file nascosti
                 if filename.startswith('.') or filename.endswith('/'):
-                    logger.info(f"Ignorato: {filename} (directory o file nascosto)")
+                    logger.info(f"⏭️  Ignorato: {filename} (directory o file nascosto)")
                     continue
                 
                 local_path = Path(self.config['output_directory']) / filename
-                logger.info(f"Scaricamento: {filename}")
+                logger.info(f"⬇️  Scaricamento: {filename}")
                 
                 # Avviso se file esiste già
                 if local_path.exists():
-                    logger.warning(f"File esistente sarà sovrascritto: {filename}")
+                    logger.warning(f"⚠️  File esistente sarà sovrascritto: {filename}")
                 
                 if self.download_file_from_ftp(filename, local_path):
                     downloaded_files.append(str(local_path))
-                    logger.info(f"[OK] Download completato: {filename}")
+                    logger.info(f"✅ [OK] Download completato: {filename}")
                 else:
-                    logger.error(f"[ERROR] Download fallito: {filename}")
+                    logger.error(f"❌ [ERROR] Download fallito: {filename}")
             
             # Pulizia finale file temporanei
             self.cleanup_output_directory("*.tmp")
             
-            logger.info(f"Download completato. File scaricati: {len(downloaded_files)}")
+            logger.info(f"🎉 Download completato. File scaricati: {len(downloaded_files)}")
+            
+            # Log finale dei file scaricati
+            if downloaded_files:
+                logger.info("📁 File scaricati:")
+                for f in downloaded_files:
+                    logger.info(f"   - {Path(f).name}")
+            
             return downloaded_files
             
         except Exception as e:
-            logger.error(f"Errore nel processo di download: {e}")
+            logger.error(f"💥 Errore nel processo di download: {e}")
             # Pulizia anche in caso di errore
             try:
                 self.cleanup_output_directory("*.tmp")
             except:
                 pass
             return []
+
     
     def convert_to_json(self, file_path):
         """
@@ -492,7 +380,7 @@ class FTPProcessor:
                 ]
                 
                 data = []
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, 'r', encoding='cp1252') as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
                         if line:  # Ignora righe vuote
@@ -665,7 +553,7 @@ class FTPProcessor:
                 logger.warning("Nessun file scaricato")
                 return {
                     'success': False, 
-                    'message': 'Nessun file scaricato',
+                    'message': 'Nessun file scaricato - verificare pattern o disponibilità file',
                     'timestamp': datetime.now().isoformat()
                 }
             
@@ -752,6 +640,28 @@ class FTPProcessor:
                 'timestamp': datetime.now().isoformat()
             }
 
+    def debug_configuration(self):
+        """Metodo di debug per controllare la configurazione"""
+        logger.info("🔧 === DEBUG CONFIGURAZIONE ===")
+        logger.info(f"Configurazione completa: {self.config}")
+        
+        # Test specifici per ogni valore
+        for key, value in self.config.items():
+            logger.info(f"  {key} = {repr(value)} (tipo: {type(value).__name__})")
+        
+        # Test conversione booleana
+        download_all_raw = self.config.get('download_all_files', 'MISSING')
+        logger.info(f"download_all_files RAW: {repr(download_all_raw)}")
+        
+        if isinstance(download_all_raw, str):
+            test_values = ['true', '1', 'yes', 'on', 'True', 'TRUE']
+            is_true = download_all_raw.lower() in ['true', '1', 'yes', 'on'] or download_all_raw in ['True', 'TRUE']
+            logger.info(f"  String test: '{download_all_raw}' -> {is_true}")
+            logger.info(f"  Lower case: '{download_all_raw.lower()}'")
+            logger.info(f"  In test values: {download_all_raw.lower() in ['true', '1', 'yes', 'on']}")
+        
+        logger.info("🔧 === FINE DEBUG ===")
+        
     def test_pattern_matching(self, pattern):
         """
         Testa un pattern contro i file presenti sul server FTP

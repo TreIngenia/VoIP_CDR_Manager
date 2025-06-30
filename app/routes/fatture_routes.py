@@ -50,7 +50,8 @@ def fatture_routes(app, secure_config):
                 'error_type': type(e).__name__,
                 'timestamp': datetime.now().isoformat()
             }), 500
-
+        
+    #Recupera la lista di tutti gli utenti di odoo
     @app.route('/api/fatturazione/lista_clienti', methods=['GET'])
     def lista_clienti():
         """Route per ottenere la lista dei clienti disponibili"""
@@ -71,8 +72,7 @@ def fatture_routes(app, secure_config):
             # Cerca clienti (non fornitori)
             partners = odoo.execute('res.partner', 'search_read',
                 [('is_company', '=', True), ('customer_rank', '>', 0)],
-                fields=['id', 'name', 'email', 'phone'],
-                limit=50)
+                fields=['id', 'name', 'email', 'phone'])
             
             return jsonify({
                 'success': True,
@@ -90,6 +90,7 @@ def fatture_routes(app, secure_config):
                 'timestamp': datetime.now().isoformat()
             }), 500
 
+    #Recupera gli abbonamenti attivi di un determinato utente
     @app.route('/api/fatturazione/ordini_cliente/<int:partner_id>', methods=['GET'])
     def ordini_cliente(partner_id):
         """Route per ottenere gli ordini di un cliente specifico"""
@@ -111,8 +112,7 @@ def fatture_routes(app, secure_config):
             orders = odoo.execute('sale.order', 'search_read',
                 [('partner_id', '=', partner_id)],
                 fields=['id', 'name', 'state', 'amount_total', 'date_order', 'order_line'],
-                order='date_order desc',
-                limit=20)
+                order='date_order desc')
             
             # Per ogni ordine, controlla se ha traffico extra
             for order in orders:
@@ -146,7 +146,25 @@ def fatture_routes(app, secure_config):
                 'error_type': type(e).__name__,
                 'timestamp': datetime.now().isoformat()
             }), 500
-
+    
+    
+    #Elabora i contratti da fatturare
+    @app.route('/api/fatturazione/genera_fatture_da_cdr', methods=['GET'])
+    def genera_fatture_da_cdr():
+        """Route per ottenere la lista dei clienti disponibili"""
+        from fatturazione import processa_contratti_attivi
+        try:
+            return processa_contratti_attivi()
+            
+        except Exception as e:
+            logger.error(f"❌ Errore nella generazione della fattura: {e}")
+            return jsonify({
+                'success': False,
+                'message': f'Errore durante recupero clienti: {str(e)}',
+                'error_type': type(e).__name__,
+                'timestamp': datetime.now().isoformat()
+            }), 500
+        
     # Restituisce le informazioni sulle route aggiunte
     return {
         'routes_added': [

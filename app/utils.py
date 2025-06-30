@@ -404,9 +404,8 @@ def extract_data_from_api(api_link):
     """Versione completa con gestione errori"""
     base_url = os.getenv("BASE_HOST")
     base_port = os.getenv("APP_PORT")
-    base_url = f"{base_url}:{base_port}"
+    # base_url = f"{base_url}:{base_port}"
     url = f"{base_url}{api_link}"
-    
     # Headers (opzionali)
     headers = {
         'Content-Type': 'application/json',

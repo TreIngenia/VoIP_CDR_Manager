@@ -1,693 +1,381 @@
 {
   "metadata": {
     "version": "1.0",
-    "created_date": "2025-06-15T22:01:24.120133",
-    "last_updated": "2025-06-18T15:12:46.910498",
-    "total_contracts": 21,
+    "created_date": "2025-06-24T13:29:26.801287",
+    "last_updated": "2025-06-27T10:09:46.682967",
+    "total_contracts": 17,
     "extraction_source": "FTP_CDR_Files",
-    "manual_updates": 15,
-    "extraction_runs": 1,
-    "last_extraction_added_contracts": 21,
+    "manual_updates": 16,
+    "extraction_runs": 44,
+    "last_extraction_added_contracts": 0,
     "description": "Configurazione codici contratto estratti da file CDR"
   },
   "contracts": {
-    "14": {
-      "contract_code": "14",
-      "contract_name": "",
-      "odoo_client_id": "",
-      "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.110338",
-      "last_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.110350",
-      "total_calls_found": 1,
-      "files_found_in": [
-        "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "016322183"
-      ],
-      "total_unique_numbers": 1,
-      "contract_type": "",
-      "last_updated": "2025-06-18T15:12:46.910492"
-    },
-    "83": {
-      "contract_code": "83",
+    "16": {
+      "contract_code": "16",
       "contract_name": "",
       "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.110353",
-      "last_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.110354",
-      "total_calls_found": 3,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770644",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678338",
+      "total_calls_found": 2756,
       "files_found_in": [
-        "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR"
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
       ],
       "notes": "",
       "phone_numbers": [
-        "016322183",
-        "0536843738"
-      ],
-      "total_unique_numbers": 2
-    },
-    "1": {
-      "contract_code": "1",
-      "contract_name": "Claudio Sgroi INC",
-      "odoo_client_id": "1953",
-      "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.110356",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119116",
-      "total_calls_found": 2,
-      "files_found_in": [
-        "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "016322183",
-        "0662296324"
-      ],
-      "total_unique_numbers": 2,
-      "contract_type": "",
-      "last_updated": "2025-06-18T15:12:46.789779"
-    },
-    "58": {
-      "contract_code": "58",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.110359",
-      "last_seen_file": "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.110360",
-      "total_calls_found": 1,
-      "files_found_in": [
-        "RIV_12345_MESE_01_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "059565865"
+        "063201242"
       ],
       "total_unique_numbers": 1
     },
-    "63": {
-      "contract_code": "63",
+    "25": {
+      "contract_code": "25",
       "contract_name": "",
       "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119038",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119058",
-      "total_calls_found": 15,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770658",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678340",
+      "total_calls_found": 52064,
       "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
       ],
       "notes": "",
       "phone_numbers": [
-        "13940081",
-        "16555251",
-        "21942794",
-        "32929339",
-        "37259259",
-        "38962717",
-        "45736695",
-        "54957925",
-        "67452568",
-        "68737648",
-        "82683286",
-        "90035591",
-        "90839200",
-        "98382929",
-        "99998977"
+        "0661662773"
       ],
-      "total_unique_numbers": 15
+      "total_unique_numbers": 1
     },
-    "21": {
-      "contract_code": "21",
+    "27": {
+      "contract_code": "27",
       "contract_name": "",
       "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119064",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119066",
-      "total_calls_found": 15,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770662",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678342",
+      "total_calls_found": 15248,
       "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
       ],
       "notes": "",
       "phone_numbers": [
-        "21508411",
-        "21540098",
-        "27118360",
-        "38639039",
-        "44345454",
-        "45627869",
-        "58387964",
-        "58446974",
-        "61030538",
-        "65215050",
-        "65795327",
-        "72058259",
-        "72065016",
-        "93180763",
-        "97124409"
+        "0697858962"
       ],
-      "total_unique_numbers": 15
+      "total_unique_numbers": 1
     },
-    "80": {
-      "contract_code": "80",
+    "29": {
+      "contract_code": "29",
       "contract_name": "",
       "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119068",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119070",
-      "total_calls_found": 15,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770665",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678344",
+      "total_calls_found": 9244,
       "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
       ],
       "notes": "",
       "phone_numbers": [
-        "14603197",
-        "16007576",
-        "17858758",
-        "24227708",
-        "26777631",
-        "31504738",
-        "33474649",
-        "35518243",
-        "45851467",
-        "54988300",
-        "57569588",
-        "68660286",
-        "77183749",
-        "82183271",
-        "87123532"
+        "068186403"
       ],
-      "total_unique_numbers": 15
-    },
-    "67": {
-      "contract_code": "67",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119072",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119073",
-      "total_calls_found": 30,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "10577556",
-        "10601993",
-        "21489657",
-        "25246353",
-        "26828010",
-        "28439464",
-        "28827385",
-        "46964980",
-        "50261400",
-        "51388642",
-        "59264623",
-        "59910820",
-        "64800943",
-        "66262872",
-        "66747246",
-        "67490235",
-        "72003786",
-        "72863160",
-        "74386475",
-        "74906954",
-        "76988901",
-        "78767284",
-        "79426983",
-        "83253431",
-        "91741061",
-        "93559226",
-        "95202889",
-        "96904918",
-        "98272474",
-        "99939819"
-      ],
-      "total_unique_numbers": 30
-    },
-    "51": {
-      "contract_code": "51",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119075",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119076",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "11059476",
-        "17941402",
-        "21831070",
-        "22927438",
-        "24474369",
-        "26651592",
-        "37153369",
-        "38269807",
-        "54754467",
-        "55828656",
-        "77112491",
-        "78226554",
-        "78885756",
-        "87952284",
-        "98143507"
-      ],
-      "total_unique_numbers": 15
-    },
-    "68": {
-      "contract_code": "68",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119078",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119080",
-      "total_calls_found": 30,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "10111643",
-        "12067767",
-        "13564190",
-        "32250304",
-        "40356929",
-        "40667258",
-        "43215737",
-        "50742970",
-        "50783829",
-        "53079206",
-        "54379908",
-        "60297867",
-        "63385370",
-        "65769150",
-        "66172828",
-        "67238640",
-        "67517809",
-        "72194762",
-        "74813252",
-        "75047526",
-        "76239465",
-        "80829398",
-        "81607833",
-        "85143848",
-        "89815732",
-        "94253917",
-        "96631158",
-        "97033373",
-        "97704307",
-        "97968755"
-      ],
-      "total_unique_numbers": 30
-    },
-    "19": {
-      "contract_code": "19",
-      "contract_name": "Claudio TEST",
-      "odoo_client_id": "1951",
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119082",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119083",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "11784301",
-        "13445520",
-        "30594931",
-        "32684059",
-        "34335230",
-        "41280935",
-        "45702418",
-        "46430603",
-        "57678899",
-        "60247585",
-        "81020649",
-        "82865374",
-        "83416455",
-        "85787509",
-        "86387840"
-      ],
-      "total_unique_numbers": 15,
-      "contract_type": "",
-      "last_updated": "2025-06-16T16:36:48.347757"
-    },
-    "20": {
-      "contract_code": "20",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119085",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119086",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "11721324",
-        "15172818",
-        "15456734",
-        "21851691",
-        "22239253",
-        "31846730",
-        "36165517",
-        "44413927",
-        "56111824",
-        "70830073",
-        "71863862",
-        "72670478",
-        "90368279",
-        "92505983",
-        "98404298"
-      ],
-      "total_unique_numbers": 15
-    },
-    "45": {
-      "contract_code": "45",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119088",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119089",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "10531296",
-        "11529320",
-        "19316739",
-        "30222385",
-        "32784654",
-        "37538318",
-        "40535266",
-        "63403916",
-        "64331268",
-        "66867567",
-        "67639413",
-        "83487604",
-        "83624032",
-        "86182450",
-        "90662497"
-      ],
-      "total_unique_numbers": 15
-    },
-    "32": {
-      "contract_code": "32",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119091",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119092",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "16694227",
-        "18904602",
-        "30580333",
-        "34633751",
-        "38651463",
-        "41835619",
-        "42294266",
-        "44414980",
-        "51691986",
-        "58906294",
-        "62047940",
-        "73730316",
-        "75740015",
-        "75764157",
-        "87062573"
-      ],
-      "total_unique_numbers": 15
-    },
-    "86": {
-      "contract_code": "86",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119094",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119096",
-      "total_calls_found": 30,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "21076671",
-        "21645400",
-        "32869520",
-        "37706926",
-        "38889432",
-        "41055393",
-        "43309042",
-        "45756326",
-        "46538725",
-        "46773689",
-        "49436271",
-        "50548935",
-        "51111407",
-        "52507422",
-        "52936212",
-        "53403952",
-        "56404625",
-        "63057322",
-        "64218340",
-        "64369679",
-        "67694588",
-        "71747128",
-        "83083712",
-        "85113390",
-        "85278393",
-        "88661877",
-        "94157408",
-        "95963769",
-        "97263101",
-        "98399200"
-      ],
-      "total_unique_numbers": 30
-    },
-    "50": {
-      "contract_code": "50",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119097",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119098",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "12895305",
-        "15502663",
-        "21857969",
-        "26709064",
-        "26736667",
-        "33462521",
-        "48372900",
-        "52310937",
-        "63855974",
-        "66306642",
-        "66780444",
-        "95679018",
-        "98340986",
-        "99099273",
-        "99758887"
-      ],
-      "total_unique_numbers": 15
-    },
-    "53": {
-      "contract_code": "53",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119100",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119101",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "10090412",
-        "17677623",
-        "21924470",
-        "22676558",
-        "31141228",
-        "32766103",
-        "47782259",
-        "48210163",
-        "48642301",
-        "54420234",
-        "55085276",
-        "55843576",
-        "86171694",
-        "91952036",
-        "97850063"
-      ],
-      "total_unique_numbers": 15
-    },
-    "96": {
-      "contract_code": "96",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119103",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119104",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "19793655",
-        "23407496",
-        "23671406",
-        "28947832",
-        "30619337",
-        "40349463",
-        "48761178",
-        "59516698",
-        "69504700",
-        "74606176",
-        "78512721",
-        "88860952",
-        "93040764",
-        "98481864",
-        "98713322"
-      ],
-      "total_unique_numbers": 15
-    },
-    "46": {
-      "contract_code": "46",
-      "contract_name": "",
-      "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119106",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119107",
-      "total_calls_found": 15,
-      "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
-      ],
-      "notes": "",
-      "phone_numbers": [
-        "12525917",
-        "15464795",
-        "27366749",
-        "30835758",
-        "40142506",
-        "45129291",
-        "47864510",
-        "48987718",
-        "52778872",
-        "58419927",
-        "66981180",
-        "74490351",
-        "79748598",
-        "90725296",
-        "96784417"
-      ],
-      "total_unique_numbers": 15
+      "total_unique_numbers": 1
     },
     "30": {
       "contract_code": "30",
       "contract_name": "",
       "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119109",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119110",
-      "total_calls_found": 15,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770668",
+      "last_seen_file": "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-25T20:05:14.453618",
+      "total_calls_found": 200,
       "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR"
       ],
       "notes": "",
       "phone_numbers": [
-        "16151333",
-        "27222241",
-        "31021978",
-        "35961901",
-        "60649640",
-        "61844786",
-        "76437642",
-        "77834174",
-        "85528425",
-        "87920775",
-        "90064334",
-        "91905572",
-        "93907794",
-        "93975302",
-        "94686805"
+        "0662296324"
       ],
-      "total_unique_numbers": 15
+      "total_unique_numbers": 1
     },
-    "65": {
-      "contract_code": "65",
+    "31": {
+      "contract_code": "31",
       "contract_name": "",
       "odoo_client_id": null,
-      "first_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "first_seen_date": "2025-06-15T22:01:24.119112",
-      "last_seen_file": "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR",
-      "last_seen_date": "2025-06-15T22:01:24.119113",
-      "total_calls_found": 15,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770671",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678346",
+      "total_calls_found": 432,
       "files_found_in": [
-        "RIV_12345_MESE_06_2024-06-05-14.16.27.CDR"
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR"
       ],
       "notes": "",
       "phone_numbers": [
-        "11740688",
-        "30051918",
-        "33044959",
-        "33050968",
-        "38390152",
-        "43480423",
-        "62463156",
-        "64738430",
-        "71610567",
-        "75466878",
-        "76587652",
-        "83593221",
-        "84021719",
-        "89347670",
-        "91781723"
+        "0669404579"
       ],
-      "total_unique_numbers": 15
+      "total_unique_numbers": 1
+    },
+    "28": {
+      "contract_code": "28",
+      "contract_name": "Claudio Sgroi INC",
+      "odoo_client_id": "1953",
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770673",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678347",
+      "total_calls_found": 48380,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "0644202555",
+        "0644202557",
+        "0644230203",
+        "0644291515"
+      ],
+      "total_unique_numbers": 4,
+      "contract_type": "62",
+      "last_updated": "2025-06-27T08:56:23.866992"
+    },
+    "34": {
+      "contract_code": "34",
+      "contract_name": "",
+      "odoo_client_id": null,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770677",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678349",
+      "total_calls_found": 20788,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "0693576361"
+      ],
+      "total_unique_numbers": 1
+    },
+    "35": {
+      "contract_code": "35",
+      "contract_name": "",
+      "odoo_client_id": null,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770680",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678351",
+      "total_calls_found": 492,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "0687155291"
+      ],
+      "total_unique_numbers": 1
+    },
+    "36": {
+      "contract_code": "36",
+      "contract_name": "",
+      "odoo_client_id": null,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770682",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678353",
+      "total_calls_found": 11520,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "0687134158"
+      ],
+      "total_unique_numbers": 1
+    },
+    "33": {
+      "contract_code": "33",
+      "contract_name": "",
+      "odoo_client_id": null,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770685",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678355",
+      "total_calls_found": 26892,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "063010023"
+      ],
+      "total_unique_numbers": 1
+    },
+    "37": {
+      "contract_code": "37",
+      "contract_name": "",
+      "odoo_client_id": null,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770689",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678357",
+      "total_calls_found": 16056,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "0633680008"
+      ],
+      "total_unique_numbers": 1
+    },
+    "38": {
+      "contract_code": "38",
+      "contract_name": "",
+      "odoo_client_id": null,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770692",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678359",
+      "total_calls_found": 4144,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "069075086"
+      ],
+      "total_unique_numbers": 1
+    },
+    "39": {
+      "contract_code": "39",
+      "contract_name": "",
+      "odoo_client_id": null,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770695",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678361",
+      "total_calls_found": 179156,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "065413733"
+      ],
+      "total_unique_numbers": 1
+    },
+    "46": {
+      "contract_code": "46",
+      "contract_name": "",
+      "odoo_client_id": null,
+      "first_seen_file": "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.770698",
+      "last_seen_file": "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-25T20:05:14.470851",
+      "total_calls_found": 30200,
+      "files_found_in": [
+        "RIV_12345_MESE_05_2025-05-05-14.16.27.CDR",
+        "RIV_12345_MESE_07_2025-07-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "0631072255"
+      ],
+      "total_unique_numbers": 1
+    },
+    "9": {
+      "contract_code": "9",
+      "contract_name": null,
+      "odoo_client_id": "",
+      "first_seen_file": "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.781039",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678328",
+      "total_calls_found": 884,
+      "files_found_in": [
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "0692935852"
+      ],
+      "total_unique_numbers": 1,
+      "contract_type": "",
+      "last_updated": "2025-06-27T08:56:12.234135"
+    },
+    "14": {
+      "contract_code": "14",
+      "contract_name": "",
+      "odoo_client_id": "",
+      "first_seen_file": "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+      "first_seen_date": "2025-06-24T13:29:26.781056",
+      "last_seen_file": "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR",
+      "last_seen_date": "2025-06-27T10:09:46.678335",
+      "total_calls_found": 19736,
+      "files_found_in": [
+        "RIV_12345_MESE_08_2025-08-05-14.16.27.CDR",
+        "RIV_12345_MESE_06_2025-06-05-14.16.27.CDR"
+      ],
+      "notes": "",
+      "phone_numbers": [
+        "068602827",
+        "0686211088"
+      ],
+      "total_unique_numbers": 2,
+      "contract_type": "",
+      "last_updated": "2025-06-24T17:02:26.142541"
     }
   },
   "last_extraction": {
-    "timestamp": "2025-06-15T22:01:24.119221",
-    "files_processed": 2,
-    "records_processed": 307,
-    "new_contracts_added": 21,
-    "existing_contracts_preserved": 0,
-    "total_contracts_after": 21
+    "timestamp": "2025-06-27T10:09:46.678365",
+    "files_processed": 1,
+    "records_processed": 2608,
+    "new_contracts_added": 0,
+    "existing_contracts_preserved": 17,
+    "total_contracts_after": 17
   }
 }

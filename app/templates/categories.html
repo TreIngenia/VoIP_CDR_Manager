@@ -133,7 +133,7 @@
                         <div class="tab-content border border-1 rounded-bottom-3 p-3">
                             <!-- Elenco categorie-->
                             <div class="tab-pane fade show active" id="categories-list">
-                                <div id="conflictsAlert" style="display: none;">
+                                <div id="conflictsAlert" class="d-none">
                                     <div class="alert alert-warning conflict-alert">
                                         <h5><i class="fas fa-exclamation-triangle"></i> Conflitti Pattern Rilevati</h5>
                                         <div id="conflictsList"></div>
@@ -209,9 +209,9 @@
                                                     <div class="mb-3">
                                                         <label for="categoryPatterns" class="form-label">Pattern di Riconoscimento</label>
                                                         <div class="input-group">
-                                                            <input type="text" class="form-control" id="newPattern"
+                                                            <input type="text" class="form-control" id="markupNewPattern"
                                                                 placeholder="Aggiungi pattern...">
-                                                            <button type="button" class="btn btn-primary" onclick="addPattern()">
+                                                            <button type="button" class="btn btn-primary" onclick="addPattern('markup')" title="Aggiungi">
                                                                 <i class="fas fa-plus fs-3"></i>
                                                             </button>
                                                         </div>
@@ -221,8 +221,7 @@
                                                     </div>
                         
                                                     <div class="form-floating mb-3">
-                                                        <textarea class="form-control" id="categoryDescription"
-                                                            style="height: 100px"></textarea>
+                                                        <textarea class="form-control" id="categoryDescription"></textarea>
                                                         <label for="categoryDescription">Descrizione (opzionale)</label>
                                                     </div>
                         
@@ -251,19 +250,21 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="d-flex flex-column">
-                                                    <li class="d-flex align-items-center py-2">
-                                                        <span class="bullet bullet-dot bg-success me-5"></span> Usa nomi categoria significativi
-                                                    </li>
-                                                    <li class="d-flex align-items-center py-2">
-                                                        <span class="bullet bullet-dot bg-success me-5"></span> Aggiungi più pattern per migliore il riconoscimento
-                                                    </li>
-                                                    <li class="d-flex align-items-center py-2">
-                                                        <span class="bullet bullet-dot bg-success me-5"></span> Verifica conflitti prima del
-                                                        salvataggio
-                                                    </li>
-                                                    <li class="d-flex align-items-center py-2">
-                                                        <span class="bullet bullet-dot bg-success me-5"></span> Prezzi in EUR per minuto
-                                                    </li>
+                                                    <ul class="">
+                                                        <li class="d-flex align-items-center py-2">
+                                                            <span class="bullet bullet-dot bg-success me-5"></span> Usa nomi categoria significativi
+                                                        </li>
+                                                        <li class="d-flex align-items-center py-2">
+                                                            <span class="bullet bullet-dot bg-success me-5"></span> Aggiungi più pattern per migliore il riconoscimento
+                                                        </li>
+                                                        <li class="d-flex align-items-center py-2">
+                                                            <span class="bullet bullet-dot bg-success me-5"></span> Verifica conflitti prima del
+                                                            salvataggio
+                                                        </li>
+                                                        <li class="d-flex align-items-center py-2">
+                                                            <span class="bullet bullet-dot bg-success me-5"></span> Prezzi in EUR per minuto
+                                                        </li>
+                                                    </ul>
                                                 </div>
                                             </div>
                                             <!-- <div class="card-footer">
@@ -456,7 +457,7 @@
                                             </div>
                                             <div class="card-body">
                                                 
-                                                <div id="healthCheckResults" class="mt-3" style="display: none;"></div>
+                                                <div id="healthCheckResults" class="mt-3 d-none"></div>
                                             </div>
                                             <!-- <div class="card-footer">
                                                 Footer
@@ -534,7 +535,7 @@
                                                         <div class="input-group">
                                                             <input type="text" class="form-control" id="newPattern"
                                                                 placeholder="Aggiungi pattern...">
-                                                            <button type="button" class="btn btn-primary" onclick="addPattern()">
+                                                            <button type="button" class="btn btn-primary" onclick="addPattern()" title="Aggiungi">
                                                                 <i class="fas fa-plus fs-3"></i>
                                                             </button>
                                                         </div>
@@ -608,7 +609,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="fas fa-edit me-2"></i> Modifica Categoria</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Chiudi"></button>
                 </div>
                 <div class="modal-body">
                     <form id="editCategoryForm">
@@ -645,7 +646,7 @@
                             <label for="categoryPatterns" class="form-label">Pattern di Riconoscimento</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="editNewPattern" placeholder="Aggiungi pattern...">
-                                <button type="button" class="btn btn-primary" onclick="addEditPattern()">
+                                <button type="button" class="btn btn-primary" onclick="addEditPattern()" title="Aggiungi pattern">
                                     <i class="fas fa-plus fs-3"></i>
                                 </button>
                             </div>
@@ -682,1054 +683,1053 @@
     </div>
 </div>
 {% endblock %}
-
 {% block scripts %}
-    <script>
-        // Global variables
-        let categoriesData = {};
-        let currentPatterns = [];
-        let editCurrentPatterns = [];
+<script>
+    // Global variables
+    let categoriesData = {};
+    let currentPatterns = [];
+    let editCurrentPatterns = [];
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadCategories();
-            loadStatistics();
-            checkConflicts();
-            
-            // Form submission handlers
-            const addForm = document.getElementById('addCategoryForm');
-            if (addForm) {
-                addForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    createCategory();
-                });
-            }
-            
-            // Auto-uppercase category name
-            const categoryNameInput = document.getElementById('categoryName');
-            if (categoryNameInput) {
-                categoryNameInput.addEventListener('input', function(e) {
-                    e.target.value = e.target.value.toUpperCase();
-                });
-            }
-
-            // Pattern input handler
-            const newPatternInput = document.getElementById('newPattern');
-            if (newPatternInput) {
-                newPatternInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addPattern();
-                    }
-                });
-            }
-
-            const editPatternInput = document.getElementById('editNewPattern');
-            if (editPatternInput) {
-                editPatternInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addEditPattern();
-                    }
-                });
-            }
-
-        });
-        window.addEventListener("DOMContentLoaded", function () {
-            live_cal_final_price()
-        });
-
-        function live_cal_final_price(){
-            const markupInput = document.getElementById("markup_FISSI");
-            const priceInput = document.getElementById("editCategoryPrice");
-            const new_markupInput = document.getElementById("categoryMarkup");
-            const new_priceInput = document.getElementById("categoryPrice");
-
-            if (markupInput && priceInput) {
-                markupInput.addEventListener("input", updateFinalPrice);
-                markupInput.addEventListener("change", updateFinalPrice);
-                priceInput.addEventListener("input", updateFinalPrice);
-                priceInput.addEventListener("change", updateFinalPrice);
-            }
-
-            if (new_markupInput && new_priceInput) {
-                new_markupInput.addEventListener("input", updateFinalPriceNew);
-                new_markupInput.addEventListener("change", updateFinalPriceNew);
-                new_priceInput.addEventListener("input", updateFinalPriceNew);
-                new_priceInput.addEventListener("change", updateFinalPriceNew);
-            }
-
-            function updateFinalPrice() {
-                const price = parseFloat(document.getElementById("editCategoryPrice").value) || 0;
-                const markup = parseFloat(document.getElementById("markup_FISSI").value) || 0;
-                document.getElementById("editFinalPrice").value = applyMarkup(price, markup).toFixed(4);
-            }
-            
-            function updateFinalPriceNew() {
-                const price = parseFloat(document.getElementById("categoryPrice").value) || 0;
-                const markup = parseFloat(document.getElementById("categoryMarkup").value) || 0;
-                document.getElementById("categoryFinalPrice").value = applyMarkup(price, markup).toFixed(4);
-            }
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCategories();
+        loadStatistics();
+        checkConflicts();
+        
+        // Form submission handlers
+        const addForm = document.getElementById('addCategoryForm');
+        if (addForm) {
+            addForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                createCategory();
+            });
+        }
+        
+        // Auto-uppercase category name
+        const categoryNameInput = document.getElementById('categoryName');
+        if (categoryNameInput) {
+            categoryNameInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.toUpperCase();
+            });
         }
 
-        // Load categories from API
-        function loadCategories() {
-            showLoading();
+        // Pattern input handler
+        const newPatternInput = document.getElementById('newPattern');
+        if (newPatternInput) {
+            newPatternInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addPattern();
+                }
+            });
+        }
+
+        const editPatternInput = document.getElementById('editNewPattern');
+        if (editPatternInput) {
+            editPatternInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addEditPattern();
+                }
+            });
+        }
+
+    });
+    window.addEventListener("DOMContentLoaded", function () {
+        live_cal_final_price()
+    });
+
+    function live_cal_final_price(){
+        const markupInput = document.getElementById("markup_FISSI");
+        const priceInput = document.getElementById("editCategoryPrice");
+        const new_markupInput = document.getElementById("categoryMarkup");
+        const new_priceInput = document.getElementById("categoryPrice");
+
+        if (markupInput && priceInput) {
+            markupInput.addEventListener("input", updateFinalPrice);
+            markupInput.addEventListener("change", updateFinalPrice);
+            priceInput.addEventListener("input", updateFinalPrice);
+            priceInput.addEventListener("change", updateFinalPrice);
+        }
+
+        if (new_markupInput && new_priceInput) {
+            new_markupInput.addEventListener("input", updateFinalPriceNew);
+            new_markupInput.addEventListener("change", updateFinalPriceNew);
+            new_priceInput.addEventListener("input", updateFinalPriceNew);
+            new_priceInput.addEventListener("change", updateFinalPriceNew);
+        }
+
+        function updateFinalPrice() {
+            const price = parseFloat(document.getElementById("editCategoryPrice").value) || 0;
+            const markup = parseFloat(document.getElementById("markup_FISSI").value) || 0;
+            document.getElementById("editFinalPrice").value = applyMarkup(price, markup).toFixed(4);
+        }
+        
+        function updateFinalPriceNew() {
+            const price = parseFloat(document.getElementById("categoryPrice").value) || 0;
+            const markup = parseFloat(document.getElementById("categoryMarkup").value) || 0;
+            document.getElementById("categoryFinalPrice").value = applyMarkup(price, markup).toFixed(4);
+        }
+    }
+
+    // Load categories from API
+    function loadCategories() {
+        showLoading();
+        
+        fetch('/api/categories')
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    categoriesData = data.categories;
+                    displayCategories();
+                    updateStatsCards(data.stats);
+                } else {
+                    showAlert('danger', 'Errore', data.message);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showAlert('danger', 'Errore', 'Errore nel caricamento: ' + error.message);
+            });
+    }
+
+    // Display categories in cards 
+    function displayCategories() {
+        const container = document.getElementById('categoriesContainer');
+        
+        if (Object.keys(categoriesData).length === 0) {
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fas fa-tags"></i>
+                        <h4>Nessuna Categoria</h4>
+                        <p>Inizia creando la tua prima categoria CDR</p>
+                        <button class="btn btn-primary" onclick="document.querySelector('[href=&quot;#add-category&quot;]').click()">
+                            <i class="fas fa-plus"></i> Crea Prima Categoria
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        Object.values(categoriesData).forEach(category => {
+            const activeClass = category.is_active ? '' : 'inactive';
+            const statusBadge = category.is_active ? 
+                '<span class="bullet bullet-dot bg-primary h-15px w-15px me-3"></span>' : 
+                '<span class="bullet bullet-dot bg-danger h-15px w-15px  me-3"></span>';
+            let buttonhtml = `
+                <div class="btn-group btn-group-sm" 
+                    ${['FISSI', 'MOBILI'].includes(category.name) ? `data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminazione diabilitata per quasta categoria"` : ``}>
+                    <button type="button" class="btn btn-sm btn-icon btn-primary" onclick="editCategory('${category.name}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    ${!['FISSI', 'MOBILI'].includes(category.name) ? `
+                        <button type="button" class="btn btn-sm btn-icon btn-danger" onclick="deleteCategory('${category.name}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : `<button  type="button" class="btn btn-sm btn-icon btn-danger disabled" >
+                            <i class="fas fa-trash"></i>
+                        </button>`}
+                </div>
+            `;
+
+
+            const patternsHtml = category.patterns.map(pattern => 
+                `<span class="badge badge-secondary m-1 text-uppercase">${pattern}</span>`
+            ).join(' ');
+            let markup = ""
+            if(category.custom_markup_percent != null){
+                markup = `<span class="badge badge-warning me-5">${category.pricing_info.markup_source}</span> <span class="fs-3">${category.custom_markup_percent}</span>% `
+            }else{
+                markup = `<span class="badge badge-primary me-5">${category.pricing_info.markup_source}</span><span class="fs-3">${category.pricing_info.markup_percent}</span>%`
+            }
+            html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card shadow-sm  h-100 ${activeClass}">
+                        <div class="card-header">
+                            <h3 class="card-title">${statusBadge} ${category.display_name}</h3>
+                            <div class="card-toolbar">
+                                ${buttonhtml}
+                                <!--<div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-sm btn-icon btn-primary" onclick="editCategory('${category.name}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-icon btn-danger" onclick="deleteCategory('${category.name}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>-->
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Descrizione: </div>
+                                <div>${category.description || 'Nessuna descrizione'}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo base: </div>
+                                <div><span class="fs-3">${formatEuro(category.price_per_minute)}</span> ${category.currency}/min</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Ricarico: </div>
+                                <div class="d-flex align-items-center">${markup}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo finale: </div>
+                                <div><span class="fs-3">${formatEuro(category.pricing_info.price_with_markup)}</span> ${category.pricing_info.currency}/min</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>                                
+                            <div class="d-block flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Pattern: (${category.patterns.length})</div>
+                                <div>${patternsHtml}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Creato il: </div>
+                                <div>${new Date(category.created_at).toLocaleDateString('it-IT', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit'
+                                        }).replace(',', ' -')}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Aggiornato il: </div>
+                                <div>${new Date(category.updated_at).toLocaleString('it-IT', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit'
+                                        }).replace(',', ' -')}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                        </div>
+                        <!--<div class="card-footer">
+                            Footer
+                        </div>-->
+                    </div>                 
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        reinitTooltips(container);
+    }
+
+    // Add pattern to current category form
+    function addPattern() {
+        const input = document.getElementById('newPattern');
+        const pattern = input.value.trim();
+        
+        if (!pattern) return;
+        
+        if (currentPatterns.includes(pattern)) {
+            showAlert('warning', 'Attenzione', 'Pattern già presente');
+            return;
+        }
+        
+        currentPatterns.push(pattern);
+        input.value = '';
+        updatePatternsDisplay();
+    }
+
+    // Update patterns display
+    function updatePatternsDisplay() {
+        const container = document.getElementById('patternsContainer');
+        
+        if (currentPatterns.length === 0) {
+            container.innerHTML = '<p class="text-muted small">Nessun pattern aggiunto</p>';
+            return;
+        }
+        
+        const html = currentPatterns.map((pattern, index) => `
+            <span class="badge badge-secondary m-1 text-uppercase">
+                ${pattern}
+                <button type="button" class="btn-close btn-close-white ms-1 fs-5" onclick="removePattern(${index})"></button>
+            </span>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+
+    // Remove pattern
+    function removePattern(index) {
+        currentPatterns.splice(index, 1);
+        updatePatternsDisplay();
+    }
+
+    // Create new category
+    function createCategory() {
+        const fine_price = applyMarkup(document.getElementById('editCategoryPrice').value, document.getElementById('categoryMarkup').value).toFixed(4);
+
             
-            fetch('/api/categories')
+        const formData = {
+            name: document.getElementById('categoryName').value.trim(),
+            display_name: document.getElementById('categoryDisplayName').value.trim(),
+            price_per_minute: parseFloat(document.getElementById('categoryPrice').value),
+            custom_markup_percent: parseFloat(document.getElementById('categoryMarkup').value),
+            final_price_per_minute: fine_price,
+            currency: document.getElementById('categoryCurrency').value,
+            patterns: currentPatterns,
+            description: document.getElementById('categoryDescription').value.trim()
+        };
+        
+        // Validation
+        if (!formData.name || !formData.display_name || !formData.price_per_minute || currentPatterns.length === 0) {
+            showAlert('warning', 'Attenzione', 'Compila tutti i campi obbligatori');
+            return;
+        }
+        
+        showLoading();
+        
+        fetch('/api/categories', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showAlert('success', 'Successo', data.message);
+                resetAddForm();
+                loadCategories();
+                // Switch to categories list tab
+                document.querySelector('[href="#add-category"]').click();
+            } else {
+                showAlert('danger', 'Errore', data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showAlert('danger', 'Errore', 'Errore nella creazione: ' + error.message);
+        });
+    }
+
+    // Reset add form
+    function resetAddForm() {
+        document.getElementById('addCategoryForm').reset();
+        currentPatterns = [];
+        updatePatternsDisplay();
+    }
+
+    // Edit category
+    function editCategory(categoryName) {
+        const category = categoriesData[categoryName];
+        if (!category) return;
+        
+        // Populate edit form
+        document.getElementById('editCategoryName').value = category.name;
+        document.getElementById('editCategoryDisplayName').value = category.display_name;
+        document.getElementById('editCategoryPrice').value = category.price_per_minute.toFixed(4);
+        document.getElementById('editCategoryDescription').value = category.description || '';
+        document.getElementById('editCategoryActive').checked = category.is_active;
+        document.getElementById('markup_FISSI').value = category.pricing_info.markup_percent;
+        document.getElementById('editFinalPrice').value = applyMarkup(category.price_per_minute, category.pricing_info.markup_percent).toFixed(4);
+        editCurrentPatterns = [...category.patterns];
+        updateEditPatternsDisplay();
+
+        // Show modal
+        new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+    }
+
+    
+    // Add pattern to edit form
+    function addEditPattern() {
+        const input = document.getElementById('editNewPattern');
+        const pattern = input.value.trim();
+        
+        if (!pattern) return;
+        
+        if (editCurrentPatterns.includes(pattern)) {
+            showAlert('warning', 'Attenzione', 'Pattern già presente');
+            return;
+        }
+        
+        editCurrentPatterns.push(pattern);
+        input.value = '';
+        updateEditPatternsDisplay();
+    }
+
+    // Update edit patterns display
+    function updateEditPatternsDisplay() {
+        const container = document.getElementById('editPatternsContainer');
+        
+        if (editCurrentPatterns.length === 0) {
+            container.innerHTML = '<p class="text-muted small">Nessun pattern</p>';
+            return;
+        }
+        
+        const html = editCurrentPatterns.map((pattern, index) => `
+            <span class="badge badge-secondary m-1 text-uppercase">
+                ${pattern}
+                <button type="button" class="btn-close btn-close-white ms-1 fs-5" onclick="removeEditPattern(${index})"></button>
+            </span>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+
+    // Remove edit pattern
+    function removeEditPattern(index) {
+        editCurrentPatterns.splice(index, 1);
+        updateEditPatternsDisplay();
+    }
+
+    // Update category
+    function updateCategory() {
+        const categoryName = document.getElementById('editCategoryName').value;
+        const fine_price = applyMarkup(document.getElementById('editCategoryPrice').value, document.getElementById('markup_FISSI').value);
+
+        const updateData = {
+            display_name: document.getElementById('editCategoryDisplayName').value.trim(),
+            price_per_minute: parseFloat(document.getElementById('editCategoryPrice').value),
+            custom_markup_percent: parseFloat(document.getElementById('markup_FISSI').value),
+            final_price_per_minute: fine_price,
+            patterns: editCurrentPatterns,
+            description: document.getElementById('editCategoryDescription').value.trim(),
+            is_active: document.getElementById('editCategoryActive').checked
+            
+        };
+        
+        if (!updateData.display_name || !updateData.price_per_minute || editCurrentPatterns.length === 0) {
+            showAlert('warning', 'Attenzione', 'Compila tutti i campi obbligatori');
+            return;
+        }
+        
+        showLoading();
+        
+        fetch(`/api/categories/${categoryName}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(updateData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                refreshData()
+                showAlert('success', 'Successo', data.message);
+                bootstrap.Modal.getInstance(document.getElementById('editCategoryModal')).hide();
+            } else {
+                showAlert('danger', 'Errore', data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showAlert('danger', 'Errore', 'Errore nell\'aggiornamento: ' + error.message);
+        });
+    }
+
+    // Delete category
+    function deleteCategory(categoryName) {
+        if (!confirm(`Sei sicuro di voler eliminare la categoria "${categoryName}"?`)) {
+            return;
+        }
+        
+        showLoading();
+        
+        fetch(`/api/categories/${categoryName}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showAlert('success', 'Successo', data.message);
+                loadCategories();
+            } else {
+                showAlert('danger', 'Errore', data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showAlert('danger', 'Errore', 'Errore nell\'eliminazione: ' + error.message);
+        });
+    }
+
+    // Run classification test
+    function runClassificationTest() {
+        const callTypesText = document.getElementById('testCallTypes').value.trim();
+        const duration = parseInt(document.getElementById('testDuration').value);
+        
+        if (!callTypesText) {
+            showAlert('warning', 'Attenzione', 'Inserisci i tipi di chiamata da testare');
+            return;
+        }
+        
+        const callTypes = callTypesText.split('\n').map(line => line.trim()).filter(line => line);
+        
+        showLoading();
+        
+        fetch('/api/categories/test-classification', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                call_types: callTypes,
+                duration_seconds: duration
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                displayTestResults(data.results);
+            } else {
+                showAlert('danger', 'Errore', data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showAlert('danger', 'Errore', 'Errore nel test: ' + error.message);
+        });
+    }
+
+    // Display test results
+    function displayTestResults(results) {
+        const container = document.getElementById('testResultsContainer');
+        const testResultsDiv = document.getElementById('testResults');
+        
+        let html = '';
+        let matchedCount = 0;
+        
+        results.forEach(result => {
+            const matchClass = result.matched ? 'matched' : 'unmatched';
+            const matchIcon = result.matched ? 'fa-check-circle text-success' : 'fa-times-circle text-danger';
+            
+            if (result.matched) matchedCount++;
+            
+            html += `
+                <div class="test-result ${matchClass} border">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6><i class="fas ${matchIcon}"></i> ${result.call_type}</h6>
+                            <p class="mb-1">
+                                <strong>Categoria:</strong> ${result.category_display}<br>
+                                <strong>Prezzo:</strong> ${result.price_per_minute} ${result.currency}/min<br>
+                                <strong>Costo calcolato:</strong> ${result.cost_calculated} ${result.currency}
+                            </p>
+                        </div>
+                        <span class="badge ${result.matched ? 'bg-success' : 'bg-danger'}">
+                            ${result.matched ? 'Riconosciuto' : 'Non riconosciuto'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        const summary = `
+            <div class="alert alert-info">
+                <h5>Risultati Test</h5>
+                <p>Riconosciuti: <strong>${matchedCount}/${results.length}</strong> 
+                (${((matchedCount/results.length)*100).toFixed(1)}%)</p>
+            </div>
+        `;
+        
+        container.innerHTML = summary + html;
+        testResultsDiv.style.display = 'block';
+    }
+
+    // Add test example
+    function addTestExample(example) {
+        const textarea = document.getElementById('testCallTypes');
+        const currentValue = textarea.value.trim();
+        
+        if (currentValue) {
+            textarea.value = currentValue + '\n' + example;
+        } else {
+            textarea.value = example;
+        }
+    }
+
+    // Clear test examples
+    function clearTestExamples() {
+        document.getElementById('testCallTypes').value = '';
+        document.getElementById('testResults').style.display = 'none';
+    }
+
+    // Load statistics
+    function loadStatistics() {
+        fetch('/api/categories/statistics')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayStatistics(data.statistics);
+                }
+            })
+            .catch(error => console.error('Error loading statistics:', error));
+    }
+
+    // Display statistics
+    function displayStatistics(stats) {
+        const container = document.getElementById('statisticsContainer');
+        
+        const html = `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card shadow-sm  h-100">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-info-circle fs-1 me-4"></i> Informazioni Generali</h3>
+                            <!-- <div class="card-toolbar">
+                                <button type="button" class="btn btn-sm btn-light">
+                                    Action
+                                </button>
+                            </div>-->
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Totali:</div>
+                                <div class="fs-3">${stats.total_categories}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Attive:</div>
+                                <div class="fs-3">${stats.active_categories}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Inattive:</div>
+                                <div class="fs-3">${stats.inactive_categories}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Pattern Totali:</div>
+                                <div class="fs-3">${stats.total_patterns}</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Valute Utilizzate:</div>
+                                <div class="fs-3">${stats.currencies.join(', ')}</div>
+                            </div>
+                        </div>
+                        <!--<div class="card-footer">
+                            Footer
+                        </div>-->
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm  h-100">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-euro fs-1 me-4"></i> Range Prezzi</h3>
+                            <!-- <div class="card-toolbar">
+                                <button type="button" class="btn btn-sm btn-light">
+                                    Action
+                                </button>
+                            </div>-->
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Minimo:</div>
+                                <div><span class="fs-3">${formatEuro(stats.price_range.min)}</span> ${stats.currencies.join(', ')}/min</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Massimo:</div>
+                                <div><span class="fs-3">${formatEuro(stats.price_range.max)}</span> ${stats.currencies.join(', ')}/min</div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="d-flex flex-stack">
+                                <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Medio:</div>
+                                <div ><span class="fs-3">${formatEuro(stats.price_range.avg)}</span> ${stats.currencies.join(', ')}/min</div>
+                            </div>
+                        </div>
+                        <!--<div class="card-footer">
+                            Footer
+                        </div>-->
+                    </div>
+                </div>
+            </div>
+            
+            ${stats.last_modified ? `
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-clock"></i> 
+                Ultima modifica: ${new Date(stats.last_modified).toLocaleString('it-IT')}
+            </div>
+            ` : ''}
+        `;
+        
+        container.innerHTML = html;
+    }
+
+    // Check conflicts
+    function checkConflicts() {
+        fetch('/api/categories/conflicts')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayConflicts(data);
+                    document.getElementById('conflictsCount').textContent = data.conflicts.length;
+                }
+            })
+            .catch(error => console.error('Error checking conflicts:', error));
+    }
+
+    // Display conflicts
+    function displayConflicts(data) {
+        
+        const alertDiv = document.getElementById('conflictsAlert');
+        const listDiv = document.getElementById('conflictsList');
+        if(data.has_conflicts){
+            
+            let html = '';
+            data.conflicts.forEach(conflict => {
+                const severityClass = conflict.severity === 'high' ? 'text-danger' : 'text-warning';
+                html += `
+                    <div class="mb-2">
+                        <span class="${severityClass}">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>${conflict.category1}</strong> vs <strong>${conflict.category2}</strong>
+                        </span><br>
+                        <small>Pattern in conflitto: ${conflict.common_patterns.join(', ')}</small>
+                    </div>
+                `;
+            });
+            
+            listDiv.innerHTML = html;
+            alertDiv.style.display = 'block';
+        }else{
+            alertDiv.style.display = 'none';
+        }
+    }
+
+    // Export categories
+    function exportCategories(format) {
+        window.open(`/api/categories/export?format=${format}`, '_blank');
+    }
+
+    // Import categories
+    function importCategories() {
+        const fileInput = document.getElementById('importFile');
+        const mergeMode = document.getElementById('mergeMode').checked;
+        
+        if (!fileInput.files[0]) {
+            showAlert('warning', 'Attenzione', 'Seleziona un file da importare');
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                const categoriesData = JSON.parse(e.target.result);
+                
+                showLoading();
+                
+                fetch('/api/categories/import', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        categories_data: categoriesData,
+                        merge: mergeMode
+                    })
+                })
                 .then(response => response.json())
                 .then(data => {
                     hideLoading();
                     if (data.success) {
-                        categoriesData = data.categories;
-                        displayCategories();
-                        updateStatsCards(data.stats);
+                        showAlert('success', 'Successo', data.message);
+                        loadCategories();
+                        fileInput.value = '';
                     } else {
                         showAlert('danger', 'Errore', data.message);
                     }
                 })
                 .catch(error => {
                     hideLoading();
-                    showAlert('danger', 'Errore', 'Errore nel caricamento: ' + error.message);
+                    showAlert('danger', 'Errore', 'Errore nell\'importazione: ' + error.message);
                 });
-        }
-
-        // Display categories in cards 
-        function displayCategories() {
-            const container = document.getElementById('categoriesContainer');
-            
-            if (Object.keys(categoriesData).length === 0) {
-                container.innerHTML = `
-                    <div class="col-12">
-                        <div class="empty-state">
-                            <i class="fas fa-tags"></i>
-                            <h4>Nessuna Categoria</h4>
-                            <p>Inizia creando la tua prima categoria CDR</p>
-                            <button class="btn btn-primary" onclick="document.querySelector('[href=&quot;#add-category&quot;]').click()">
-                                <i class="fas fa-plus"></i> Crea Prima Categoria
-                            </button>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = '';
-            
-            Object.values(categoriesData).forEach(category => {
-                const activeClass = category.is_active ? '' : 'inactive';
-                const statusBadge = category.is_active ? 
-                    '<span class="bullet bullet-dot bg-primary h-15px w-15px me-3"></span>' : 
-                    '<span class="bullet bullet-dot bg-danger h-15px w-15px  me-3"></span>';
-                let buttonhtml = `
-                    <div class="btn-group btn-group-sm" 
-                        ${['FISSI', 'MOBILI'].includes(category.name) ? `data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminazione diabilitata per quasta categoria"` : ``}>
-                        <button type="button" class="btn btn-sm btn-icon btn-primary" onclick="editCategory('${category.name}')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        ${!['FISSI', 'MOBILI'].includes(category.name) ? `
-                            <button type="button" class="btn btn-sm btn-icon btn-danger" onclick="deleteCategory('${category.name}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        ` : `<button  type="button" class="btn btn-sm btn-icon btn-danger disabled" >
-                                <i class="fas fa-trash"></i>
-                            </button>`}
-                    </div>
-                `;
-
-
-                const patternsHtml = category.patterns.map(pattern => 
-                    `<span class="badge badge-secondary m-1 text-uppercase">${pattern}</span>`
-                ).join(' ');
-                let markup = ""
-                if(category.custom_markup_percent != null){
-                    markup = `<span class="badge badge-warning me-5">${category.pricing_info.markup_source}</span> <span class="fs-3">${category.custom_markup_percent}</span>% `
-                }else{
-                    markup = `<span class="badge badge-primary me-5">${category.pricing_info.markup_source}</span><span class="fs-3">${category.pricing_info.markup_percent}</span>%`
-                }
-                html += `
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card shadow-sm  h-100 ${activeClass}">
-                            <div class="card-header">
-                                <h3 class="card-title">${statusBadge} ${category.display_name}</h3>
-                                <div class="card-toolbar">
-                                    ${buttonhtml}
-                                    <!--<div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-sm btn-icon btn-primary" onclick="editCategory('${category.name}')">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-icon btn-danger" onclick="deleteCategory('${category.name}')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>-->
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Descrizione: </div>
-                                    <div>${category.description || 'Nessuna descrizione'}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo base: </div>
-                                    <div><span class="fs-3">${formatEuro(category.price_per_minute)}</span> ${category.currency}/min</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Ricarico: </div>
-                                    <div class="d-flex align-items-center">${markup}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo finale: </div>
-                                    <div><span class="fs-3">${formatEuro(category.pricing_info.price_with_markup)}</span> ${category.pricing_info.currency}/min</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>                                
-                                <div class="d-block flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Pattern: (${category.patterns.length})</div>
-                                    <div>${patternsHtml}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Creato il: </div>
-                                    <div>${new Date(category.created_at).toLocaleDateString('it-IT', {
-                                            day: '2-digit',
-                                            month: '2-digit',
-                                            year: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                            second: '2-digit'
-                                            }).replace(',', ' -')}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Aggiornato il: </div>
-                                    <div>${new Date(category.updated_at).toLocaleString('it-IT', {
-                                            day: '2-digit',
-                                            month: '2-digit',
-                                            year: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                            second: '2-digit'
-                                            }).replace(',', ' -')}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                            </div>
-                            <!--<div class="card-footer">
-                                Footer
-                            </div>-->
-                        </div>                 
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-            reinitTooltips(container);
-        }
-
-        // Add pattern to current category form
-        function addPattern() {
-            const input = document.getElementById('newPattern');
-            const pattern = input.value.trim();
-            
-            if (!pattern) return;
-            
-            if (currentPatterns.includes(pattern)) {
-                showAlert('warning', 'Attenzione', 'Pattern già presente');
-                return;
-            }
-            
-            currentPatterns.push(pattern);
-            input.value = '';
-            updatePatternsDisplay();
-        }
-
-        // Update patterns display
-        function updatePatternsDisplay() {
-            const container = document.getElementById('patternsContainer');
-            
-            if (currentPatterns.length === 0) {
-                container.innerHTML = '<p class="text-muted small">Nessun pattern aggiunto</p>';
-                return;
-            }
-            
-            const html = currentPatterns.map((pattern, index) => `
-                <span class="badge badge-secondary m-1 text-uppercase">
-                    ${pattern}
-                    <button type="button" class="btn-close btn-close-white ms-1 fs-5" onclick="removePattern(${index})"></button>
-                </span>
-            `).join('');
-            
-            container.innerHTML = html;
-        }
-
-        // Remove pattern
-        function removePattern(index) {
-            currentPatterns.splice(index, 1);
-            updatePatternsDisplay();
-        }
-
-        // Create new category
-        function createCategory() {
-            const fine_price = applyMarkup(document.getElementById('editCategoryPrice').value, document.getElementById('categoryMarkup').value).toFixed(4);
-
                 
-            const formData = {
-                name: document.getElementById('categoryName').value.trim(),
-                display_name: document.getElementById('categoryDisplayName').value.trim(),
-                price_per_minute: parseFloat(document.getElementById('categoryPrice').value),
-                custom_markup_percent: parseFloat(document.getElementById('categoryMarkup').value),
-                final_price_per_minute: fine_price,
-                currency: document.getElementById('categoryCurrency').value,
-                patterns: currentPatterns,
-                description: document.getElementById('categoryDescription').value.trim()
-            };
-            
-            // Validation
-            if (!formData.name || !formData.display_name || !formData.price_per_minute || currentPatterns.length === 0) {
-                showAlert('warning', 'Attenzione', 'Compila tutti i campi obbligatori');
-                return;
+            } catch (error) {
+                showAlert('danger', 'Errore', 'File JSON non valido');
             }
-            
-            showLoading();
-            
-            fetch('/api/categories', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(formData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    showAlert('success', 'Successo', data.message);
-                    resetAddForm();
-                    loadCategories();
-                    // Switch to categories list tab
-                    document.querySelector('[href="#add-category"]').click();
-                } else {
-                    showAlert('danger', 'Errore', data.message);
+        };
+        
+        reader.readAsText(file);
+    }
+
+    // Import CSV categories
+    function importCategoriesCSV() {
+        const fileInput = document.getElementById('importCsvFile');
+        const mergeMode = document.getElementById('mergeMode').checked;
+        
+        if (!fileInput.files[0]) {
+            showAlert('warning', 'Attenzione', 'Seleziona un file CSV da importare');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('merge', mergeMode ? 'true' : 'false');
+        
+        showLoading();
+        
+        fetch('/api/categories/import-csv', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showAlert('success', 'Successo', data.message);
+                if (data.errors && data.errors.length > 0) {
+                    showAlert('warning', 'Attenzione', `Alcuni errori durante l'importazione: ${data.errors.slice(0, 3).join(', ')}${data.errors.length > 3 ? '...' : ''}`);
                 }
-            })
-            .catch(error => {
-                hideLoading();
-                showAlert('danger', 'Errore', 'Errore nella creazione: ' + error.message);
-            });
-        }
-
-        // Reset add form
-        function resetAddForm() {
-            document.getElementById('addCategoryForm').reset();
-            currentPatterns = [];
-            updatePatternsDisplay();
-        }
-
-        // Edit category
-        function editCategory(categoryName) {
-            const category = categoriesData[categoryName];
-            if (!category) return;
-            
-            // Populate edit form
-            document.getElementById('editCategoryName').value = category.name;
-            document.getElementById('editCategoryDisplayName').value = category.display_name;
-            document.getElementById('editCategoryPrice').value = category.price_per_minute.toFixed(4);
-            document.getElementById('editCategoryDescription').value = category.description || '';
-            document.getElementById('editCategoryActive').checked = category.is_active;
-            document.getElementById('markup_FISSI').value = category.pricing_info.markup_percent;
-            document.getElementById('editFinalPrice').value = applyMarkup(category.price_per_minute, category.pricing_info.markup_percent).toFixed(4);
-            editCurrentPatterns = [...category.patterns];
-            updateEditPatternsDisplay();
-
-            // Show modal
-            new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
-        }
-
-       
-        // Add pattern to edit form
-        function addEditPattern() {
-            const input = document.getElementById('editNewPattern');
-            const pattern = input.value.trim();
-            
-            if (!pattern) return;
-            
-            if (editCurrentPatterns.includes(pattern)) {
-                showAlert('warning', 'Attenzione', 'Pattern già presente');
-                return;
-            }
-            
-            editCurrentPatterns.push(pattern);
-            input.value = '';
-            updateEditPatternsDisplay();
-        }
-
-        // Update edit patterns display
-        function updateEditPatternsDisplay() {
-            const container = document.getElementById('editPatternsContainer');
-            
-            if (editCurrentPatterns.length === 0) {
-                container.innerHTML = '<p class="text-muted small">Nessun pattern</p>';
-                return;
-            }
-          
-            const html = editCurrentPatterns.map((pattern, index) => `
-                <span class="badge badge-secondary m-1 text-uppercase">
-                    ${pattern}
-                    <button type="button" class="btn-close btn-close-white ms-1 fs-5" onclick="removeEditPattern(${index})"></button>
-                </span>
-            `).join('');
-            
-            container.innerHTML = html;
-        }
-
-        // Remove edit pattern
-        function removeEditPattern(index) {
-            editCurrentPatterns.splice(index, 1);
-            updateEditPatternsDisplay();
-        }
-
-        // Update category
-        function updateCategory() {
-            const categoryName = document.getElementById('editCategoryName').value;
-            const fine_price = applyMarkup(document.getElementById('editCategoryPrice').value, document.getElementById('markup_FISSI').value);
-
-            const updateData = {
-                display_name: document.getElementById('editCategoryDisplayName').value.trim(),
-                price_per_minute: parseFloat(document.getElementById('editCategoryPrice').value),
-                custom_markup_percent: parseFloat(document.getElementById('markup_FISSI').value),
-                final_price_per_minute: fine_price,
-                patterns: editCurrentPatterns,
-                description: document.getElementById('editCategoryDescription').value.trim(),
-                is_active: document.getElementById('editCategoryActive').checked
-                
-            };
-            
-            if (!updateData.display_name || !updateData.price_per_minute || editCurrentPatterns.length === 0) {
-                showAlert('warning', 'Attenzione', 'Compila tutti i campi obbligatori');
-                return;
-            }
-            
-            showLoading();
-            
-            fetch(`/api/categories/${categoryName}`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(updateData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    refreshData()
-                    showAlert('success', 'Successo', data.message);
-                    bootstrap.Modal.getInstance(document.getElementById('editCategoryModal')).hide();
-                } else {
-                    showAlert('danger', 'Errore', data.message);
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                showAlert('danger', 'Errore', 'Errore nell\'aggiornamento: ' + error.message);
-            });
-        }
-
-        // Delete category
-        function deleteCategory(categoryName) {
-            if (!confirm(`Sei sicuro di voler eliminare la categoria "${categoryName}"?`)) {
-                return;
-            }
-            
-            showLoading();
-            
-            fetch(`/api/categories/${categoryName}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    showAlert('success', 'Successo', data.message);
-                    loadCategories();
-                } else {
-                    showAlert('danger', 'Errore', data.message);
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                showAlert('danger', 'Errore', 'Errore nell\'eliminazione: ' + error.message);
-            });
-        }
-
-        // Run classification test
-        function runClassificationTest() {
-            const callTypesText = document.getElementById('testCallTypes').value.trim();
-            const duration = parseInt(document.getElementById('testDuration').value);
-            
-            if (!callTypesText) {
-                showAlert('warning', 'Attenzione', 'Inserisci i tipi di chiamata da testare');
-                return;
-            }
-            
-            const callTypes = callTypesText.split('\n').map(line => line.trim()).filter(line => line);
-            
-            showLoading();
-            
-            fetch('/api/categories/test-classification', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    call_types: callTypes,
-                    duration_seconds: duration
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    displayTestResults(data.results);
-                } else {
-                    showAlert('danger', 'Errore', data.message);
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                showAlert('danger', 'Errore', 'Errore nel test: ' + error.message);
-            });
-        }
-
-        // Display test results
-        function displayTestResults(results) {
-            const container = document.getElementById('testResultsContainer');
-            const testResultsDiv = document.getElementById('testResults');
-            
-            let html = '';
-            let matchedCount = 0;
-            
-            results.forEach(result => {
-                const matchClass = result.matched ? 'matched' : 'unmatched';
-                const matchIcon = result.matched ? 'fa-check-circle text-success' : 'fa-times-circle text-danger';
-                
-                if (result.matched) matchedCount++;
-                
-                html += `
-                    <div class="test-result ${matchClass} border">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h6><i class="fas ${matchIcon}"></i> ${result.call_type}</h6>
-                                <p class="mb-1">
-                                    <strong>Categoria:</strong> ${result.category_display}<br>
-                                    <strong>Prezzo:</strong> ${result.price_per_minute} ${result.currency}/min<br>
-                                    <strong>Costo calcolato:</strong> ${result.cost_calculated} ${result.currency}
-                                </p>
-                            </div>
-                            <span class="badge ${result.matched ? 'bg-success' : 'bg-danger'}">
-                                ${result.matched ? 'Riconosciuto' : 'Non riconosciuto'}
-                            </span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            const summary = `
-                <div class="alert alert-info">
-                    <h5>Risultati Test</h5>
-                    <p>Riconosciuti: <strong>${matchedCount}/${results.length}</strong> 
-                    (${((matchedCount/results.length)*100).toFixed(1)}%)</p>
-                </div>
-            `;
-            
-            container.innerHTML = summary + html;
-            testResultsDiv.style.display = 'block';
-        }
-
-        // Add test example
-        function addTestExample(example) {
-            const textarea = document.getElementById('testCallTypes');
-            const currentValue = textarea.value.trim();
-            
-            if (currentValue) {
-                textarea.value = currentValue + '\n' + example;
+                loadCategories();
+                fileInput.value = '';
             } else {
-                textarea.value = example;
-            }
-        }
-
-        // Clear test examples
-        function clearTestExamples() {
-            document.getElementById('testCallTypes').value = '';
-            document.getElementById('testResults').style.display = 'none';
-        }
-
-        // Load statistics
-        function loadStatistics() {
-            fetch('/api/categories/statistics')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        displayStatistics(data.statistics);
-                    }
-                })
-                .catch(error => console.error('Error loading statistics:', error));
-        }
-
-        // Display statistics
-        function displayStatistics(stats) {
-            const container = document.getElementById('statisticsContainer');
-            
-            const html = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card shadow-sm  h-100">
-                            <div class="card-header">
-                                <h3 class="card-title"><i class="fas fa-info-circle fs-1 me-4"></i> Informazioni Generali</h3>
-                                <!-- <div class="card-toolbar">
-                                    <button type="button" class="btn btn-sm btn-light">
-                                        Action
-                                    </button>
-                                </div>-->
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Totali:</div>
-                                    <div class="fs-3">${stats.total_categories}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Attive:</div>
-                                    <div class="fs-3">${stats.active_categories}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Categorie Inattive:</div>
-                                    <div class="fs-3">${stats.inactive_categories}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Pattern Totali:</div>
-                                    <div class="fs-3">${stats.total_patterns}</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Valute Utilizzate:</div>
-                                    <div class="fs-3">${stats.currencies.join(', ')}</div>
-                                </div>
-                            </div>
-                            <!--<div class="card-footer">
-                                Footer
-                            </div>-->
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card shadow-sm  h-100">
-                            <div class="card-header">
-                                <h3 class="card-title"><i class="fas fa-euro fs-1 me-4"></i> Range Prezzi</h3>
-                                <!-- <div class="card-toolbar">
-                                    <button type="button" class="btn btn-sm btn-light">
-                                        Action
-                                    </button>
-                                </div>-->
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Minimo:</div>
-                                    <div><span class="fs-3">${formatEuro(stats.price_range.min)}</span> ${stats.currencies.join(', ')}/min</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Massimo:</div>
-                                    <div><span class="fs-3">${formatEuro(stats.price_range.max)}</span> ${stats.currencies.join(', ')}/min</div>
-                                </div>
-                                <div class="separator separator-dashed my-3"></div>
-                                <div class="d-flex flex-stack">
-                                    <div href="#" class="text-primary fw-semibold fs-6 me-2">Prezzo Medio:</div>
-                                    <div ><span class="fs-3">${formatEuro(stats.price_range.avg)}</span> ${stats.currencies.join(', ')}/min</div>
-                                </div>
-                            </div>
-                            <!--<div class="card-footer">
-                                Footer
-                            </div>-->
-                        </div>
-                    </div>
-                </div>
-                
-                ${stats.last_modified ? `
-                <div class="alert alert-info mt-3">
-                    <i class="fas fa-clock"></i> 
-                    Ultima modifica: ${new Date(stats.last_modified).toLocaleString('it-IT')}
-                </div>
-                ` : ''}
-            `;
-            
-            container.innerHTML = html;
-        }
-
-        // Check conflicts
-        function checkConflicts() {
-            fetch('/api/categories/conflicts')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        displayConflicts(data);
-                        document.getElementById('conflictsCount').textContent = data.conflicts.length;
-                    }
-                })
-                .catch(error => console.error('Error checking conflicts:', error));
-        }
-
-        // Display conflicts
-        function displayConflicts(data) {
-            
-            const alertDiv = document.getElementById('conflictsAlert');
-            const listDiv = document.getElementById('conflictsList');
-            if(data.has_conflicts){
-                
-                let html = '';
-                data.conflicts.forEach(conflict => {
-                    const severityClass = conflict.severity === 'high' ? 'text-danger' : 'text-warning';
-                    html += `
-                        <div class="mb-2">
-                            <span class="${severityClass}">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <strong>${conflict.category1}</strong> vs <strong>${conflict.category2}</strong>
-                            </span><br>
-                            <small>Pattern in conflitto: ${conflict.common_patterns.join(', ')}</small>
-                        </div>
-                    `;
-                });
-                
-                listDiv.innerHTML = html;
-                alertDiv.style.display = 'block';
-            }else{
-                alertDiv.style.display = 'none';
-            }
-        }
-
-        // Export categories
-        function exportCategories(format) {
-            window.open(`/api/categories/export?format=${format}`, '_blank');
-        }
-
-        // Import categories
-        function importCategories() {
-            const fileInput = document.getElementById('importFile');
-            const mergeMode = document.getElementById('mergeMode').checked;
-            
-            if (!fileInput.files[0]) {
-                showAlert('warning', 'Attenzione', 'Seleziona un file da importare');
-                return;
-            }
-            
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                try {
-                    const categoriesData = JSON.parse(e.target.result);
-                    
-                    showLoading();
-                    
-                    fetch('/api/categories/import', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            categories_data: categoriesData,
-                            merge: mergeMode
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        hideLoading();
-                        if (data.success) {
-                            showAlert('success', 'Successo', data.message);
-                            loadCategories();
-                            fileInput.value = '';
-                        } else {
-                            showAlert('danger', 'Errore', data.message);
-                        }
-                    })
-                    .catch(error => {
-                        hideLoading();
-                        showAlert('danger', 'Errore', 'Errore nell\'importazione: ' + error.message);
-                    });
-                    
-                } catch (error) {
-                    showAlert('danger', 'Errore', 'File JSON non valido');
+                showAlert('danger', 'Errore', data.message);
+                if (data.errors) {
+                    console.error('Import errors:', data.errors);
                 }
-            };
-            
-            reader.readAsText(file);
-        }
-
-        // Import CSV categories
-        function importCategoriesCSV() {
-            const fileInput = document.getElementById('importCsvFile');
-            const mergeMode = document.getElementById('mergeMode').checked;
-            
-            if (!fileInput.files[0]) {
-                showAlert('warning', 'Attenzione', 'Seleziona un file CSV da importare');
-                return;
             }
-            
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('merge', mergeMode ? 'true' : 'false');
-            
-            showLoading();
-            
-            fetch('/api/categories/import-csv', {
-                method: 'POST',
-                body: formData
-            })
+        })
+        .catch(error => {
+            hideLoading();
+            showAlert('danger', 'Errore', 'Errore nell\'importazione CSV: ' + error.message);
+        });
+    }
+
+    // Check system health
+    function checkSystemHealth() {
+        showLoading();
+        
+        fetch('/api/categories/health')
             .then(response => response.json())
             .then(data => {
                 hideLoading();
-                if (data.success) {
-                    showAlert('success', 'Successo', data.message);
-                    if (data.errors && data.errors.length > 0) {
-                        showAlert('warning', 'Attenzione', `Alcuni errori durante l'importazione: ${data.errors.slice(0, 3).join(', ')}${data.errors.length > 3 ? '...' : ''}`);
-                    }
-                    loadCategories();
-                    fileInput.value = '';
-                } else {
-                    showAlert('danger', 'Errore', data.message);
-                    if (data.errors) {
-                        console.error('Import errors:', data.errors);
-                    }
-                }
+                displayHealthResults(data);
             })
             .catch(error => {
                 hideLoading();
-                showAlert('danger', 'Errore', 'Errore nell\'importazione CSV: ' + error.message);
+                showAlert('danger', 'Errore', 'Errore controllo sistema: ' + error.message);
             });
-        }
+    }
 
-        // Check system health
-        function checkSystemHealth() {
-            showLoading();
-            
-            fetch('/api/categories/health')
-                .then(response => response.json())
-                .then(data => {
-                    hideLoading();
-                    displayHealthResults(data);
-                })
-                .catch(error => {
-                    hideLoading();
-                    showAlert('danger', 'Errore', 'Errore controllo sistema: ' + error.message);
-                });
+    // Display health check results
+    function displayHealthResults(health) {
+        const container = document.getElementById('healthCheckResults');
+        
+        const statusClass = health.status === 'healthy' ? 'success' : health.status === 'degraded' ? 'warning' : 'danger';
+        const statusIcon = health.status === 'healthy' ? 'fa-check-circle' : health.status === 'degraded' ? 'fa-exclamation-triangle' : 'fa-times-circle';
+        
+        let checksHtml = '';
+        for (const [check, passed] of Object.entries(health.checks || {})) {
+            const checkIcon = passed ? 'fa-check text-success' : 'fa-times text-danger';
+            checksHtml += `<li><i class="fas ${checkIcon}"></i> ${check.replace(/_/g, ' ')}</li>`;
         }
-
-        // Display health check results
-        function displayHealthResults(health) {
-            const container = document.getElementById('healthCheckResults');
-            
-            const statusClass = health.status === 'healthy' ? 'success' : health.status === 'degraded' ? 'warning' : 'danger';
-            const statusIcon = health.status === 'healthy' ? 'fa-check-circle' : health.status === 'degraded' ? 'fa-exclamation-triangle' : 'fa-times-circle';
-            
-            let checksHtml = '';
-            for (const [check, passed] of Object.entries(health.checks || {})) {
-                const checkIcon = passed ? 'fa-check text-success' : 'fa-times text-danger';
-                checksHtml += `<li><i class="fas ${checkIcon}"></i> ${check.replace(/_/g, ' ')}</li>`;
-            }
-            
-            let warningsHtml = '';
-            if (health.warnings && health.warnings.length > 0) {
-                warningsHtml = `
-                    <div class="alert alert-warning mt-2">
-                        <h6>Avvisi:</h6>
-                        <ul class="mb-0">
-                            ${health.warnings.map(w => `<li>${w}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            }
-            
-            let errorsHtml = '';
-            if (health.errors && health.errors.length > 0) {
-                errorsHtml = `
-                    <div class="alert alert-danger mt-2">
-                        <h6>Errori:</h6>
-                        <ul class="mb-0">
-                            ${health.errors.map(e => `<li>${e}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            }
-            
-            container.innerHTML = `
-                <div class="alert alert-${statusClass}">
-                    <h5><i class="fas ${statusIcon}"></i> Sistema ${health.status.toUpperCase()}</h5>
-                    <p>Controllo eseguito: ${new Date(health.timestamp).toLocaleString('it-IT')}</p>
+        
+        let warningsHtml = '';
+        if (health.warnings && health.warnings.length > 0) {
+            warningsHtml = `
+                <div class="alert alert-warning mt-2">
+                    <h6>Avvisi:</h6>
                     <ul class="mb-0">
-                        ${checksHtml}
+                        ${health.warnings.map(w => `<li>${w}</li>`).join('')}
                     </ul>
                 </div>
-                ${warningsHtml}
-                ${errorsHtml}
             `;
-            
-            container.style.display = 'block';
         }
-
-        // Validate all categories
-        function validateAllCategories() {
-            showLoading();
-            
-            const categories = Object.keys(categoriesData);
-            let validationPromises = [];
-            
-            categories.forEach(categoryName => {
-                const category = categoriesData[categoryName];
-                validationPromises.push(
-                    fetch('/api/categories/validate', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(category)
-                    }).then(response => response.json())
-                    .then(data => ({
-                        categoryName: categoryName,
-                        validation: data
-                    }))
-                );
-            });
-            
-            Promise.all(validationPromises)
-                .then(results => {
-                    hideLoading();
-                    displayValidationResults(results);
-                })
-                .catch(error => {
-                    hideLoading();
-                    showAlert('danger', 'Errore', 'Errore validazione: ' + error.message);
-                });
-        }
-
-        // Display validation results
-        function displayValidationResults(results) {
-            const container = document.getElementById('healthCheckResults');
-            
-            let validCount = 0;
-            let invalidCount = 0;
-            let warningsCount = 0;
-            
-            let html = '<div class="mt-3"><h5>Risultati Validazione Categorie</h5>';
-            
-            results.forEach(result => {
-                const validation = result.validation;
-                if (validation.valid) {
-                    validCount++;
-                } else {
-                    invalidCount++;
-                }
-                if (validation.warnings && validation.warnings.length > 0) {
-                    warningsCount++;
-                }
-                
-                const statusClass = validation.valid ? 'success' : 'danger';
-                const statusIcon = validation.valid ? 'fa-check-circle' : 'fa-times-circle';
-                
-                html += `
-                    <div class="alert alert-${statusClass} alert-sm">
-                        <h6><i class="fas ${statusIcon}"></i> ${result.categoryName}</h6>
-                        ${validation.errors && validation.errors.length > 0 ? 
-                            `<ul class="mb-1">${validation.errors.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
-                        ${validation.warnings && validation.warnings.length > 0 ? 
-                            `<small class="text-warning">Avvisi: ${validation.warnings.join(', ')}</small>` : ''}
-                    </div>
-                `;
-            });
-            
-            html = `
-                <div class="alert alert-info">
-                    <h5>Riepilogo Validazione</h5>
-                    <p>Valide: <strong>${validCount}</strong> | Invalide: <strong>${invalidCount}</strong> | Con avvisi: <strong>${warningsCount}</strong></p>
+        
+        let errorsHtml = '';
+        if (health.errors && health.errors.length > 0) {
+            errorsHtml = `
+                <div class="alert alert-danger mt-2">
+                    <h6>Errori:</h6>
+                    <ul class="mb-0">
+                        ${health.errors.map(e => `<li>${e}</li>`).join('')}
+                    </ul>
                 </div>
-            ` + html + '</div>';
-            
-            container.innerHTML = html;
-            container.style.display = 'block';
+            `;
         }
+        
+        container.innerHTML = `
+            <div class="alert alert-${statusClass}">
+                <h5><i class="fas ${statusIcon}"></i> Sistema ${health.status.toUpperCase()}</h5>
+                <p>Controllo eseguito: ${new Date(health.timestamp).toLocaleString('it-IT')}</p>
+                <ul class="mb-0">
+                    ${checksHtml}
+                </ul>
+            </div>
+            ${warningsHtml}
+            ${errorsHtml}
+        `;
+        
+        container.style.display = 'block';
+    }
 
-        // Reset to defaults
-        function resetToDefaults() {
-            if (!confirm('Sei sicuro di voler ripristinare le categorie di default? Tutte le modifiche andranno perse.')) {
-                return;
-            }
-            
-            showLoading();
-            
-            fetch('/api/categories/reset-defaults', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
+    // Validate all categories
+    function validateAllCategories() {
+        showLoading();
+        
+        const categories = Object.keys(categoriesData);
+        let validationPromises = [];
+        
+        categories.forEach(categoryName => {
+            const category = categoriesData[categoryName];
+            validationPromises.push(
+                fetch('/api/categories/validate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(category)
+                }).then(response => response.json())
+                .then(data => ({
+                    categoryName: categoryName,
+                    validation: data
+                }))
+            );
+        });
+        
+        Promise.all(validationPromises)
+            .then(results => {
                 hideLoading();
-                if (data.success) {
-                    showAlert('success', 'Successo', data.message);
-                    loadCategories();
-                    loadStatistics();
-                    checkConflicts();
-                } else {
-                    showAlert('danger', 'Errore', data.message);
-                }
+                displayValidationResults(results);
             })
             .catch(error => {
                 hideLoading();
-                showAlert('danger', 'Errore', 'Errore nel ripristino: ' + error.message);
+                showAlert('danger', 'Errore', 'Errore validazione: ' + error.message);
             });
-        }
+    }
 
-        // Refresh data
-        function refreshData(button) {
-            loadCategories();
-            loadStatistics();
-            checkConflicts();
-            if(button){
-                showAlert('info', 'Aggiornamento', 'Dati aggiornati con successo');
+    // Display validation results
+    function displayValidationResults(results) {
+        const container = document.getElementById('healthCheckResults');
+        
+        let validCount = 0;
+        let invalidCount = 0;
+        let warningsCount = 0;
+        
+        let html = '<div class="mt-3"><h5>Risultati Validazione Categorie</h5>';
+        
+        results.forEach(result => {
+            const validation = result.validation;
+            if (validation.valid) {
+                validCount++;
+            } else {
+                invalidCount++;
             }
-        }
-
-        // Update stats cards
-        function updateStatsCards(stats) {
-            if (stats) {
-                document.getElementById('totalCategoriesCount').textContent = stats.total_categories;
-                document.getElementById('activeCategoriesCount').textContent = stats.active_categories;
-                document.getElementById('totalPatternsCount').textContent = stats.total_patterns;
-            }
-        }
-
-        // Utility functions
-        function showLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = 'flex';
-            }
-        }
-
-        function hideLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-            }
-        }
-
-        function showAlert(type, title, message) {
-            switch (type) {
-            case "success":
-                toastr.success(message, title);
-                break;
-            case "warnings":
-                toastr.warnings(message, title);
-                break;
-            case "info":
-                toastr.info(message, title);
-                break;
-            case "danger":
-                toastr.error(message, title);
-                break;
-            default:
-                toastr.success(message, title);
+            if (validation.warnings && validation.warnings.length > 0) {
+                warningsCount++;
             }
             
+            const statusClass = validation.valid ? 'success' : 'danger';
+            const statusIcon = validation.valid ? 'fa-check-circle' : 'fa-times-circle';
+            
+            html += `
+                <div class="alert alert-${statusClass} alert-sm">
+                    <h6><i class="fas ${statusIcon}"></i> ${result.categoryName}</h6>
+                    ${validation.errors && validation.errors.length > 0 ? 
+                        `<ul class="mb-1">${validation.errors.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
+                    ${validation.warnings && validation.warnings.length > 0 ? 
+                        `<small class="text-warning">Avvisi: ${validation.warnings.join(', ')}</small>` : ''}
+                </div>
+            `;
+        });
+        
+        html = `
+            <div class="alert alert-info">
+                <h5>Riepilogo Validazione</h5>
+                <p>Valide: <strong>${validCount}</strong> | Invalide: <strong>${invalidCount}</strong> | Con avvisi: <strong>${warningsCount}</strong></p>
+            </div>
+        ` + html + '</div>';
+        
+        container.innerHTML = html;
+        container.style.display = 'block';
+    }
+
+    // Reset to defaults
+    function resetToDefaults() {
+        if (!confirm('Sei sicuro di voler ripristinare le categorie di default? Tutte le modifiche andranno perse.')) {
+            return;
         }
-    </script>
+        
+        showLoading();
+        
+        fetch('/api/categories/reset-defaults', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showAlert('success', 'Successo', data.message);
+                loadCategories();
+                loadStatistics();
+                checkConflicts();
+            } else {
+                showAlert('danger', 'Errore', data.message);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showAlert('danger', 'Errore', 'Errore nel ripristino: ' + error.message);
+        });
+    }
+
+    // Refresh data
+    function refreshData(button) {
+        loadCategories();
+        loadStatistics();
+        checkConflicts();
+        if(button){
+            showAlert('info', 'Aggiornamento', 'Dati aggiornati con successo');
+        }
+    }
+
+    // Update stats cards
+    function updateStatsCards(stats) {
+        if (stats) {
+            document.getElementById('totalCategoriesCount').textContent = stats.total_categories;
+            document.getElementById('activeCategoriesCount').textContent = stats.active_categories;
+            document.getElementById('totalPatternsCount').textContent = stats.total_patterns;
+        }
+    }
+
+    // Utility functions
+    function showLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+        }
+    }
+
+    function hideLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+
+    function showAlert(type, title, message) {
+        switch (type) {
+        case "success":
+            toastr.success(message, title);
+            break;
+        case "warnings":
+            toastr.warnings(message, title);
+            break;
+        case "info":
+            toastr.info(message, title);
+            break;
+        case "danger":
+            toastr.error(message, title);
+            break;
+        default:
+            toastr.success(message, title);
+        }
+        
+    }
+</script>
 {% endblock %}

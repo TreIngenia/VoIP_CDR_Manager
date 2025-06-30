@@ -1,15 +1,15 @@
 import json
 import logging
-from logger_config import get_logger
+from logger_config import get_logger, log_success, log_error, log_warning, log_info
 from exception_handler import handle_exceptions, APIResponse, ExceptionHandler
 from performance_monitor import get_performance_monitor
 from pathlib import Path
 from datetime import datetime
 from flask import render_template, request, jsonify, redirect, url_for, Response
-
+from ftp_downloader import FTPDownloader
 logger = get_logger(__name__)
 
-def create_routes(app, secure_config, processor, scheduler_manager):
+def create_routes(app, secure_config, scheduler_manager):
     from routes.menu_routes import menu_bp, register_menu_globals, render_with_menu_context
     """Crea tutte le route Flask"""
     # Registra blueprint menu
@@ -65,13 +65,9 @@ def create_routes(app, secure_config, processor, scheduler_manager):
                 # Salva configurazione
                 from config import save_config_to_env
                 save_config_to_env(secure_config, app.secret_key)
-                
-                # Aggiorna processore
-                processor.config = secure_config.get_config()
-                processor.ensure_output_directory()
-                
+                           
                 # Aggiorna e riavvia scheduler
-                scheduler_manager.set_config(secure_config.get_config())
+                scheduler_manager.set_config(secure_config)
                 scheduler_manager.restart_scheduler()
                 
                 logger.info("Configurazione aggiornata con successo")
@@ -85,33 +81,6 @@ def create_routes(app, secure_config, processor, scheduler_manager):
                                      error=f"Errore nell'aggiornamento: {str(e)}")
         
         return render_with_menu_context('config.html', {'config':secure_config.get_config()})
-
-    @app.route('/manual_run')
-    def manual_run():
-        """Esecuzione manuale del processo con gestione serializzazione JSON corretta"""
-        try:
-            result = processor.process_files()
-            
-            # ✅ PULIZIA RISULTATO PER JSON SERIALIZATION
-            if isinstance(result, dict):
-                # Rimuovi eventuali riferimenti a oggetti non serializzabili
-                clean_result = clean_for_json_serialization(result)
-                return jsonify(clean_result)
-            else:
-                # Fallback se result non è un dict
-                return jsonify({
-                    'success': True,
-                    'message': 'Processo completato',
-                    'details': str(result)
-                })
-                
-        except Exception as e:
-            logger.error(f"Errore esecuzione manuale: {e}")
-            return jsonify({
-                'success': False, 
-                'message': str(e),
-                'error_type': type(e).__name__
-            })
 
     def clean_for_json_serialization(data):
         """
@@ -150,15 +119,6 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             # Fallback per altri tipi
             return str(data)
         
-    @app.route('/test_ftp')
-    def test_ftp():
-        """Test connessione FTP"""
-        try:
-            files = processor.list_ftp_files()
-            return jsonify({'success': True, 'files': files})
-        except Exception as e:
-            logger.error(f"Errore test FTP: {e}")
-            return jsonify({'success': False, 'message': str(e)})
 
     @app.route('/logs')
     def logs():
@@ -245,51 +205,46 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             logger.error(f"Errore endpoint status: {e}")
             return jsonify({'error': 'Errore interno del server'}), 500
         
-    
 
     @app.route('/test_pattern', methods=['POST'])
     def test_pattern():
         """Test pattern con validazione input"""
         try:
+            from ftp_downloader import FTPDownloader
             data = request.get_json()
             if not data:
                 return jsonify({'success': False, 'message': 'Dati non validi'})
             
             pattern = data.get('pattern', '').strip()
             
-            if not pattern:
-                return jsonify({'success': False, 'message': 'Pattern non specificato'})
-            
-            # Validazione pattern
-            if not secure_config._validate_filename_pattern(pattern):
-                return jsonify({'success': False, 'message': 'Pattern contiene caratteri non sicuri'})
-            
-            if len(pattern) > 200:
-                return jsonify({'success': False, 'message': 'Pattern troppo lungo'})
-            
-            # Testa il pattern
-            result = processor.test_pattern_matching(pattern)
-            
-            if 'error' in result:
+            converter = FTPDownloader(secure_config)
+            result = converter.check_file(pattern,True)
+
+            if result['success'] == True:
+                    return jsonify({
+                    'success': True,
+                    'pattern': pattern,
+                    'match_count': len(result['downloaded_files']['files']),
+                    'matching_files': result['downloaded_files']['files'],  # Limita risultati
+                    'total_files': len(result['total_in_ftp'])
+                })
+            else:
                 return jsonify({'success': False, 'message': result['error']})
             
-            return jsonify({
-                'success': True,
-                'pattern': result['pattern'],
-                'total_files': result['total_files'],
-                'matching_files': result['matching_files'][:50],  # Limita risultati
-                'match_count': result['match_count']
-            })
+            
             
         except Exception as e:
-            logger.error(f"Errore nel test pattern: {e}")
+            log_error(f"Errore nel test pattern: {e}")
             return jsonify({'success': False, 'message': 'Errore interno del server'})
+
 
     @app.route('/pattern_examples')
     def pattern_examples():
         """Restituisce esempi di pattern con variabili temporali"""
         try:
-            examples = processor.generate_pattern_examples()
+            from file_processor import ConvertFILE
+            file = ConvertFILE(secure_config)
+            examples = file.generate_pattern_examples()
             return jsonify({
                 'success': True,
                 'examples': examples,
@@ -305,60 +260,27 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             logger.error(f"Errore nel generare esempi pattern: {e}")
             return jsonify({'success': False, 'message': str(e)})
 
+
     @app.route('/list_ftp_files')
     def list_ftp_files():
         """Lista tutti i file presenti sul server FTP"""
         try:
-            files = processor.list_ftp_files()
-            return jsonify({
+            
+            converter = FTPDownloader(secure_config)
+            result = converter.check_file("*",True)
+
+            if result['success'] == True:
+                    return jsonify({
                 'success': True,
-                'files': files,
-                'count': len(files)
+                'files': result['total_in_ftp'],
+                'count': len(result['total_in_ftp'])
             })
+
+            
         except Exception as e:
             logger.error(f"Errore nel listare file FTP: {e}")
             return jsonify({'success': False, 'message': str(e)})
-
-    @app.route('/quick_schedule/<schedule_type>')
-    def quick_schedule(schedule_type):
-        """Configurazioni rapide di schedulazione"""
-        try:
-            from scheduler import (set_schedule_every_minute, set_schedule_every_hour, 
-                                 set_schedule_every_30_minutes, set_schedule_every_10_seconds)
-            
-            if schedule_type == 'every_minute':
-                set_schedule_every_minute(scheduler_manager)
-                message = "Schedulazione impostata: ogni minuto"
-                
-            elif schedule_type == 'every_hour':
-                set_schedule_every_hour(scheduler_manager)
-                message = "Schedulazione impostata: ogni ora"
-                
-            elif schedule_type == 'every_30_minutes':
-                set_schedule_every_30_minutes(scheduler_manager)
-                message = "Schedulazione impostata: ogni 30 minuti"
-                
-            elif schedule_type == 'every_10_seconds':
-                set_schedule_every_10_seconds(scheduler_manager)
-                message = "Schedulazione impostata: ogni 10 secondi (TEST)"
-                
-            else:
-                return jsonify({'success': False, 'message': 'Tipo di schedulazione non riconosciuto'})
-            
-            # Salva configurazione
-            from config import save_config_to_env
-            save_config_to_env(secure_config, app.secret_key)
-            
-            return jsonify({
-                'success': True,
-                'message': message,
-                'schedule_description': scheduler_manager.get_schedule_description(),
-                'next_jobs': scheduler_manager.get_next_scheduled_jobs()
-            })
-            
-        except Exception as e:
-            logger.error(f"Errore nella configurazione rapida: {e}")
-            return jsonify({'success': False, 'message': str(e)})
+    
 
     @app.route('/schedule_info')
     def schedule_info():
@@ -376,6 +298,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         except Exception as e:
             logger.error(f"Errore nel recupero info schedulazione: {e}")
             return jsonify({'success': False, 'message': str(e)})
+
 
     @app.route('/api/voip/update_prices', methods=['POST'])
     def update_voip_prices():
@@ -405,6 +328,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         except Exception as e:
             logger.error(f"Errore aggiornamento prezzi VoIP via API: {e}")
             return jsonify({'success': False, 'message': str(e)})
+
 
     @app.route('/api/voip/calculate', methods=['POST'])
     def calculate_voip_prices():
@@ -440,6 +364,7 @@ def create_routes(app, secure_config, processor, scheduler_manager):
         except Exception as e:
             logger.error(f"Errore calcolo prezzi VoIP: {e}")
             return jsonify({'success': False, 'message': str(e)})
+
 
     @app.route('/health')
     def health_check():
@@ -524,9 +449,18 @@ def create_routes(app, secure_config, processor, scheduler_manager):
             }), 500
 
     def _scheduled_job():
-        """Job schedulato che esegue il processo completo"""
-        logger.info("Esecuzione job schedulato")
-        result = processor.process_files()
+        from config import SecureConfig
+        secure_config = SecureConfig()
+        config = secure_config.get_config()
+        
+        # ✅ Istanzia il downloader
+        downloader = FTPDownloader(config)
+        
+        # ✅ Chiama il metodo sull'istanza
+        result = downloader.process_files()
+        # return(result)
+
+        # result = processor.process_files()
         
         # Salva il risultato dell'ultima esecuzione
         config = secure_config.get_config()

@@ -221,7 +221,7 @@ def main():
     print("=" * 30)
     
     # Puoi modificare questo path o passarlo come argomento
-    routes_directory = "route"  # Cambia questo path se necessario
+    routes_directory = "routes"  # Cambia questo path se necessario
     
     # Controlla se l'utente ha passato un argomento
     import sys

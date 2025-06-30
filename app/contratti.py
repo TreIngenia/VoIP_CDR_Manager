@@ -71,8 +71,8 @@ class CDRContractsService:
         try:
             # Estrai il primo numero di telefono dall'array phone_numbers
             phone_numbers = contract_data.get('phone_numbers', [])
-            first_phone = phone_numbers[0] if phone_numbers and len(phone_numbers) > 0 else ""
-            
+            # first_phone = phone_numbers[0] if phone_numbers and len(phone_numbers) > 0 else ""
+            first_phone = phone_numbers
             # Gestisci valori None o mancanti
             contract_code = contract_data.get('contract_code', "")
             contract_name = contract_data.get('contract_name', "")

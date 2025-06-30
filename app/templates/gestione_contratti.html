@@ -64,11 +64,9 @@
         <div class="row">
                 <form id="contracts-form">
                     <div class="table-responsive">
-                        <table id="kt_datatable" class="table table-rounded table-striped border gy-5 gs-7 align-middle dataTable table-hover">
-                          
-                            <!-- <tbody id="contracts-container">
-                                
-                            </tbody> -->
+                        <table id="table_view" class="table table-rounded table-row-bordered border gy-5 gs-7 align-middle dataTable table-hover">
+                        </table>
+                        <table id="table_edit" class="table table-rounded table-row-bordered border gy-5 gs-7 align-middle dataTable table-hover">
                         </table>
                     </div>
                 </form>
@@ -86,6 +84,8 @@
     let contractTypeOptions = [];
     let odooclient = [];
     let payment_terms = [];
+    let table_view = null;
+    let table_edit = null;
     var target = document.querySelector("#kt_app_main"); 
         var blockUI = new KTBlockUI(target);
         if (blockUI.isBlocked()) {
@@ -120,10 +120,11 @@
                         const contract = data.contracts[contractId];  // CORRETTO QUI
                         if(contract.contract_name != "" && contract.odoo_client_id != "" && contract.contract_type != ""){
                             ++contOK
-                            console.log(contract.contract_name);
-                        }else if(contract.odoo_client_id == ""){
+                        }
+                        if(contract.odoo_client_id == "" || contract.odoo_client_id == undefined ){
                             ++contNO_odoo_client_id
-                        }else if(contract.contract_type == ""){
+                        }
+                        if(contract.contract_type == "" || contract.contract_type == undefined || contract.contract_type == null){
                             ++contNO_contract_type
                         }
                     }
@@ -135,36 +136,36 @@
         }else{
             callExtractContracts();
         }
+        console.log(data)
         document.getElementById('contrattiOK').textContent = contOK;
         document.getElementById('NO_Cliente').textContent = contNO_odoo_client_id;
         document.getElementById('NO_Tipologia').textContent = contNO_contract_type;
-        document.getElementById('contrattiKO').textContent = contNO_contract_type+contNO_odoo_client_id;
+        document.getElementById('contrattiKO').textContent = (contNO_contract_type > contNO_odoo_client_id) ? contNO_contract_type : contNO_odoo_client_id;
         document.getElementById('total-contracts').textContent = json.contracts_count;
         document.getElementById('last-updated').textContent = new Date(json.last_updated).toLocaleString('it-IT').replace(',',' - ');
     }
 
     async function loadContracts() {
         CheckContracts()
-            // if (data.success) {
-                // contractsData = data.data;
-                if(isEditMode === true) {
-                    $('#kt_datatable1').DataTable().clear().destroy();
-                    loadSelectOptions_callback(function () {
-                        edit_datatables('#kt_datatable');
-                    });
+        // if (data.success) {
+        // contractsData = data.data;
+        if(isEditMode === true) {
+            $('#table_edit').removeClass('d-none');
+            $('#table_view').addClass('d-none');
+            $('#table_view').DataTable().clear().destroy();
+            loadSelectOptions_callback(function () {
+                edit_datatables('#table_edit');
+            });
 
-                } else {
-                    $('#kt_datatable1').DataTable().clear().destroy();
-                    loadSelectOptions_callback(function () {
-                        view_datatables('#kt_datatable');
-                    });
-                }
-                
-                
-                // form.style.display = 'block';
-            // } else {
-            //     throw new Error(data.message || 'Errore nel caricamento');
-            // }
+        } else {
+            $('#table_view').removeClass('d-none');
+            $('#table_edit').addClass('d-none');
+            $('#table_edit').DataTable().clear().destroy();
+            loadSelectOptions_callback(function () {
+                view_datatables('#table_view');
+            });
+        }
+
     }
 
     function toggle_button(id, icon1, icon2, text1, text2, action1, action2) {
@@ -199,9 +200,13 @@
     /**Funzione che abilita DataTables per la tabella specificata */
 
     function view_datatables(id){
+        if ( $.fn.DataTable.isDataTable(id) ) {
+            $(id).DataTable().clear().destroy();
+        }
         const save_all_button = document.getElementById('save_all');
         save_all_button.classList.add('disabled');
-        table = new DataTable(id,{
+
+        table_view = new DataTable(id,{
             destroy: true,
             responsive: true,
             pageLength: 10,
@@ -223,7 +228,15 @@
                     width: "10%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         // var date_db = moment(data).format("DD/MM/YYYY - HH:mm");
-                        return data;
+                        telefono = recupera_numero_principale(data);
+                        if (!Array.isArray(telefono) || telefono.length === 0) return "";
+
+                        const primo = telefono[0];
+                        const altri = telefono.slice(1).join("<br>");
+
+                        
+                        return primo;
+
                     },
                 },
                 {   
@@ -268,12 +281,21 @@
                 //     },
                 // },
                 {   
-                    data: "notes",
-                    title: "Note",
+                    data: "phone_number",
+                    title: "Altri N. Telefono",
                     width: "33%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
                         // var date_db = moment(data).format("DD/MM/YYYY - HH:mm");
-                        return data;
+                        telefono = recupera_numero_principale(data);
+                        if (!Array.isArray(telefono) || telefono.length === 0) return "";
+
+                        const primo = telefono[0];
+                        const altri = telefono.slice(1).join(" | ");
+
+                        if (altri === "") {
+                            return 'Nessuno';
+                        }
+                        return altri;
                     },
                 },
                 {   
@@ -295,16 +317,18 @@
                         return "";
                     }  
                 },
+                {   
+                    data: "notes",
+                    className: 'd-none',
+                    orderable: false,
+                    defaultContent: ''
+                },
             ],
             //Ordina i record in modo crescente in base alla colonna 1
             "order": [
                 [0, 'asc']
             ],   
-            select: {
-                style: 'multi',
-                selector: 'td:first-child input[type="checkbox"]',
-                className: 'row-selected'
-            },
+
             processing: true,
             // serverSide: true,
             searchDelay:250,
@@ -315,20 +339,71 @@
                 type: "GET",
                 dataSrc: 'data'         
             },
-            
+            createdRow: function(row, data, dataIndex) {
+                $(row).addClass('cursor-pointer');
+            },
             "initComplete": function(settings, json){
                 blockUI.release(); 
+
                 $('#mySearch').on('keyup', function () {
-                    table.search(this.value).draw();
+                    table_view.search(this.value).draw();
+                });
+
+                $('#table_view tbody').off('click', 'tr').on('click', 'tr', function () {
+                    var tr = $(this).closest('tr');
+                    var row = table_view.row(tr);
+                
+                    if (row.child.isShown()) {
+                        // This row is already open - close it
+                        row.child.hide();
+                        tr.removeClass('shown');
+                    }
+                    else {
+                        // Open this row
+                        row.child(dettaglio_tabella(row.data()), 'bg-active-opacity-50 bg-secondary').show();
+                        tr.addClass('shown');
+                    }
+                });
+                
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                    new bootstrap.Tooltip(tooltipTriggerEl);
                 });
             }
         })
+        
+
+
     }
 
+    function dettaglio_tabella(d) {
+        // `d` is the original data object for the row
+        return (
+            '<dl>' +
+            '<dt>Note:</dt>' +
+            '<dd>' +
+            d.notes +
+            '</dl>'
+        );
+    }
+
+    function recupera_numero_principale(array) {
+
+        // Converti gli apici singoli in doppi per renderlo un JSON valido
+        let jsonCompatibile = array.replace(/'/g, '"');
+
+        // Esegui il parsing
+        let numeri = JSON.parse(jsonCompatibile);
+
+        return numeri
+    }
     function edit_datatables(id){
+        if ( $.fn.DataTable.isDataTable(id) ) {
+            $(id).DataTable().clear().destroy();
+        }
         const save_all_button = document.getElementById('save_all');
         save_all_button.classList.remove('disabled');
-        table = new DataTable(id,{
+        table_edit = new DataTable(id,{
             destroy: true,
             responsive: true,
             pageLength: 10,
@@ -348,7 +423,13 @@
                     title: "N. telefono",
                     width: "10%", orderable: true, searchable: true, visible: true, className: "align-middle", responsivePriority: 1, targets: 0,
                     "render": function ( data, type, row ) {
-                        html = `<span class="fs-2"> ${data || ''}</span>`
+                        telefono = recupera_numero_principale(data);
+                        if (!Array.isArray(telefono) || telefono.length === 0) return "";
+
+                        const primo = telefono[0];
+                        const altri = telefono.slice(1).join("<br>");
+
+                        html = `<span class="fs-2"> ${primo || ''}</span>`
                         return html;
                     },
                 },
@@ -526,7 +607,7 @@
                 // });
                 blockUI.release(); 
                 $('#mySearch').on('keyup', function () {
-                    table.search(this.value).draw();
+                    table_edit.search(this.value).draw();
                 });
             }
         });
@@ -660,8 +741,16 @@
         // statusElement.style.color = 'blue';
         
         // const contractName = document.getElementById(`name_${contractCode}`).value.trim();
+        let contractName = null;
         const select = document.getElementById(`odoo_${contractCode}`);
-        const contractName = select.options[select.selectedIndex].text;
+        if(select && 
+            select instanceof HTMLSelectElement &&
+            select.selectedIndex >= 0 &&
+            select.options.length > select.selectedIndex &&
+            select.options[select.selectedIndex]
+            ){
+            contractName = select.options[select.selectedIndex].text;
+        }
         const odooClientId = document.getElementById(`odoo_${contractCode}`).value.trim();
         const notes = document.getElementById(`notes_${contractCode}`).value.trim();
         const contractType = document.getElementById(`contracttype_${contractCode}`).value.trim();
@@ -691,7 +780,7 @@
             });
             
             const result = await response.json();
-            
+            console.log(result)
             if (result.success) {
                 CheckContracts() 
                 toastr.success(`Il contratto <span class="fs-3">${contractCode}</span> è stato salvato con successo.`, "Salvato con successo");

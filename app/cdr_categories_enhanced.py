@@ -6,6 +6,7 @@ Unisce la gestione delle macro categorie con il sistema di elaborazione CDR avan
 
 import json
 import logging
+import math
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -859,8 +860,9 @@ class CDRAnalyticsEnhanced:
             price_per_min = float(record.get('prezzo_categoria_per_minuto', 0))
             matched = record.get('categoria_matched', False)
             
-            costo_cliente_totale_euro_by_category[cat_name] += cost_client
-            
+            # costo_cliente_totale_euro_by_category[cat_name] += cost_client
+            costo_cliente_totale_euro_by_category[cat_name] += math.ceil(cost_client * 100) / 100
+
             category_breakdown[cat_name]['calls'] += 1
             category_breakdown[cat_name]['duration_seconds'] += duration
             category_breakdown[cat_name]['cost_client_euro'] += cost_client
@@ -1398,9 +1400,9 @@ def integrate_enhanced_cdr_system(app, processor, secure_config):
     Integra il sistema CDR potenziato nell'applicazione esistente
     Sostituisce completamente il vecchio sistema con quello basato su categorie
     """
-    # Backup del vecchio sistema se presente
-    if hasattr(processor, 'cdr_analytics'):
-        processor._old_cdr_analytics = processor.cdr_analytics
+    # # Backup del vecchio sistema se presente
+    # if hasattr(processor, 'cdr_analytics'):
+    #     processor._old_cdr_analytics = processor.cdr_analytics
 
     # Sostituisce con il nuovo sistema integrato
     processor.cdr_analytics = CDRAnalyticsEnhanced(
