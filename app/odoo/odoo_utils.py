@@ -4,7 +4,8 @@ Utilità e helper functions per l'integrazione Odoo con gestione robusta degli e
 """
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
-from flask import jsonify
+# from flask import jsonify
+import json
 import time
 import functools
 import threading
@@ -201,8 +202,9 @@ def build_api_response(success: bool, data: Any = None, message: str = "",
         
         if status_code == 200:
             status_code = 400
-    
-    return jsonify(response), status_code
+    # return jsonify(response), status_code
+    # return json.dumps(response), status_code
+    return response, status_code
 
 def validate_pagination_params(page: int, per_page: int, max_per_page: int = 100) -> Dict:
     """Valida e normalizza parametri di paginazione"""

@@ -751,7 +751,7 @@ class CDRAnalyticsEnhanced:
                     'categoria_cliente': cost_calculation['category_name'],
                     'categoria_display': cost_calculation['category_display_name'],
                     'prezzo_categoria_per_minuto': cost_calculation['price_per_minute'],
-                    'costo_cliente_euro': cost_calculation['cost_calculated'],
+                    'costo_cliente_euro': round(float(cost_calculation['cost_calculated']),4),
                     'durata_fatturata_minuti': cost_calculation['duration_billed'],
                     'categoria_matched': cost_calculation['matched'],
                     'valuta_categoria': cost_calculation['currency'],
@@ -769,7 +769,7 @@ class CDRAnalyticsEnhanced:
                 # Statistiche utilizzo categorie
                 cat_name = cost_calculation['category_name']
                 category_usage[cat_name]['count'] += 1
-                category_usage[cat_name]['total_cost'] += cost_calculation['cost_calculated']
+                category_usage[cat_name]['total_cost'] +=  round(float(cost_calculation['cost_calculated']), 4) #cost_calculation['cost_calculated']
                 category_usage[cat_name]['total_duration'] += durata_secondi
                 category_usage[cat_name]['total_duration_seconds'] += durata_secondi
                 category_usage[cat_name]['display_name'] = cost_calculation['category_display_name']
@@ -837,7 +837,7 @@ class CDRAnalyticsEnhanced:
         total_duration = sum(int(r.get('durata_secondi', 0)) for r in records)
         total_cost_original = sum(float(r.get('costo_originale_euro', 0)) for r in records)
         total_cost_client = sum(float(r.get('costo_cliente_euro', 0)) for r in records)
-        
+
         # Aggregazione per categoria
         costo_cliente_totale_euro_by_category = defaultdict(float)
         category_breakdown = defaultdict(lambda: {
@@ -905,10 +905,14 @@ class CDRAnalyticsEnhanced:
                 if total_cost_original > 0 else 0, 2
             ),
             
-            'costo_cliente_totale_euro_by_category': dict(costo_cliente_totale_euro_by_category),
+            # 'costo_cliente_totale_euro_by_category': dict(costo_cliente_totale_euro_by_category),
+            # Arrotondo gl importi dentro a costo_cliente_totale_euro_by_category ad un massimo di 4 cifre dopo la virgola
+            'costo_cliente_totale_euro_by_category': {
+                cat: round(float(val), 4)
+                for cat, val in costo_cliente_totale_euro_by_category.items()
+            },
             'categoria_breakdown_dettagliato': dict(category_breakdown)
         }
-        
         return result
     
     def _generate_contract_report(self, contract_code: str, records: List[Dict], metadata: Dict) -> Optional[str]:

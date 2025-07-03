@@ -557,65 +557,65 @@ def create_routes(app, secure_config, scheduler_manager):
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)}), 500
 
-    @app.route('/cdr_analytics/report_details/<path:filename>')
-    def cdr_report_details(filename):
-        """Mostra dettagli di un report specifico con supporto per file SUMMARY"""
-        try:
-            report_path = processor.cdr_analytics.analytics_directory / filename
+    # @app.route('/cdr_analytics/report_details/<path:filename>')
+    # def cdr_report_details(filename):
+    #     """Mostra dettagli di un report specifico con supporto per file SUMMARY"""
+    #     try:
+    #         report_path = processor.cdr_analytics.analytics_directory / filename
             
-            if not report_path.exists():
-                return jsonify({'success': False, 'message': 'Report non trovato'}), 404
+    #         if not report_path.exists():
+    #             return jsonify({'success': False, 'message': 'Report non trovato'}), 404
             
-            # Carica il report
-            with open(report_path, 'r', encoding='utf-8') as f:
-                report_data = json.load(f)
+    #         # Carica il report
+    #         with open(report_path, 'r', encoding='utf-8') as f:
+    #             report_data = json.load(f)
             
-            # ✅ CORREZIONE: Rileva automaticamente il tipo di file
-            is_summary = filename.startswith('SUMMARY_') or 'global_totals' in report_data
+    #         # ✅ CORREZIONE: Rileva automaticamente il tipo di file
+    #         is_summary = filename.startswith('SUMMARY_') or 'global_totals' in report_data
             
-            if is_summary:
-                # ========== GESTIONE FILE SUMMARY (Report Globale) ==========
-                metadata = report_data.get('metadata', {})
-                global_totals = report_data.get('global_totals', {})
-                global_by_type = report_data.get('global_by_call_type', {})
+    #         if is_summary:
+    #             # ========== GESTIONE FILE SUMMARY (Report Globale) ==========
+    #             metadata = report_data.get('metadata', {})
+    #             global_totals = report_data.get('global_totals', {})
+    #             global_by_type = report_data.get('global_by_call_type', {})
                 
-                details = {
-                    'filename': filename,
-                    'is_summary': True,
-                    'contract_code': 'SUMMARY_GLOBALE',
-                    'total_calls': global_totals.get('total_calls', 0),
-                    'total_duration_minutes': global_totals.get('total_duration_minutes', 0),
-                    'total_cost': global_totals.get('total_cost_euro', 0),
-                    'client_city': f"Tutti i contratti ({global_totals.get('total_contracts', 0)} contratti)",
-                    'generation_date': metadata.get('generation_timestamp'),
-                    'call_types_breakdown': global_by_type,  # ✅ Usa la struttura corretta per SUMMARY
-                    'contracts_summary': report_data.get('contracts_summary', {}),
-                    'top_contracts': report_data.get('top_contracts', {}),
-                    'metadata': metadata
-                }
-            else:
-                # ========== GESTIONE FILE CONTRATTO SINGOLO (Report Individuale) ==========
-                summary = report_data.get('summary', {})
-                metadata = report_data.get('metadata', {})
+    #             details = {
+    #                 'filename': filename,
+    #                 'is_summary': True,
+    #                 'contract_code': 'SUMMARY_GLOBALE',
+    #                 'total_calls': global_totals.get('total_calls', 0),
+    #                 'total_duration_minutes': global_totals.get('total_duration_minutes', 0),
+    #                 'total_cost': global_totals.get('total_cost_euro', 0),
+    #                 'client_city': f"Tutti i contratti ({global_totals.get('total_contracts', 0)} contratti)",
+    #                 'generation_date': metadata.get('generation_timestamp'),
+    #                 'call_types_breakdown': global_by_type,  # ✅ Usa la struttura corretta per SUMMARY
+    #                 'contracts_summary': report_data.get('contracts_summary', {}),
+    #                 'top_contracts': report_data.get('top_contracts', {}),
+    #                 'metadata': metadata
+    #             }
+    #         else:
+    #             # ========== GESTIONE FILE CONTRATTO SINGOLO (Report Individuale) ==========
+    #             summary = report_data.get('summary', {})
+    #             metadata = report_data.get('metadata', {})
                 
-                details = {
-                    'filename': filename,
-                    'is_summary': False,
-                    'contract_code': summary.get('codice_contratto'),
-                    'total_calls': summary.get('totale_chiamate'),
-                    'total_duration_minutes': summary.get('durata_totale_minuti'),
-                    'total_cost': summary.get('costo_totale_euro'),
-                    'client_city': summary.get('cliente_finale_comune'),
-                    'generation_date': metadata.get('generation_timestamp'),
-                    'call_types_breakdown': report_data.get('call_types_breakdown', {}),  # ✅ Usa la struttura corretta per contratti singoli
-                    'daily_breakdown': report_data.get('daily_breakdown', {})
-                }
+    #             details = {
+    #                 'filename': filename,
+    #                 'is_summary': False,
+    #                 'contract_code': summary.get('codice_contratto'),
+    #                 'total_calls': summary.get('totale_chiamate'),
+    #                 'total_duration_minutes': summary.get('durata_totale_minuti'),
+    #                 'total_cost': summary.get('costo_totale_euro'),
+    #                 'client_city': summary.get('cliente_finale_comune'),
+    #                 'generation_date': metadata.get('generation_timestamp'),
+    #                 'call_types_breakdown': report_data.get('call_types_breakdown', {}),  # ✅ Usa la struttura corretta per contratti singoli
+    #                 'daily_breakdown': report_data.get('daily_breakdown', {})
+    #             }
             
-            return jsonify({'success': True, 'details': details})
+    #         return jsonify({'success': True, 'details': details})
             
-        except Exception as e:
-            logger.error(f"Errore dettagli report: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
+    #     except Exception as e:
+    #         logger.error(f"Errore dettagli report: {e}")
+    #         return jsonify({'success': False, 'message': str(e)}), 500
         
     
 

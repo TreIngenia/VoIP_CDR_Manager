@@ -393,6 +393,7 @@ class ElaborazioneContratti:
             return []
         
     def elabora_tutti_contratti_get(self, timeout: int = 30) -> Dict[str, Any]:
+        print(self.api_url)
         """
         Elabora tutti i contratti validi - VERSIONE SEMPLIFICATA
         
@@ -411,7 +412,7 @@ class ElaborazioneContratti:
             
             # Elabora contratti validi
             results = []
-            print(contracts)
+            # print(contracts)
             for contract in contracts:
                 odoo_id = contract.get('odoo_client_id', '').strip()
                 contract_type = contract.get('contract_type', '').strip()
@@ -440,6 +441,7 @@ class ElaborazioneContratti:
         except Exception as e:
             logger.error(f"❌ Errore: {e}")
             return {'success': False, 'error': str(e)}
+    
         
     def ottieni_info_contratti(self) -> Dict[str, Any]:
         """
@@ -476,7 +478,405 @@ class ElaborazioneContratti:
         except Exception as e:
             logger.error(f"❌ Errore info contratti: {e}")
             return {'error': str(e)}
+
+class CDRContractsServiceStandalone:
+    """Servizio contratti completamente autonomo - senza richieste HTTP"""
+    
+    def __init__(self, contracts_data_source: Optional[Dict[str, Any]] = None):
+        """
+        Inizializza il servizio autonomo
         
+        Args:
+            contracts_data_source: Dati dei contratti già caricati (opzionale)
+        """
+        self.contracts_data = contracts_data_source
+        self._cached_contracts = None
+    
+    def set_contracts_data(self, contracts_data: Dict[str, Any]) -> None:
+        """
+        Imposta i dati dei contratti
+        
+        Args:
+            contracts_data: Dizionario con i dati dei contratti
+        """
+        self.contracts_data = contracts_data
+        self._cached_contracts = None  # Reset cache
+    
+    def load_contracts_from_file(self, file_path: str) -> bool:
+        """
+        Carica i contratti da un file JSON
+        
+        Args:
+            file_path: Percorso del file JSON con i contratti
+            
+        Returns:
+            True se il caricamento è riuscito, False altrimenti
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                self.contracts_data = json.load(file)
+            self._cached_contracts = None
+            logger.info(f"✅ Contratti caricati da file: {file_path}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Errore caricamento file {file_path}: {e}")
+            return False
+    
+    def _extract_contract_fields(self, contract_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Estrae i campi necessari da un singolo contratto
+        
+        Args:
+            contract_data: Dati del singolo contratto
+            
+        Returns:
+            Dict con i campi estratti
+        """
+        try:
+            # Gestisce diversi formati di phone_numbers
+            phone_numbers = contract_data.get('phone_numbers', [])
+            if isinstance(phone_numbers, list):
+                first_phone = phone_numbers[0] if phone_numbers else ""
+            else:
+                first_phone = str(phone_numbers) if phone_numbers else ""
+            
+            # Estrae tutti i campi necessari
+            contract_code = contract_data.get('contract_code', "")
+            contract_name = contract_data.get('contract_name', "")
+            odoo_client_id = contract_data.get('odoo_client_id', "")
+            contract_type = contract_data.get('contract_type', "")
+            payment_term = contract_data.get('payment_term', "")
+            notes = contract_data.get('notes', "")
+            
+            # Assicura che tutti i valori siano stringhe
+            return {
+                'contract_code': str(contract_code) if contract_code is not None else "",
+                'phone_number': str(first_phone) if first_phone is not None else "",
+                'contract_name': str(contract_name) if contract_name is not None else "",
+                'odoo_client_id': str(odoo_client_id) if odoo_client_id is not None else "",
+                'contract_type': str(contract_type) if contract_type is not None else "",
+                'payment_term': str(payment_term) if payment_term is not None else "",
+                'notes': str(notes) if notes is not None else ""
+            }
+            
+        except Exception as e:
+            logger.error(f"Errore estrazione campi contratto: {e}")
+            return {
+                'contract_code': "",
+                'phone_number': "",
+                'contract_name': "",
+                'odoo_client_id': "",
+                'contract_type': "",
+                'payment_term': "",
+                'notes': ""
+            }
+    
+    def get_contracts_list(self) -> List[Dict[str, Any]]:
+        """
+        Restituisce la lista dei contratti in formato standard
+        
+        Returns:
+            Lista di contratti con campi estratti
+        """
+        if not self.contracts_data:
+            logger.warning("Nessun dato contratti disponibile")
+            return []
+        
+        if self._cached_contracts is not None:
+            return self._cached_contracts
+        
+        try:
+            # Estrae i contratti dal formato API
+            contracts = self.contracts_data.get('contracts', {})
+            if not contracts:
+                logger.warning("Nessun contratto trovato nei dati")
+                return []
+            
+            # Converte ogni contratto nel formato standard
+            contracts_list = []
+            
+            for contract_id, contract_info in contracts.items():
+                try:
+                    extracted_fields = self._extract_contract_fields(contract_info)
+                    
+                    # Aggiunge l'ID del contratto
+                    contract_standard = {
+                        'id': contract_id,
+                        **extracted_fields
+                    }
+                    
+                    contracts_list.append(contract_standard)
+                    
+                except Exception as e:
+                    logger.error(f"Errore elaborazione contratto {contract_id}: {e}")
+                    continue
+            
+            # Cache del risultato
+            self._cached_contracts = contracts_list
+            logger.info(f"📋 Elaborati {len(contracts_list)} contratti")
+            
+            return contracts_list
+            
+        except Exception as e:
+            logger.error(f"Errore nella conversione contratti: {e}")
+            return []
+
+
+class ElaborazioneContrattiStandalone:
+    """Classe per elaborare contratti senza richieste HTTP - Solo funzioni interne"""
+    
+    def __init__(self, contracts_service: Optional[CDRContractsServiceStandalone] = None):
+        """
+        Inizializza la classe
+        
+        Args:
+            contracts_service: Istanza del servizio contratti
+        """
+        self.contracts_service = contracts_service or CDRContractsServiceStandalone()
+    
+    def set_contracts_data(self, contracts_data: Dict[str, Any]) -> None:
+        """
+        Imposta i dati dei contratti direttamente
+        
+        Args:
+            contracts_data: Dati dei contratti
+        """
+        self.contracts_service.set_contracts_data(contracts_data)
+    
+    def load_contracts_from_file(self, file_path: str) -> bool:
+        """
+        Carica i contratti da file
+        
+        Args:
+            file_path: Percorso del file JSON
+            
+        Returns:
+            True se caricamento riuscito
+        """
+        return self.contracts_service.load_contracts_from_file(file_path)
+    
+    def elabora_tutti_contratti_standalone(self, processor_callback: Optional[Callable] = None) -> Dict[str, Any]:
+        """
+        Elabora tutti i contratti validi - VERSIONE COMPLETAMENTE AUTONOMA
+        
+        Args:
+            processor_callback: Funzione opzionale per elaborazione personalizzata
+                               Riceve il dict del contratto, restituisce il risultato
+            
+        Returns:
+            Dict con risultati elaborazione
+        """
+        try:
+            logger.info(f"🔄 Elaborazione contratti standalone...")
+            
+            # Recupera contratti tramite funzione interna
+            contracts = self.contracts_service.get_contracts_list()
+            
+            if not contracts:
+                logger.warning("Nessun contratto disponibile per l'elaborazione")
+                return {
+                    'success': True,
+                    'total_received': 0,
+                    'total_processed': 0,
+                    'total_skipped': 0,
+                    'total_errors': 0,
+                    'results': [],
+                    'message': 'Nessun contratto disponibile'
+                }
+            
+            logger.info(f"📊 Contratti da elaborare: {len(contracts)}")
+            
+            # Elabora contratti validi
+            results = []
+            valid_count = 0
+            invalid_count = 0
+            error_count = 0
+            
+            for contract in contracts:
+                try:
+                    odoo_id = contract.get('odoo_client_id', '').strip()
+                    contract_type = contract.get('contract_type', '').strip()
+                    contract_code = contract.get('contract_code', '').strip()
+                    contract_name = contract.get('contract_name', '').strip()
+                    phone_number = contract.get('phone_number', '').strip()
+                    
+                    # Verifica validità del contratto
+                    if odoo_id and contract_type and contract_code:
+                        valid_count += 1
+                        
+                        # Se c'è un callback personalizzato, usalo
+                        if processor_callback and callable(processor_callback):
+                            try:
+                                custom_result = processor_callback(contract)
+                                results.append(custom_result)
+                                logger.info(f"✅ Callback completato per contratto {contract_code}")
+                                continue
+                            except Exception as e:
+                                logger.error(f"❌ Errore callback per contratto {contract_code}: {e}")
+                                error_count += 1
+                                results.append({
+                                    'contract_code': contract_code,
+                                    'status': 'callback_error',
+                                    'error': str(e),
+                                    'processed_at': datetime.now().isoformat()
+                                })
+                                continue
+                        
+                        # Elaborazione standard (se nessun callback)
+                        elaboration_result = self._elabora_contratto_standard(contract)
+                        results.append(elaboration_result)
+                        logger.info(f"✅ Processato contratto {contract_code} - {contract_name}")
+                        
+                    else:
+                        invalid_count += 1
+                        logger.debug(f"⚠️ Contratto {contract_code} saltato: "
+                                   f"odoo_id='{odoo_id}', type='{contract_type}', code='{contract_code}'")
+                        
+                        results.append({
+                            'contract_code': contract_code,
+                            'contract_name': contract_name,
+                            'status': 'skipped',
+                            'reason': 'Missing required fields (odoo_id, contract_type, or contract_code)',
+                            'missing_fields': {
+                                'odoo_id': not bool(odoo_id),
+                                'contract_type': not bool(contract_type),
+                                'contract_code': not bool(contract_code)
+                            },
+                            'processed_at': datetime.now().isoformat()
+                        })
+                
+                except Exception as e:
+                    error_count += 1
+                    logger.error(f"❌ Errore nell'elaborazione del contratto {contract.get('contract_code', 'Unknown')}: {e}")
+                    results.append({
+                        'contract_code': contract.get('contract_code', 'Unknown'),
+                        'status': 'error',
+                        'error': str(e),
+                        'processed_at': datetime.now().isoformat()
+                    })
+            
+            # Riepilogo finale
+            total_processed = len([r for r in results if r.get('status') == 'processed'])
+            logger.info(f"🎯 Elaborazione completata:")
+            logger.info(f"   - Totali ricevuti: {len(contracts)}")
+            logger.info(f"   - Validi processati: {total_processed}")
+            logger.info(f"   - Invalidi/saltati: {invalid_count}")
+            logger.info(f"   - Errori: {error_count}")
+            
+            return {
+                'success': True,
+                'total_received': len(contracts),
+                'total_processed': total_processed,
+                'total_skipped': invalid_count,
+                'total_errors': error_count,
+                'results': results,
+                'summary': {
+                    'processed_contracts': [r for r in results if r.get('status') == 'processed'],
+                    'skipped_contracts': [r for r in results if r.get('status') == 'skipped'],
+                    'error_contracts': [r for r in results if r.get('status') == 'error'],
+                    'callback_error_contracts': [r for r in results if r.get('status') == 'callback_error']
+                },
+                'processing_timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Errore generale nell'elaborazione: {e}")
+            return {
+                'success': False, 
+                'error': str(e),
+                'error_type': 'general_error',
+                'processing_timestamp': datetime.now().isoformat()
+            }
+    
+    def _elabora_contratto_standard(self, contract: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Elaborazione standard di un contratto (da personalizzare)
+        
+        Args:
+            contract: Dati del contratto
+            
+        Returns:
+            Risultato dell'elaborazione
+        """
+        contract_code = contract.get('contract_code', '')
+        contract_name = contract.get('contract_name', '')
+        contract_type = contract.get('contract_type', '')
+        odoo_id = contract.get('odoo_client_id', '')
+        phone_number = contract.get('phone_number', '')
+        
+        # QUI AGGIUNGI LA TUA LOGICA DI ELABORAZIONE:
+        # Esempi:
+        # - generate_report(contract_code, contract_type, odoo_id)
+        # - send_email(contract_code, contract_name)
+        # - update_database(contract_code, odoo_id)
+        # - create_invoice(contract_code, contract_type)
+        # - sync_with_external_system(odoo_id, contract_data)
+        
+        # Per ora restituisce un risultato di esempio
+        return {
+            'contract_code': contract_code,
+            'contract_name': contract_name,
+            'contract_type': contract_type,
+            'odoo_id': odoo_id,
+            'phone_number': phone_number,
+            'status': 'processed',
+            'processed_at': datetime.now().isoformat(),
+            'elaboration_notes': f"Contratto {contract_code} elaborato con successo",
+            'actions_performed': [
+                'validation_completed',
+                'data_extracted',
+                'processing_logged'
+                # Aggiungi qui le azioni che hai effettivamente eseguito
+            ]
+        }
+    
+    def get_contracts_statistics(self) -> Dict[str, Any]:
+        """
+        Ottieni statistiche sui contratti senza elaborarli
+        
+        Returns:
+            Statistiche sui contratti
+        """
+        try:
+            contracts = self.contracts_service.get_contracts_list()
+            
+            if not contracts:
+                return {
+                    'total': 0,
+                    'valid': 0,
+                    'invalid': 0,
+                    'types': {},
+                    'message': 'Nessun contratto disponibile'
+                }
+            
+            # Conta contratti validi/invalidi
+            valid = 0
+            contract_types = {}
+            odoo_ids = set()
+            
+            for contract in contracts:
+                odoo_id = contract.get('odoo_client_id', '').strip()
+                contract_type = contract.get('contract_type', '').strip()
+                contract_code = contract.get('contract_code', '').strip()
+                
+                if odoo_id and contract_type and contract_code:
+                    valid += 1
+                    contract_types[contract_type] = contract_types.get(contract_type, 0) + 1
+                    odoo_ids.add(odoo_id)
+            
+            return {
+                'total': len(contracts),
+                'valid': valid,
+                'invalid': len(contracts) - valid,
+                'types': contract_types,
+                'unique_odoo_ids': len(odoo_ids),
+                'analysis_timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Errore calcolo statistiche: {e}")
+            return {'error': str(e)}
+                
 # Esempio di utilizzo
 if __name__ == "__main__":
     try:

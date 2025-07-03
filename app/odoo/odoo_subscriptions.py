@@ -2,6 +2,7 @@
 Odoo Subscriptions Manager v18.2+
 Gestione abbonamenti e ordini ricorrenti semplificata
 """
+import json
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
@@ -432,3 +433,84 @@ class OdooSubscriptionManager:
         except Exception as e:
             self.logger.error(f"Errore recupero abbonamenti: {e}")
             return None
+        
+    def verifica_abbonamento(secure_config, subscription_id, request_path):
+
+        from odoo.odoo_utils import (
+            build_api_response, build_select2_response, 
+            validate_pagination_params, calculate_pagination_info,
+            PerformanceTimer
+        )
+        from odoo.odoo_manager import get_odoo_manager
+        
+        odoo_manager = get_odoo_manager(secure_config)
+        try:
+            with PerformanceTimer(f"get_subscription_detail_{subscription_id}"):
+                # Determina il formato dal path
+                format_type = 'select' if '/select/' in request_path else 'full'
+                
+                # Recupera tutti gli abbonamenti (potremmo ottimizzare recuperando solo quello specifico)
+                json_data = odoo_manager.subscriptions.get_subscriptions_json()
+                
+                if json_data is None:
+                    return build_api_response(
+                        False, 
+                        message="Errore nel recupero dei dati da Odoo", 
+                        error_code="ODOO_CONNECTION_ERROR", 
+                        status_code=500
+                    )
+                
+                # Cerca l'abbonamento specifico
+                subscription = None
+                for sub in json_data.get('subscriptions', []):
+                    if sub['id'] == subscription_id:
+                        subscription = sub
+                        break
+                
+                if subscription is None:
+                    return build_api_response(
+                        False, 
+                        message=f"Abbonamento con ID {subscription_id} non trovato", 
+                        error_code="SUBSCRIPTION_NOT_FOUND", 
+                        status_code=404
+                    )
+                
+                # Formato select
+                if format_type == 'select':
+                    # Prende il primo prodotto dell'abbonamento come rappresentativo
+                    if subscription.get('subscription_products') and len(subscription['subscription_products']) > 0:
+                        first_product = subscription['subscription_products'][0]
+                        product_name = first_product['name']
+                        product_id = first_product.get('product', {}).get('id', 'N/A')
+                        text = f"{product_name} ({product_id})"
+                    else:
+                        text = f"{subscription['name']} (N/A)"
+                    
+                    select_data = {
+                        "results": [
+                            {
+                                "id": subscription_id,
+                                "text": text
+                            }
+                        ]
+                    }
+                    return select_data
+                
+                # Formato completo
+                # return subscription
+                return build_api_response(
+                        True, 
+                        data=subscription,
+                        # message=f"Abbonamento con ID {subscription_id} non trovato", 
+                        # error_code="SUBSCRIPTION_NOT_FOUND", 
+                        # status_code=404
+                    )
+                
+        except Exception as e:
+            # logger.error(f"Errore get_subscription_detail: {e}")
+            return build_api_response(
+                False, 
+                message=f"Errore interno del server: {str(e)}", 
+                error_code="INTERNAL_ERROR", 
+                status_code=500
+            )

@@ -1,0 +1,18 @@
+from dotenv import load_dotenv
+from odoo.odoo_subscriptions import OdooSubscriptionManager
+import json
+load_dotenv() 
+
+from config import SecureConfig
+secure_config = SecureConfig()
+# secure_config = secure_config.get_config()
+print(secure_config)
+response = OdooSubscriptionManager.verifica_abbonamento(secure_config, 62, '')
+response = json.dumps(response)
+if '"success": true' in response[0]:
+    print("Success TRUE")
+elif '"success": false' in response[0]:
+    print("Success FALSE")
+else:
+    print("Campo 'success' non trovato")
+print(response)

@@ -35,7 +35,7 @@ class SecureConfig:
             'download_all_files': self._str_to_bool(os.getenv('DOWNLOAD_ALL_FILES', 'false')),
             'specific_filename': os.getenv('SPECIFIC_FILENAME', ''),
             'output_directory': os.getenv('OUTPUT_DIRECTORY', './output'),
-            'ANALYTICS_OUTPUT_FOLDER': os.getenv('ANALYTICS_OUTPUT_FOLDER', './output/cdr_analytics'),
+            'analytics_output_folder': os.getenv('ANALYTICS_OUTPUT_FOLDER', './output/cdr_analytics'),
             'config_directory': os.getenv('CONFIG_DIRECTORY', 'config'),
             'categories_config_file': os.getenv('CATEGORIES_CONFIG_FILE', 'cdr_categories.json'),
             'file_naming_pattern': os.getenv('FILE_NAMING_PATTERN', 'monthly'),

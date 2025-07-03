@@ -155,7 +155,7 @@ class Abbonamenti:
                 [{
                     'order_id': subscription_id,
                     'product_id': product_id,
-                    'name': f"Dettaglio: {descrizione}", # - Contratto {contract_code}
+                    'name': f"Dettaglio: \n {descrizione}", # - Contratto {contract_code}
                     'product_uom_qty': 1.0,
                     'price_unit': float(importo),
                 }]

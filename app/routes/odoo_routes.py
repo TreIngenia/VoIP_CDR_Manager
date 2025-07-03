@@ -392,69 +392,76 @@ def add_odoo_routes(app, secure_config):
     @app.route('/api/subscriptions/select/<int:subscription_id>', methods=['GET'])
     def get_subscription_detail(subscription_id):
         """API per dettaglio singolo abbonamento"""
-        try:
-            with PerformanceTimer(f"get_subscription_detail_{subscription_id}"):
-                # Determina il formato dal path
-                format_type = 'select' if '/select/' in request.path else 'full'
+        from odoo.odoo_subscriptions import OdooSubscriptionManager
+        # secure_config = secure_config.get_config()
+        print(secure_config)
+
+        format_type = 'select' if '/select/' in request.path else 'full'
+        response = OdooSubscriptionManager.verifica_abbonamento(secure_config, subscription_id, format_type)
+        return jsonify(response)
+        # try:
+        #     with PerformanceTimer(f"get_subscription_detail_{subscription_id}"):
+        #         # Determina il formato dal path
+        #         format_type = 'select' if '/select/' in request.path else 'full'
                 
-                # Recupera tutti gli abbonamenti (potremmo ottimizzare recuperando solo quello specifico)
-                json_data = odoo_manager.subscriptions.get_subscriptions_json(limit=1000)
+        #         # Recupera tutti gli abbonamenti (potremmo ottimizzare recuperando solo quello specifico)
+        #         json_data = odoo_manager.subscriptions.get_subscriptions_json()
                 
-                if json_data is None:
-                    return build_api_response(
-                        False, 
-                        message="Errore nel recupero dei dati da Odoo", 
-                        error_code="ODOO_CONNECTION_ERROR", 
-                        status_code=500
-                    )
+        #         if json_data is None:
+        #             return build_api_response(
+        #                 False, 
+        #                 message="Errore nel recupero dei dati da Odoo", 
+        #                 error_code="ODOO_CONNECTION_ERROR", 
+        #                 status_code=500
+        #             )
                 
-                # Cerca l'abbonamento specifico
-                subscription = None
-                for sub in json_data.get('subscriptions', []):
-                    if sub['id'] == subscription_id:
-                        subscription = sub
-                        break
+        #         # Cerca l'abbonamento specifico
+        #         subscription = None
+        #         for sub in json_data.get('subscriptions', []):
+        #             if sub['id'] == subscription_id:
+        #                 subscription = sub
+        #                 break
                 
-                if subscription is None:
-                    return build_api_response(
-                        False, 
-                        message=f"Abbonamento con ID {subscription_id} non trovato", 
-                        error_code="SUBSCRIPTION_NOT_FOUND", 
-                        status_code=404
-                    )
+        #         if subscription is None:
+        #             return build_api_response(
+        #                 False, 
+        #                 message=f"Abbonamento con ID {subscription_id} non trovato", 
+        #                 error_code="SUBSCRIPTION_NOT_FOUND", 
+        #                 status_code=404
+        #             )
                 
-                # Formato select
-                if format_type == 'select':
-                    # Prende il primo prodotto dell'abbonamento come rappresentativo
-                    if subscription.get('subscription_products') and len(subscription['subscription_products']) > 0:
-                        first_product = subscription['subscription_products'][0]
-                        product_name = first_product['name']
-                        product_id = first_product.get('product', {}).get('id', 'N/A')
-                        text = f"{product_name} ({product_id})"
-                    else:
-                        text = f"{subscription['name']} (N/A)"
+        #         # Formato select
+        #         if format_type == 'select':
+        #             # Prende il primo prodotto dell'abbonamento come rappresentativo
+        #             if subscription.get('subscription_products') and len(subscription['subscription_products']) > 0:
+        #                 first_product = subscription['subscription_products'][0]
+        #                 product_name = first_product['name']
+        #                 product_id = first_product.get('product', {}).get('id', 'N/A')
+        #                 text = f"{product_name} ({product_id})"
+        #             else:
+        #                 text = f"{subscription['name']} (N/A)"
                     
-                    select_data = {
-                        "results": [
-                            {
-                                "id": subscription_id,
-                                "text": text
-                            }
-                        ]
-                    }
-                    return jsonify(select_data)
+        #             select_data = {
+        #                 "results": [
+        #                     {
+        #                         "id": subscription_id,
+        #                         "text": text
+        #                     }
+        #                 ]
+        #             }
+        #             return jsonify(select_data)
                 
-                # Formato completo
-                return jsonify(subscription)
+        #         # Formato completo
+        #         return jsonify(subscription)
                 
-        except Exception as e:
-            logger.error(f"Errore get_subscription_detail: {e}")
-            return build_api_response(
-                False, 
-                message=f"Errore interno del server: {str(e)}", 
-                error_code="INTERNAL_ERROR", 
-                status_code=500
-            )
+        # except Exception as e:
+        #     logger.error(f"Errore get_subscription_detail: {e}")
+        #     return build_api_response(
+        #         False, 
+        #         message=f"Errore interno del server: {str(e)}", 
+        #         error_code="INTERNAL_ERROR", 
+        #         status_code=500
+        #     )
 
     @app.route('/api/subscriptions/summary', methods=['GET'])
     def get_subscriptions_summary():

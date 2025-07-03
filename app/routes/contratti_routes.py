@@ -32,10 +32,10 @@ def contratti_routes(app, secure_config):
     }
 
 def api_contract_routes(app, secure_config):
-    from cdr_contract_extractor import extract_cdr_contracts_from_cdr
-    @app.route('/api/cdr/extract_contracts', methods=['POST'])
-    def extract_cdr_contracts():
-        extract_cdr_contracts_from_cdr()    
+    # from cdr_contract_extractor import extract_cdr_contracts_from_cdr
+    # @app.route('/api/cdr/extract_contracts', methods=['POST'])
+    # def extract_cdr_contracts():
+    #     return extract_cdr_contracts_from_cdr()    
     # def extract_cdr_contracts():
     
     #     """

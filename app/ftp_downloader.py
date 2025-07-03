@@ -343,7 +343,7 @@ class FTPDownloader:
                 file_scaricati = self.scarica_per_template(
                     template=get_template,
                     directory_ftp=self.config.get('ftp_directory', '/'),
-                    cartella_locale=self.config.get('output_directory'),
+                    cartella_locale=os.path.join(self.config.get('output_directory'), 'ftp_cdr'),
                     data=None,
                     test=get_test
                 )
@@ -769,132 +769,19 @@ class FTPDownloader:
         Metodo di compatibilità temporaneo
         Sostituirà il vecchio processor.process_files()
         """
-        try:
-            print("🔄 Avvio processo download e conversione...")
-            get_template = self.config['specific_filename']
-            get_test = self.config.get('test_mode', False)
+        
+        # print("🔄 Avvio processo download e conversione...")
+        get_template = self.config['specific_filename']
+        get_test = self.config.get('test_mode', False)
+        
+        # print(f"📂 Template e modalità test: {get_template}, {get_test}")
+        
+        # 1. Download dei file
+        downloaded_response = self.runftp_internal(get_template, get_test)
+        
+        return downloaded_response
             
-            print(f"📂 Template e modalità test: {get_template}, {get_test}")
-            
-            # 1. Download dei file
-            downloaded_response = self.runftp_internal(get_template, get_test)
-            print(f"📥 Response type: {type(downloaded_response)}")
-            print(f"📥 Response data: {downloaded_response}")
-            
-            # ✅ ESTRAI I DATI DAL RESPONSE OBJECT
-            if hasattr(downloaded_response, 'get_json'):
-                # È un Response object di Flask
-                downloaded_files = downloaded_response.get_json()
-            elif hasattr(downloaded_response, 'json'):
-                # Potrebbe essere un altro tipo di response
-                downloaded_files = downloaded_response.json
-            else:
-                # Assume che sia già un dizionario
-                downloaded_files = downloaded_response
-            
-            print(f"📥 Dati estratti: {downloaded_files}")
-            print(f"📥 Tipo dati estratti: {type(downloaded_files)}")
-            
-            # ✅ CONTROLLA I DATI ESTRATTI
-            if not downloaded_files or not downloaded_files.get('success', False):
-                return {
-                    'success': False,
-                    'message': downloaded_files.get('message', 'Download fallito') if downloaded_files else 'Nessuna risposta dal server',
-                    'downloaded_files': [],
-                    'converted_files': [],
-                    'timestamp': datetime.now().isoformat()
-                }
-            
-            file_list = downloaded_files.get('files', [])
-            
-            if not file_list:
-                return {
-                    'success': False,
-                    'message': 'Nessun file scaricato',
-                    'downloaded_files': [],
-                    'converted_files': [],
-                    'timestamp': datetime.now().isoformat()
-                }
-            
-            print(f"📄 Lista file da elaborare: {file_list}")
-            
-            # 2. Conversione JSON (da implementare)
-            converted_files = []
-            for file_path in file_list:
-                print(f"📄 Elaborando file: {file_path}")
-                directory = self.config['output_directory']
-                full_path = os.path.join(directory, file_path)
-                #Converto il file in json
-                file_json = self.convert_to_json(full_path)
-                converted_files.append(file_path)  # Temporaneo
-            
-            # 3. Risultato compatibile con app.py
-            result = {
-                'success': True,
-                'message': f'Processo completato: {len(file_list)} file scaricati',
-                'downloaded_files': file_list,
-                'converted_files': converted_files,
-                'total_downloaded': len(file_list),
-                'total_converted': len(converted_files),
-                'timestamp': datetime.now().isoformat()
-            }
-
-            try:
-                cdr_results = []
-                # for json_file in converted_files:
-                cdr_result = self.cdr_analytics.process_cdr_file(file_json)
-                
-                # ✅ PULISCI RISULTATO CDR
-                if isinstance(cdr_result, dict):
-                    clean_cdr_result = {
-                        'success': cdr_result.get('success', False),
-                        'message': cdr_result.get('message', ''),
-                        'source_file': str(cdr_result.get('source_file', '')),
-                        'total_records': cdr_result.get('total_records', 0),
-                        'total_contracts': cdr_result.get('total_contracts', 0),
-                        'generated_files': [str(f) for f in cdr_result.get('generated_files', [])],
-                        'categories_system_enabled': cdr_result.get('categories_system_enabled', False),
-                        'processing_timestamp': cdr_result.get('processing_timestamp', datetime.now().isoformat())
-                    }
-                    
-                    # Aggiungi statistiche categorie se disponibili
-                    if 'category_stats' in cdr_result:
-                        clean_cdr_result['category_stats'] = cdr_result['category_stats']
-                    
-                    cdr_results.append(clean_cdr_result)
-                
-                if cdr_results:
-                    result['cdr_analytics'] = {
-                        'processed_files': len(cdr_results),
-                        'successful_analyses': sum(1 for r in cdr_results if r.get('success')),
-                        'total_reports_generated': sum(len(r.get('generated_files', [])) for r in cdr_results),
-                        'categories_system_enabled': any(r.get('categories_system_enabled', False) for r in cdr_results),
-                        'results': cdr_results
-                    }
-                    
-            except Exception as e:
-                logger.error(f"Errore elaborazione CDR: {e}")
-                result['cdr_analytics'] = {
-                    'error': str(e),
-                    'processed_files': 0
-                }
-            
-            logger.info(f"Processo completato: {len(converted_files)} file convertiti")
-            extract_data_from_api("/api/cdr/extract_contracts")
-            return result
-            
-        except Exception as e:
-            print(f"❌ Errore in process_files: {e}")
-            import traceback
-            traceback.print_exc()  # Per debug completo
-            return {
-                'success': False,
-                'message': str(e),
-                'downloaded_files': [],
-                'converted_files': [],
-                'timestamp': datetime.now().isoformat()
-            }
-    
+       
     def check_file(self, get_template, get_test):
         """
         Metodo di compatibilità temporaneo
